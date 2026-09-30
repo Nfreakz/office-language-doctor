@@ -19,14 +19,17 @@ This application is independent from every other NeoRS application. Do not reuse
 - Branch: `main`
 - Clean public root: `65dac5d41f44f3b34fc85d6f4e4247b7dd7a4c79`
 - Version: `0.5.0`
-- Release state: **Community Edition · clean repository rebuilt; release republish pending**
+- Release state: **published Community Edition**
 - Public licensing: **MPL-2.0**
-- GitHub tag/release: **pending republish after clean repository reconstruction**
-- Public deployment source: `gh-pages / (root)` after the deployment workflow recreates the branch
-- Public branches at this checkpoint: `main`
+- Annotated tag: `v0.5.0` pins the validated clean release baseline
+- GitHub Release: **Office Language Doctor 0.5.0 Community Edition**
+- Release published: **2026-09-30**
+- Public deployment source: `gh-pages / (root)`
+- Public branches: `main` and `gh-pages`
 - Clean local reconstruction snapshot: verified on the approved local runner before rebuilding this repository
+- Repository reconstruction: completed on 2026-09-30 with no pre-0.5.0 history carried into the new repository
 
-Version `0.5.0` is the first public Community Edition baseline and the first commit in the rebuilt public `main` history. The release tag will be recreated only after CI and deployment are verified.
+Version `0.5.0` is the first public Community Edition release in the rebuilt repository. The public `main` history starts at the clean 0.5.0 product root, and the release tag pins the validated release baseline after CI/Pages restoration.
 
 Changes after the release tag must accumulate under Unreleased without automatically changing the package version.
 
@@ -291,13 +294,13 @@ Policy:
 - writes `.nojekyll`;
 - Vite uses `base: './'`.
 
-The v0.5.0 clean public baseline is being rebuilt from the verified local snapshot. Re-record deployment success here after the new `gh-pages` branch is verified.
+The rebuilt v0.5.0 public baseline passed the local Windows CI suite and the Pages deployment workflow recreated `gh-pages` successfully before the GitHub Release was republished.
 
 ## Release policy
 
 Current package version is `0.5.0`.
 
-Version 0.5.0 is the first public Community Edition baseline and is distributed under MPL-2.0 unless a file states otherwise. Recreate the annotated v0.5.0 tag only after the rebuilt repository passes CI and deployment verification. Do not create a new patch/minor version for every PR; future changes should accumulate coherently under Unreleased until the next deliberate release.
+Version 0.5.0 is the first public Community Edition release in the rebuilt repository and is distributed under MPL-2.0 unless a file states otherwise. The annotated v0.5.0 tag pins the validated clean release baseline. Do not create a new patch/minor version for every PR; future changes should accumulate coherently under Unreleased until the next deliberate release.
 
 ## Remaining validation / next steps
 
