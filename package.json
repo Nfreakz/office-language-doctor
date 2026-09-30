@@ -1,0 +1,31 @@
+{
+  "name": "office-language-doctor",
+  "version": "0.5.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "check:detector": "tsx scripts/check-language-detector.mts",
+    "check:xml": "tsx scripts/check-xml-patcher.mjs",
+    "check:docx": "tsx scripts/check-docx.mts",
+    "check:odf": "tsx scripts/check-odf.mts",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "check:variants": "tsx scripts/check-format-variants.mts",
+    "check:smart-fix": "tsx scripts/check-smart-fix.mts",
+    "check:diagnostics": "tsx scripts/check-fragment-diagnostics.mts",
+    "check:report": "tsx scripts/check-audit-report.mts",
+    "check:rtf": "tsx scripts/check-rtf.mts",
+    "check:public-ui": "tsx scripts/check-public-ui.mts"
+  },
+  "dependencies": {
+    "franc-all": "7.2.0",
+    "jszip": "3.10.2"
+  },
+  "devDependencies": {
+    "tsx": "4.20.6",
+    "typescript": "7.0.2",
+    "vite": "8.3.1"
+  },
+  "license": "MPL-2.0"
+}

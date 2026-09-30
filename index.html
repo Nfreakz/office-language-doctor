@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Find and repair wrong proofing-language metadata in Word, PowerPoint, OpenDocument and RTF files locally in your browser. No document upload."
+    />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://nfreakz.github.io/office-language-doctor/" />
+    <meta name="author" content="NeoRS" />
+    <meta name="theme-color" content="#263d58" />
+    <meta property="og:title" content="Fix Wrong Proofing Language | Office Language Doctor" />
+    <meta
+      property="og:description"
+      content="Find and repair wrong proofing-language metadata in Word, PowerPoint, OpenDocument and RTF files locally in your browser."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://nfreakz.github.io/office-language-doctor/" />
+    <meta
+      property="og:image"
+      content="https://nfreakz.github.io/office-language-doctor/social-preview.jpg"
+    />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="600" />
+    <meta property="og:image:height" content="315" />
+    <meta
+      property="og:image:alt"
+      content="Office Language Doctor · NeoRS open-source project"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Fix Wrong Proofing Language | Office Language Doctor" />
+    <meta
+      name="twitter:description"
+      content="Find and repair wrong proofing-language metadata in Word, PowerPoint, OpenDocument and RTF files locally in your browser."
+    />
+    <meta
+      name="twitter:image"
+      content="https://nfreakz.github.io/office-language-doctor/social-preview.jpg"
+    />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Office Language Doctor",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Web browser",
+        "browserRequirements": "Requires a modern browser with JavaScript and local file access.",
+        "description": "Browser tool for finding and repairing wrong proofing-language metadata in Word, PowerPoint, OpenDocument and RTF files while keeping documents on the user's device.",
+        "url": "https://nfreakz.github.io/office-language-doctor/",
+        "image": "https://nfreakz.github.io/office-language-doctor/social-preview.jpg",
+        "author": { "@type": "Organization", "name": "NeoRS" },
+        "sameAs": [
+          "https://github.com/Nfreakz/office-language-doctor",
+          "https://cecolab.cat/software/office-language-doctor/"
+        ]
+      }
+    </script>
+    <title>Fix Wrong Proofing Language | Office Language Doctor</title>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div class="brand-row">
+          <div class="brand-lockup">
+            <img class="app-mark" src="./favicon.svg" alt="" aria-hidden="true" />
+            <div>
+              <p class="eyebrow">Office Language Doctor · v0.5.0</p>
+              <p class="byline">Community Edition · A NeoRS open-source project</p>
+            </div>
+          </div>
+          <nav class="hero-nav" aria-label="Project links">
+            <a href="https://github.com/Nfreakz/office-language-doctor" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <a href="https://github.com/Nfreakz/office-language-doctor/issues" target="_blank" rel="noopener noreferrer">Issues</a>
+          </nav>
+        </div>
+
+        <h1>Find and fix the wrong proofing language in Office documents.</h1>
+        <p class="lead">
+          Inspect stored proofing languages, review likely mismatches and download a repaired copy.
+          Documents stay in your browser, and the
+          <a href="https://github.com/Nfreakz/office-language-doctor" target="_blank" rel="noopener noreferrer">source code is public</a>.
+        </p>
+
+        <p class="hero-flow" aria-label="Workflow">
+          <span>Select document</span><span aria-hidden="true">→</span>
+          <span>Review mismatches</span><span aria-hidden="true">→</span>
+          <span>Download repaired copy</span>
+        </p>
+      </header>
+
+      <section class="panel upload-panel" aria-labelledby="upload-title">
+        <div class="panel-heading upload-heading">
+          <div>
+            <p class="step">01</p>
+            <h2 id="upload-title">Choose a supported document</h2>
+          </div>
+          <span class="privacy-badge">Local processing · no upload</span>
+        </div>
+
+        <label id="dropzone" class="dropzone" for="file-input">
+          <input
+            id="file-input"
+            type="file"
+            accept=".docx,.docm,.dotx,.dotm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.odt,.ott,.odp,.otp,.ods,.ots,.rtf"
+          />
+          <span class="dropzone-icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" role="img">
+              <path d="M14 6h14l8 8v28H14z"></path>
+              <path d="M28 6v9h8"></path>
+              <path d="M20 24h10M20 30h10"></path>
+            </svg>
+          </span>
+          <strong>Choose a file or drop it here</strong>
+          <span class="dropzone-copy">Word, PowerPoint, OpenDocument and RTF · 17 supported formats</span>
+          <span class="dropzone-action" aria-hidden="true">Choose file</span>
+        </label>
+
+        <div class="upload-meta">
+          <p id="status" class="status" role="status" aria-live="polite">No file selected.</p>
+          <span class="local-note">Processed locally · Nothing uploaded</span>
+        </div>
+
+        <div class="start-actions">
+          <a class="sample-link" href="./samples/LanguageDoctor_SAMPLE.rtf" download>Try a sample file</a>
+          <span>or inspect your own document above</span>
+        </div>
+
+        <div class="info-grid">
+          <section id="formats" class="info-card" aria-labelledby="formats-title">
+            <h3 id="formats-title">Supported formats</h3>
+            <p><strong>Word:</strong> DOCX, DOCM, DOTX, DOTM</p>
+            <p><strong>PowerPoint:</strong> PPTX, PPTM, POTX, POTM, PPSX, PPSM</p>
+            <p><strong>OpenDocument:</strong> ODT, OTT, ODP, OTP, ODS, OTS</p>
+            <p><strong>Rich Text:</strong> RTF</p>
+          </section>
+
+          <section id="changes" class="info-card" aria-labelledby="changes-title">
+            <h3 id="changes-title">What does it change?</h3>
+            <p>
+              Only the proofing-language metadata you explicitly repair. Language Doctor does not
+              rewrite your document text. Smart Fix preselects only high-confidence safe suggestions.
+            </p>
+          </section>
+
+          <section id="privacy" class="info-card" aria-labelledby="privacy-title">
+            <h3 id="privacy-title">Privacy</h3>
+            <p>
+              Document contents, filenames and file bytes stay on your device. There is no upload
+              endpoint, account system or server-side document processing.
+            </p>
+          </section>
+        </div>
+      </section>
+
+      <section id="results" class="panel hidden" aria-labelledby="results-title">
+        <div class="panel-heading">
+          <div>
+            <p class="step">02</p>
+            <h2 id="results-title">Stored proofing languages</h2>
+            <p class="section-copy">
+              These are the proofing-language tags stored in the document for actual text fragments.
+              They are not the detected language of the text.
+            </p>
+          </div>
+          <span id="summary" class="summary"></span>
+        </div>
+
+        <div class="document-stats" aria-label="Document audit summary">
+          <div class="document-stat">
+            <strong id="stat-fragments">0</strong>
+            <span>Text fragments</span>
+          </div>
+          <div class="document-stat">
+            <strong id="stat-languages">0</strong>
+            <span>Reliable languages</span>
+          </div>
+          <div class="document-stat document-stat-issues">
+            <strong id="stat-issues">0</strong>
+            <span>Likely mismatches</span>
+          </div>
+          <div class="document-stat">
+            <strong id="stat-undetected">0</strong>
+            <span>No language</span>
+          </div>
+        </div>
+
+        <div id="mixed-warning" class="warning hidden">
+          <strong>Mixed-language text detected.</strong>
+          <span>Global remapping is disabled because it could overwrite valid language differences.</span>
+        </div>
+
+        <div class="global-fix">
+          <label for="global-language">Set all stored language tags to</label>
+          <div class="global-actions">
+            <select id="global-language"></select>
+            <button id="apply-global" class="secondary" type="button">Prepare global fix</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Stored language</th>
+                <th scope="col">Tag</th>
+                <th scope="col">Text fragments</th>
+                <th scope="col">Change to</th>
+              </tr>
+            </thead>
+            <tbody id="language-rows"></tbody>
+          </table>
+        </div>
+
+        <div class="footer-actions">
+          <p id="change-summary">No changes prepared.</p>
+          <button id="repair-button" class="primary" type="button" disabled>
+            Repair stored tags and download
+          </button>
+        </div>
+
+        <div class="audit">
+          <div class="audit-heading">
+            <div>
+              <p class="step">03</p>
+              <div class="title-line">
+                <h2>Text language audit</h2>
+                <span class="experimental">Experimental</span>
+              </div>
+              <p class="section-copy">
+                Review reliable mismatches individually. Short or non-linguistic fragments are left
+                unchanged. Catalan and Valencian require an explicit variant choice.
+              </p>
+            </div>
+            <span id="detection-summary" class="summary"></span>
+          </div>
+
+          <div class="audit-toolbar">
+            <div class="audit-filters" aria-label="Filter audit results">
+              <button id="filter-issues" class="audit-filter" type="button" aria-pressed="false">
+                Issues <span id="filter-issues-count">0</span>
+              </button>
+              <button id="filter-all" class="audit-filter" type="button" aria-pressed="false">
+                All text <span id="filter-all-count">0</span>
+              </button>
+              <button id="filter-matches" class="audit-filter" type="button" aria-pressed="false">
+                Matches <span id="filter-matches-count">0</span>
+              </button>
+              <button id="filter-undetected" class="audit-filter" type="button" aria-pressed="false">
+                No language <span id="filter-undetected-count">0</span>
+              </button>
+            </div>
+            <div class="audit-view-options">
+              <div class="audit-export-actions" aria-label="Export audit report">
+                <button id="export-audit-csv" class="secondary compact-button" type="button" disabled>Export CSV</button>
+                <button id="export-audit-json" class="secondary compact-button" type="button" disabled>Export JSON</button>
+              </div>
+              <label class="audit-page-size-label" for="audit-page-size">
+                Rows
+                <select id="audit-page-size" class="audit-page-size">
+                  <option value="10" selected>10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="all">All</option>
+                </select>
+              </label>
+              <span id="audit-range" class="audit-range">0 results</span>
+            </div>
+          </div>
+
+          <div id="smart-actions" class="smart-actions hidden">
+            <div>
+              <strong id="smart-fix-summary">No fragment fixes selected.</strong>
+              <span>High-confidence fixes are preselected. Medium-confidence and Catalan/Valencian suggestions require review.</span>
+            </div>
+            <button id="smart-repair-button" class="primary" type="button" disabled>
+              Repair selected fixes
+            </button>
+          </div>
+
+          <div class="table-wrap">
+            <table class="audit-table">
+              <thead>
+                <tr>
+                  <th scope="col">Text</th>
+                  <th scope="col">Stored</th>
+                  <th scope="col">Detected</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Fix</th>
+                </tr>
+              </thead>
+              <tbody id="fragment-rows"></tbody>
+            </table>
+          </div>
+          <nav id="audit-pagination" class="audit-pagination hidden" aria-label="Audit pages">
+            <button id="audit-previous" class="secondary compact-button" type="button">Previous</button>
+            <span id="audit-page-label">Page 1 of 1</span>
+            <button id="audit-next" class="secondary compact-button" type="button">Next</button>
+          </nav>
+        </div>
+      </section>
+
+      <footer class="site-footer">
+        <div class="footer-brand">
+          <strong>Office Language Doctor</strong>
+          <span>Created and maintained by NeoRS.</span>
+        </div>
+
+        <nav class="footer-links" aria-label="Project information">
+          <a href="https://github.com/Nfreakz/office-language-doctor" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://github.com/Nfreakz/office-language-doctor/issues" target="_blank" rel="noopener noreferrer">Report an issue</a>
+          <a href="https://github.com/Nfreakz/office-language-doctor/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MPL-2.0</a>
+          <a href="#privacy">Privacy</a>
+          <span>v0.5.0</span>
+        </nav>
+
+        <img
+          class="visit-counter"
+          src="https://hitscounter.dev/api/hit?url=https%3A%2F%2Fnfreakz.github.io%2Foffice-language-doctor%2F&amp;label=Visits&amp;icon=eye&amp;color=%2348617f&amp;message=&amp;style=flat&amp;tz=Europe%2FMadrid"
+          alt="Office Language Doctor visit count"
+          referrerpolicy="no-referrer"
+        />
+      </footer>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,188 @@
+import { francAll } from 'franc-all'
+import type { DetectionConfidence } from '../document/types'
+
+const DETECTION_CODES = ['cat', 'glg', 'eus', 'spa', 'eng', 'fra', 'por', 'deu', 'ita']
+
+const ISO3_TO_TAG: Record<string, string> = {
+  cat: 'ca-ES',
+  glg: 'gl-ES',
+  eus: 'eu-ES',
+  spa: 'es-ES',
+  eng: 'en-US',
+  fra: 'fr-FR',
+  por: 'pt-PT',
+  deu: 'de-DE',
+  ita: 'it-IT',
+}
+
+const EXACT_LANGUAGE_LABELS: Record<string, string> = {
+  'català': 'cat',
+  'catala': 'cat',
+  'catalan': 'cat',
+  'valencià': 'cat',
+  'valencia': 'cat',
+  'valencian': 'cat',
+  'galego': 'glg',
+  'galega': 'glg',
+  'galician': 'glg',
+  'euskara': 'eus',
+  'basque': 'eus',
+  'español': 'spa',
+  'castellano': 'spa',
+  'spanish': 'spa',
+  'english': 'eng',
+  'français': 'fra',
+  'french': 'fra',
+  'português': 'por',
+  'portuguese': 'por',
+  'deutsch': 'deu',
+  'german': 'deu',
+  'italiano': 'ita',
+  'italian': 'ita',
+}
+
+const GALICIAN_ANCHORS = new Set([
+  'galego',
+  'galega',
+  'grazas',
+  'pola',
+  'polas',
+  'polo',
+  'polos',
+  'súa',
+  'súas',
+  'benvidos',
+  'benvidas',
+  'traballo',
+  'lingua',
+])
+
+export interface LanguageDetection {
+  iso3: string | null
+  tag: string | null
+  confidence: DetectionConfidence
+  score: number | null
+  margin: number | null
+}
+
+export function detectTextLanguage(text: string): LanguageDetection {
+  const normalized = text.replace(/\s+/g, ' ').trim()
+  const exactLabel = detectExactLanguageLabel(normalized)
+  if (exactLabel) return exactLabel
+
+  const letterCount = normalized.match(/\p{L}/gu)?.length ?? 0
+
+  if (letterCount < 10) {
+    return unknownDetection()
+  }
+
+  const ranked = francAll(normalized, {
+    only: DETECTION_CODES,
+    minLength: 8,
+  })
+
+  const best = ranked[0]
+  if (!best || best[0] === 'und' || !ISO3_TO_TAG[best[0]]) {
+    return unknownDetection()
+  }
+
+  const secondScore = ranked[1]?.[1] ?? 0
+  const margin = Math.max(0, best[1] - secondScore)
+
+  let confidence: DetectionConfidence = 'low'
+  if (letterCount >= 28 && margin >= 0.12) {
+    confidence = 'high'
+  } else if (letterCount >= 16 && margin >= 0.05) {
+    confidence = 'medium'
+  } else if (
+    best[0] === 'glg' &&
+    letterCount >= 16 &&
+    countGalicianAnchors(normalized) >= 2
+  ) {
+    confidence = 'medium'
+  }
+
+  return {
+    iso3: best[0],
+    tag: ISO3_TO_TAG[best[0]],
+    confidence,
+    score: best[1],
+    margin,
+  }
+}
+
+export function languageFamily(tag: string | null): string | null {
+  if (!tag) return null
+  const normalized = tag.toLowerCase()
+
+  if (normalized.startsWith('ca-')) return 'ca'
+  if (normalized.startsWith('gl-')) return 'gl'
+  if (normalized.startsWith('eu-')) return 'eu'
+  if (normalized.startsWith('es-')) return 'es'
+  if (normalized.startsWith('en-')) return 'en'
+  if (normalized.startsWith('fr-')) return 'fr'
+  if (normalized.startsWith('pt-')) return 'pt'
+  if (normalized.startsWith('de-')) return 'de'
+  if (normalized.startsWith('it-')) return 'it'
+
+  return normalized
+}
+
+export function isLikelyMismatch(
+  storedTag: string | null,
+  detectedTag: string | null,
+  confidence: DetectionConfidence,
+): boolean {
+  if (!storedTag || !detectedTag || (confidence !== 'high' && confidence !== 'medium')) {
+    return false
+  }
+
+  return languageFamily(storedTag) !== languageFamily(detectedTag)
+}
+
+function detectExactLanguageLabel(text: string): LanguageDetection | null {
+  const label = text
+    .normalize('NFC')
+    .toLocaleLowerCase()
+    .replace(/^[\p{P}\p{S}\s]+|[\p{P}\p{S}\s]+$/gu, '')
+
+  const iso3 = EXACT_LANGUAGE_LABELS[label]
+  if (!iso3) return null
+
+  return {
+    iso3,
+    tag: ISO3_TO_TAG[iso3],
+    confidence: 'high',
+    score: 1,
+    margin: 1,
+  }
+}
+
+function countGalicianAnchors(text: string): number {
+  const tokens = text
+    .normalize('NFC')
+    .toLocaleLowerCase()
+    .match(/\p{L}+/gu) ?? []
+
+  let count = 0
+  const seen = new Set<string>()
+
+  for (const token of tokens) {
+    if (GALICIAN_ANCHORS.has(token) && !seen.has(token)) {
+      seen.add(token)
+      count += 1
+    }
+  }
+
+  return count
+}
+
+function unknownDetection(): LanguageDetection {
+  return {
+    iso3: null,
+    tag: null,
+    confidence: 'unknown',
+    score: null,
+    margin: null,
+  }
+}
