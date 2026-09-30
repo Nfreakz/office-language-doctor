@@ -1,0 +1,78 @@
+name: CI · local Windows
+
+on:
+  push:
+    branches:
+      - main
+      - 'feat/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build on DESKTOP-0NEP6ON
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        shell: powershell
+
+    steps:
+      - name: Verify approved local runner
+        run: |
+          Write-Host "Runner: $env:RUNNER_NAME / Host: $env:COMPUTERNAME"
+          if ($env:RUNNER_NAME -ne 'DESKTOP-0NEP6ON') {
+            throw "Unexpected runner: $env:RUNNER_NAME"
+          }
+          if ($env:COMPUTERNAME -ne 'DESKTOP-0NEP6ON') {
+            throw "Unexpected host: $env:COMPUTERNAME"
+          }
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Check PowerPoint XML patcher
+        run: npm run check:xml
+
+      - name: Check language detector
+        run: npm run check:detector
+
+      - name: Check Word scan and repair
+        run: npm run check:docx
+
+      - name: Check OpenDocument scan and repair
+        run: npm run check:odf
+
+      - name: Check format variants and macro preservation
+        run: npm run check:variants
+
+      - name: Check Smart Fix safety policy
+        run: npm run check:smart-fix
+
+      - name: Check fragment diagnostics labels
+        run: npm run check:diagnostics
+
+      - name: Check local audit report exports
+        run: npm run check:report
+
+      - name: Check RTF scan and repair
+        run: npm run check:rtf
+
+      - name: Check public landing page
+        run: npm run check:public-ui
+
+      - name: Build
+        run: npm run build

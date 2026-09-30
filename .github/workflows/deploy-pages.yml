@@ -1,0 +1,87 @@
+name: Deploy · GitHub Pages branch
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: office-language-doctor-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build and publish on DESKTOP-0NEP6ON
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        shell: powershell
+
+    steps:
+      - name: Verify approved local runner
+        run: |
+          Write-Host "Runner: $env:RUNNER_NAME / Host: $env:COMPUTERNAME"
+          if ($env:RUNNER_NAME -ne 'DESKTOP-0NEP6ON') {
+            throw "Unexpected runner: $env:RUNNER_NAME"
+          }
+          if ($env:COMPUTERNAME -ne 'DESKTOP-0NEP6ON') {
+            throw "Unexpected host: $env:COMPUTERNAME"
+          }
+
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build site
+        run: npm run build
+
+      - name: Verify build output
+        run: |
+          if (-not (Test-Path "dist\index.html")) {
+            throw "dist/index.html was not generated"
+          }
+
+      - name: Publish gh-pages branch
+        run: |
+          $publish = Join-Path $env:RUNNER_TEMP "office-language-doctor-pages"
+
+          if (Test-Path $publish) {
+            Remove-Item -Recurse -Force $publish
+          }
+
+          New-Item -ItemType Directory -Path $publish | Out-Null
+          Copy-Item -Path "dist\*" -Destination $publish -Recurse -Force
+          New-Item -ItemType File -Path (Join-Path $publish ".nojekyll") -Force | Out-Null
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          $deployBranch = "gh-pages-build-$env:GITHUB_RUN_ID"
+          git checkout --orphan $deployBranch
+
+          git rm -rf .
+          git clean -fdx
+
+          Copy-Item -Path "$publish\*" -Destination "." -Recurse -Force
+          Copy-Item -Path (Join-Path $publish ".nojekyll") -Destination ".\.nojekyll" -Force
+
+          git add -A
+          git commit -m "Deploy $env:GITHUB_SHA"
+          git push origin HEAD:gh-pages --force
