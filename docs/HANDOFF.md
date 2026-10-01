@@ -148,7 +148,7 @@ Manual validation completed for ODT, ODP and ODS in LibreOffice Writer, Impress 
 
 OTT, OTP and OTS are supported through the shared engine and automated checks. On 2026-10-02 they also passed a real LibreOffice 25.2.3.2 headless engine round-trip in an external Linux environment. Each template reopened successfully after an `en-US → ca-ES` language change with text preserved; OTP retained its slide content, and OTS preserved `=SUM(B1:B2)` with result `42`. This is real LibreOffice-engine validation, not a visual GUI/manual validation.
 
-The ODF scanner now reports fragment locations at the useful container level: `Document content` for text documents, numbered slides for presentations, and sheet names for spreadsheets. These labels are used consistently in the UI and local CSV/JSON audit exports.
+The ODF scanner reports `Document content` for text documents, numbered slides for presentations, and exact sheet + cell/range coordinates for spreadsheets. ODS coordinate resolution handles self-closing empty cells, repeated rows/columns, covered cells, merged ranges and columns beyond Z. Examples covered by regression include `Sheet: Budget Q4 · AB1`, `AC1:AD1`, `A1:A2` and `B3:C4`. These labels are used consistently in the UI and local CSV/JSON audit exports.
 
 ## RTF engine
 
@@ -271,7 +271,7 @@ Current automated checks:
 - PowerPoint XML regression;
 - language detector calibration;
 - DOCX scan + repair;
-- ODF scan + repair;
+- ODF scan + repair, including exact ODS cell/range coordinates across repeated and merged geometry;
 - variant routing and macro-binary preservation;
 - Smart Fix safety policy;
 - fragment diagnostics labels;
@@ -306,8 +306,7 @@ Version 0.5.0 is the first public Community Edition release in the rebuilt repos
 
 1. Validate live VBA execution before/after repair using the new DOCM/PPTM harness on a Windows runner with desktop Word and PowerPoint installed. The approved `DESKTOP-0NEP6ON` runner was inspected on 2026-10-02 and currently has no Word/PowerPoint executable, App Path or COM registration, so this test cannot run there.
 2. Optional: perform a visual/manual GUI pass for OTT / OTP / OTS. Real LibreOffice 25.2.3.2 engine round-trip validation is complete.
-3. Consider finer-grained ODS cell coordinates only if repeated rows/columns and merged cells can be handled safely; slide/sheet-level locations are already implemented.
-4. Keep XLSX audit-only work separate from metadata repair.
+3. Keep XLSX audit-only work separate from metadata repair.
 
 ## Historical ODS fixture note
 
