@@ -10,8 +10,8 @@ import type { StoredLanguageSource } from '../document/types'
 
 const PARAGRAPH = /<text:p\b[^>]*>[\s\S]*?<\/text:p>/g
 const SPAN = /<text:span\b[^>]*>[\s\S]*?<\/text:span>/g
-const ROW = /<table:table-row\b[^>]*(?:\/>|>[\s\S]*?<\/table:table-row>)/g
-const SPREADSHEET_CELL = /<table:table-cell\b[^>]*(?:\/>|>[\s\S]*?<\/table:table-cell>)|<table:covered-table-cell\b[^>]*(?:\/>|>[\s\S]*?<\/table:covered-table-cell>)/g
+const ROW = /<table:table-row\b[^>]*\/>|<table:table-row\b[^>]*>[\s\S]*?<\/table:table-row>/g
+const SPREADSHEET_CELL = /<table:table-cell\b[^>]*\/>|<table:table-cell\b[^>]*>[\s\S]*?<\/table:table-cell>|<table:covered-table-cell\b[^>]*\/>|<table:covered-table-cell\b[^>]*>[\s\S]*?<\/table:covered-table-cell>/g
 const DRAW_PAGE = /<draw:page(?=\s|>)[^>]*>[\s\S]*?<\/draw:page>/g
 const TABLE = /<table:table(?=\s|>)[^>]*>[\s\S]*?<\/table:table>/g
 const TEXT_PROPERTIES = /<style:text-properties\b[^>]*\/?\s*>/gi
