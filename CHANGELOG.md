@@ -2,7 +2,16 @@
 
 ## Unreleased
 
-No changes yet.
+### Added
+
+- repeatable Windows/Office live-VBA validation harness for DOCM and PPTM, kept manual via `workflow_dispatch` so normal CI does not require desktop Office.
+
+### Validation
+
+- OTT, OTP and OTS passed a real LibreOffice 25.2.3.2 headless engine round-trip on 2026-10-02;
+- the template round-trip preserved text while changing proofing locale from `en-US` to `ca-ES`;
+- OTS preserved `=SUM(B1:B2)` and its result `42`;
+- the approved runner was checked for live VBA automation but has no Word/PowerPoint executable, App Path or COM registration, so live macro execution remains pending rather than being marked as passed.
 
 ## 0.5.0 · Community Edition — 2026-09-30
 
