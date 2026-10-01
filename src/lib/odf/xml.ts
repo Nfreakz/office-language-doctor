@@ -10,7 +10,8 @@ import type { StoredLanguageSource } from '../document/types'
 
 const PARAGRAPH = /<text:p\b[^>]*>[\s\S]*?<\/text:p>/g
 const SPAN = /<text:span\b[^>]*>[\s\S]*?<\/text:span>/g
-const CELL = /<table:table-cell\b[^>]*>[\s\S]*?<\/table:table-cell>/g
+const ROW = /<table:table-row\b[^>]*(?:\/>|>[\s\S]*?<\/table:table-row>)/g
+const SPREADSHEET_CELL = /<table:table-cell\b[^>]*(?:\/>|>[\s\S]*?<\/table:table-cell>)|<table:covered-table-cell\b[^>]*(?:\/>|>[\s\S]*?<\/table:covered-table-cell>)/g
 const DRAW_PAGE = /<draw:page(?=\s|>)[^>]*>[\s\S]*?<\/draw:page>/g
 const TABLE = /<table:table(?=\s|>)[^>]*>[\s\S]*?<\/table:table>/g
 const TEXT_PROPERTIES = /<style:text-properties\b[^>]*\/?\s*>/gi
@@ -85,17 +86,63 @@ export function extractOdfTextFragments(
     runIndex += 1
   }
 
-  const processSpreadsheetCells = (xmlChunk: string, location: string): void => {
-    for (const cellMatch of xmlChunk.matchAll(CELL)) {
-      const cellXml = cellMatch[0]
-      const cellOpening = cellXml.match(/^<table:table-cell\b[^>]*>/)?.[0] ?? ''
-      const cellStyle = readAttribute(cellOpening, 'table:style-name')
-      const cellResolved = resolveOdfStyleLanguage(cellStyle, 'table-cell', context)
-      const cellSource: StoredLanguageSource = cellResolved.tag ? 'style' : 'none'
-
-      for (const paragraphMatch of cellXml.matchAll(PARAGRAPH)) {
-        processParagraph(paragraphMatch[0], cellResolved.tag, cellSource, location)
+  const consumeParagraph = (paragraphXml: string): void => {
+    const spans = Array.from(paragraphXml.matchAll(SPAN))
+    if (spans.length > 0) {
+      for (const spanMatch of spans) {
+        if (normalizeOdfText(spanMatch[0])) runIndex += 1
       }
+      return
+    }
+
+    if (normalizeOdfText(paragraphXml)) runIndex += 1
+  }
+
+  const processSpreadsheetCells = (xmlChunk: string, sheetLabel: string): void => {
+    let rowIndex = 1
+
+    for (const rowMatch of xmlChunk.matchAll(ROW)) {
+      const rowXml = rowMatch[0]
+      const rowOpening = rowXml.match(/^<table:table-row\b[^>]*>/)?.[0] ?? ''
+      const rowRepeat = readPositiveIntegerAttribute(rowOpening, 'table:number-rows-repeated')
+      let columnIndex = 1
+
+      for (const cellMatch of rowXml.matchAll(SPREADSHEET_CELL)) {
+        const cellXml = cellMatch[0]
+        const cellOpening = cellXml.match(/^<table:(?:table-cell|covered-table-cell)\b[^>]*>/)?.[0] ?? ''
+        const columnRepeat = readPositiveIntegerAttribute(cellOpening, 'table:number-columns-repeated')
+
+        if (/^<table:covered-table-cell\b/i.test(cellOpening)) {
+          for (const paragraphMatch of cellXml.matchAll(PARAGRAPH)) {
+            consumeParagraph(paragraphMatch[0])
+          }
+          columnIndex += columnRepeat
+          continue
+        }
+
+        const cellStyle = readAttribute(cellOpening, 'table:style-name')
+        const cellResolved = resolveOdfStyleLanguage(cellStyle, 'table-cell', context)
+        const cellSource: StoredLanguageSource = cellResolved.tag ? 'style' : 'none'
+        const columnSpan = readPositiveIntegerAttribute(cellOpening, 'table:number-columns-spanned')
+        const rowSpan = readPositiveIntegerAttribute(cellOpening, 'table:number-rows-spanned')
+        const location = spreadsheetCellLocation(
+          sheetLabel,
+          columnIndex,
+          rowIndex,
+          columnRepeat,
+          rowRepeat,
+          columnSpan,
+          rowSpan,
+        )
+
+        for (const paragraphMatch of cellXml.matchAll(PARAGRAPH)) {
+          processParagraph(paragraphMatch[0], cellResolved.tag, cellSource, location)
+        }
+
+        columnIndex += columnRepeat
+      }
+
+      rowIndex += rowRepeat
     }
   }
 
@@ -126,8 +173,8 @@ export function extractOdfTextFragments(
         const tableXml = tableMatch[0]
         const tableOpening = tableXml.match(/^<table:table(?=\s|>)[^>]*>/)?.[0] ?? ''
         const tableName = readAttribute(tableOpening, 'table:name')
-        const location = tableName ? `Sheet: ${tableName}` : `Sheet ${tableIndex + 1}`
-        processSpreadsheetCells(tableXml, location)
+        const sheetLabel = tableName ? `Sheet: ${tableName}` : `Sheet ${tableIndex + 1}`
+        processSpreadsheetCells(tableXml, sheetLabel)
       })
     } else {
       processSpreadsheetCells(contentXml, 'Spreadsheet content')
@@ -251,6 +298,42 @@ export function replaceOdfFragmentLanguages(
   }
 
   return { xml: patched, changes }
+}
+
+function spreadsheetCellLocation(
+  sheetLabel: string,
+  columnIndex: number,
+  rowIndex: number,
+  columnRepeat: number,
+  rowRepeat: number,
+  columnSpan: number,
+  rowSpan: number,
+): string {
+  const endColumn = columnIndex + Math.max(columnRepeat, columnSpan) - 1
+  const endRow = rowIndex + Math.max(rowRepeat, rowSpan) - 1
+  const start = `${spreadsheetColumnName(columnIndex)}${rowIndex}`
+  const end = `${spreadsheetColumnName(endColumn)}${endRow}`
+  return start === end ? `${sheetLabel} · ${start}` : `${sheetLabel} · ${start}:${end}`
+}
+
+function spreadsheetColumnName(columnIndex: number): string {
+  let value = Math.max(1, Math.trunc(columnIndex))
+  let name = ''
+
+  while (value > 0) {
+    value -= 1
+    name = String.fromCharCode(65 + (value % 26)) + name
+    value = Math.floor(value / 26)
+  }
+
+  return name
+}
+
+function readPositiveIntegerAttribute(tag: string, name: string): number {
+  const raw = readAttribute(tag, name)
+  if (!raw) return 1
+  const value = Number.parseInt(raw, 10)
+  return Number.isSafeInteger(value) && value > 0 ? value : 1
 }
 
 function collectStyleNames(contentXml: string, stylesXml: string | null): Set<string> {
