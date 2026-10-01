@@ -4,14 +4,16 @@
 
 ### Added
 
-- repeatable Windows/Office live-VBA validation harness for DOCM and PPTM, kept manual via `workflow_dispatch` so normal CI does not require desktop Office.
+- repeatable Windows/Office live-VBA validation harness for DOCM and PPTM, kept manual via `workflow_dispatch` so normal CI does not require desktop Office;
+- exact ODS fragment coordinates in audit locations, including column names beyond Z, repeated rows/columns and merged ranges; the same sheet + cell/range labels flow into local CSV/JSON exports.
 
 ### Validation
 
 - OTT, OTP and OTS passed a real LibreOffice 25.2.3.2 headless engine round-trip on 2026-10-02;
 - the template round-trip preserved text while changing proofing locale from `en-US` to `ca-ES`;
 - OTS preserved `=SUM(B1:B2)` and its result `42`;
-- the approved runner was checked for live VBA automation but has no Word/PowerPoint executable, App Path or COM registration, so live macro execution remains pending rather than being marked as passed.
+- the approved runner was checked for live VBA automation but has no Word/PowerPoint executable, App Path or COM registration, so live macro execution remains pending rather than being marked as passed;
+- ODS coordinate regression covers self-closing empty cells, a 27-column offset (`AB1`), repeated columns (`AC1:AD1`), repeated rows (`A1:A2`) and a merged 2×2 range (`B3:C4`).
 
 ## 0.5.0 · Community Edition — 2026-09-30
 
