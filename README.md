@@ -60,7 +60,7 @@ Version 0.5.0 is the initial public Community Edition baseline under MPL-2.0, wi
 - byte-for-byte `vbaProject.bin` preservation checks for DOCM and PPTM;
 - calibrated Catalan, Valencian, Galician and Basque detection;
 - conservative Smart Fix selection;
-- human-readable fragment locations, including numbered ODP slides and ODS sheet names, plus stored-language source diagnostics;
+- human-readable fragment locations, including numbered ODP slides and exact ODS sheet + cell/range coordinates, plus stored-language source diagnostics;
 - local CSV and JSON audit exports;
 - initial RTF audit and repair support using `\\langN` and `\\deflangN`;
 - the NeoRS public identity, document-check logo, favicon, source/issue/license links and local-processing guidance.
@@ -119,7 +119,7 @@ ODT, ODP and ODS share one ODF engine. Language metadata is read from text, para
 
 For ODS, cell-style language can be inherited by cell text. Fragment repair writes a more specific text/paragraph style so formulas, numeric values and number formats remain unchanged.
 
-ODP audit rows identify the numbered slide containing each fragment. ODS audit rows identify the sheet name; the same locations are included in local CSV/JSON audit exports.
+ODP audit rows identify the numbered slide containing each fragment. ODS audit rows identify the sheet plus exact cell or range, for example `Sheet: Budget Q4 · AB1` or `Sheet: Sheet2 · B3:C4`; the same locations are included in local CSV/JSON audit exports. Coordinate resolution accounts for repeated rows/columns, self-closing empty cells, covered cells and merged ranges.
 
 ODT, ODP and ODS have representative manual validation in LibreOffice Writer, Impress and Calc. OTT, OTP and OTS additionally passed a real LibreOffice 25.2.3.2 headless engine round-trip on 2026-10-02: text and template structure reopened correctly after an `en-US → ca-ES` language change, and OTS preserved `=SUM(B1:B2)` with result `42`. This is real LibreOffice-engine validation, not a visual GUI/manual inspection.
 
@@ -164,7 +164,6 @@ The public repository does not execute untrusted pull-request code on that machi
 
 - run the live VBA preservation harness on a Windows self-hosted runner that has desktop Word and PowerPoint installed;
 - optionally add a visual/manual GUI pass for OTT, OTP and OTS; real LibreOffice-engine round-trip validation is already complete;
-- consider finer-grained ODS cell coordinates only if repeated rows/columns and merged cells can be handled safely;
 - keep XLSX as a separate audit-only possibility.
 
 ## Contributing
