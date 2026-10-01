@@ -1,0 +1,41 @@
+name: QA · live VBA preservation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-vba:
+    name: Word and PowerPoint live VBA
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: powershell
+
+    steps:
+      - name: Verify approved local runner
+        run: |
+          if ($env:RUNNER_NAME -ne 'DESKTOP-0NEP6ON') { throw "Unexpected runner: $env:RUNNER_NAME" }
+          if ($env:COMPUTERNAME -ne 'DESKTOP-0NEP6ON') { throw "Unexpected host: $env:COMPUTERNAME" }
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Validate live VBA before and after Language Doctor repair
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-live-vba-office.ps1
+
+      - name: Build
+        run: npm run build

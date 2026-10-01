@@ -43,9 +43,9 @@ The current public UI advertises **17 repairable formats**.
 | --- | --- | --- |
 | Word OOXML | DOCX, DOCM, DOTX, DOTM | All four open correctly after repair in Microsoft Word; live VBA execution still pending |
 | PowerPoint OOXML | PPTX, PPTM, POTX, POTM, PPSX, PPSM | All six open correctly after repair in Microsoft PowerPoint; live VBA execution still pending |
-| OpenDocument Text | ODT, OTT | ODT validated; OTT automated-only |
-| OpenDocument Presentation | ODP, OTP | ODP validated; OTP automated-only |
-| OpenDocument Spreadsheet | ODS, OTS | ODS validated; OTS automated-only |
+| OpenDocument Text | ODT, OTT | ODT manually validated; OTT real LibreOffice 25.2.3.2 engine round-trip validated |
+| OpenDocument Presentation | ODP, OTP | ODP manually validated; OTP real LibreOffice 25.2.3.2 engine round-trip validated |
+| OpenDocument Spreadsheet | ODS, OTS | ODS manually validated; OTS real LibreOffice 25.2.3.2 engine round-trip validated with formula preservation |
 | Rich Text Format | RTF | Automated scan/repair coverage plus representative manual Microsoft Word open/repair validation |
 
 Legacy `.doc`, `.ppt` and `.xls` remain out of scope.
@@ -146,7 +146,7 @@ ODS resolves `table-cell` style language as an inherited fallback for cell text.
 
 Manual validation completed for ODT, ODP and ODS in LibreOffice Writer, Impress and Calc.
 
-OTT, OTP and OTS are supported through the shared engine and automated checks but are not manually validated. No current LibreOffice manual-test environment is available, so do not mark them as manually validated without a representative external/manual test.
+OTT, OTP and OTS are supported through the shared engine and automated checks. On 2026-10-02 they also passed a real LibreOffice 25.2.3.2 headless engine round-trip in an external Linux environment. Each template reopened successfully after an `en-US → ca-ES` language change with text preserved; OTP retained its slide content, and OTS preserved `=SUM(B1:B2)` with result `42`. This is real LibreOffice-engine validation, not a visual GUI/manual validation.
 
 The ODF scanner now reports fragment locations at the useful container level: `Document content` for text documents, numbered slides for presentations, and sheet names for spreadsheets. These labels are used consistently in the UI and local CSV/JSON audit exports.
 
@@ -304,8 +304,8 @@ Version 0.5.0 is the first public Community Edition release in the rebuilt repos
 
 ## Remaining validation / next steps
 
-1. Validate live VBA execution before/after repair using a real macro-enabled Word or PowerPoint fixture.
-2. Validate OTT / OTP / OTS manually when a LibreOffice environment is available.
+1. Validate live VBA execution before/after repair using the new DOCM/PPTM harness on a Windows runner with desktop Word and PowerPoint installed. The approved `DESKTOP-0NEP6ON` runner was inspected on 2026-10-02 and currently has no Word/PowerPoint executable, App Path or COM registration, so this test cannot run there.
+2. Optional: perform a visual/manual GUI pass for OTT / OTP / OTS. Real LibreOffice 25.2.3.2 engine round-trip validation is complete.
 3. Consider finer-grained ODS cell coordinates only if repeated rows/columns and merged cells can be handled safely; slide/sheet-level locations are already implemented.
 4. Keep XLSX audit-only work separate from metadata repair.
 
