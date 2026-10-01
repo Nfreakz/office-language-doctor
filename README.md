@@ -36,9 +36,9 @@ Files are processed locally in the browser. There is no document upload, backend
 | --- | --- | --- |
 | Microsoft Word OOXML | `.docx`, `.docm`, `.dotx`, `.dotm` | All listed variants opened correctly after repair in Microsoft Word; live VBA execution not yet tested |
 | Microsoft PowerPoint OOXML | `.pptx`, `.pptm`, `.potx`, `.potm`, `.ppsx`, `.ppsm` | All listed variants opened correctly after repair in Microsoft PowerPoint; live VBA execution not yet tested |
-| OpenDocument Text | `.odt`, `.ott` | ODT validated in LibreOffice Writer; OTT pending manual validation |
-| OpenDocument Presentation | `.odp`, `.otp` | ODP validated in LibreOffice Impress; OTP pending manual validation |
-| OpenDocument Spreadsheet | `.ods`, `.ots` | ODS validated in LibreOffice Calc; OTS pending manual validation |
+| OpenDocument Text | `.odt`, `.ott` | ODT manually validated; OTT round-trip validated with LibreOffice 25.2.3.2 engine |
+| OpenDocument Presentation | `.odp`, `.otp` | ODP manually validated; OTP round-trip validated with LibreOffice 25.2.3.2 engine |
+| OpenDocument Spreadsheet | `.ods`, `.ots` | ODS manually validated; OTS round-trip validated with LibreOffice 25.2.3.2 engine, including formula preservation |
 | Rich Text Format | `.rtf` | Automated scan/repair coverage plus manual Microsoft Word open/repair validation on the representative fixture |
 
 Legacy binary formats `.doc`, `.ppt` and `.xls` are out of scope for the current browser-first architecture.
@@ -65,7 +65,7 @@ Version 0.5.0 is the initial public Community Edition baseline under MPL-2.0, wi
 - initial RTF audit and repair support using `\\langN` and `\\deflangN`;
 - the NeoRS public identity, document-check logo, favicon, source/issue/license links and local-processing guidance.
 
-Macro-enabled fixtures used for manual compatibility tests did not contain live VBA. OTT, OTP and OTS remain automated-only. RTF has now passed a representative Microsoft Word open/repair validation.
+Macro-enabled fixtures used for manual compatibility tests did not contain live VBA. A repeatable live-VBA harness is now available, but the approved runner currently has no Word or PowerPoint installation, so live macro execution remains pending. OTT, OTP and OTS have now passed a real LibreOffice 25.2.3.2 headless engine round-trip; RTF has passed representative Microsoft Word open/repair validation.
 
 ## What it changes
 
@@ -121,7 +121,7 @@ For ODS, cell-style language can be inherited by cell text. Fragment repair writ
 
 ODP audit rows identify the numbered slide containing each fragment. ODS audit rows identify the sheet name; the same locations are included in local CSV/JSON audit exports.
 
-ODT, ODP and ODS have been validated in LibreOffice Writer, Impress and Calc. OTT, OTP and OTS still need representative manual validation.
+ODT, ODP and ODS have representative manual validation in LibreOffice Writer, Impress and Calc. OTT, OTP and OTS additionally passed a real LibreOffice 25.2.3.2 headless engine round-trip on 2026-10-02: text and template structure reopened correctly after an `en-US → ca-ES` language change, and OTS preserved `=SUM(B1:B2)` with result `42`. This is real LibreOffice-engine validation, not a visual GUI/manual inspection.
 
 ## Privacy
 
@@ -162,8 +162,8 @@ The public repository does not execute untrusted pull-request code on that machi
 
 ## Roadmap
 
-- manually validate live VBA preservation in a real macro-enabled Word or PowerPoint file;
-- manually validate OTT, OTP and OTS when a LibreOffice test environment is available;
+- run the live VBA preservation harness on a Windows self-hosted runner that has desktop Word and PowerPoint installed;
+- optionally add a visual/manual GUI pass for OTT, OTP and OTS; real LibreOffice-engine round-trip validation is already complete;
 - consider finer-grained ODS cell coordinates only if repeated rows/columns and merged cells can be handled safely;
 - keep XLSX as a separate audit-only possibility.
 
