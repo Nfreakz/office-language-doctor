@@ -17,7 +17,6 @@ This application is independent from every other NeoRS application. Do not reuse
 ## Current verified state
 
 - Branch: `main`
-- Current main after documentation sync: to be verified post-merge
 - Clean public root: `65dac5d41f44f3b34fc85d6f4e4247b7dd7a4c79`
 - Version: `0.5.0`
 - Release state: **published Community Edition**
