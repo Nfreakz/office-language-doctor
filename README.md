@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://nfreakz.github.io/office-language-doctor/">Live app</a>
+  <a href="https://language-doctor.cecolab.cat/">Live app</a>
   ·
   <a href="https://cecolab.cat/software/office-language-doctor/">Product page</a>
   ·
@@ -23,7 +23,7 @@ Office Language Doctor audits stored proofing-language metadata in Microsoft Off
 Files are processed locally in the browser. There is no document upload, backend or account system.
 
 <p align="center">
-  <a href="https://nfreakz.github.io/office-language-doctor/">
+  <a href="https://language-doctor.cecolab.cat/">
     <img src="./docs/assets/office-language-doctor-preview.webp" width="900" alt="Office Language Doctor public interface">
   </a>
 </p>
