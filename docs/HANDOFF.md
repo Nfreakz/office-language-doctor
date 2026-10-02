@@ -220,7 +220,10 @@ Current landing page state:
 - local processing / no upload is visible next to the file selector;
 - the three-step workflow cue remains visible;
 - the downloadable sample is `public/samples/LanguageDoctor_SAMPLE.rtf`;
-- visit counter remains a secondary footer element.
+- visit counter remains a secondary footer element;
+- hero copy uses the full available content width instead of leaving an unused right column;
+- the hero includes a visible Buy Me a Coffee support action using the approved NeoRS URL `https://buymeacoffee.com/neors`;
+- support is voluntary, unlocks no features and does not alter the MPL-2.0 Community Edition license.
 
 ## Privacy
 
