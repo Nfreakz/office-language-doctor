@@ -204,7 +204,7 @@ CSV cells beginning with `=`, `+`, `-` or `@` are neutralized before export.
 
 ## Public UI / identity
 
-The public identity is **NeoRS**. `Nfreakz` is used only where technically required by the GitHub repository/Pages URL.
+The public identity is **NeoRS**. `Nfreakz` is used only where technically required by the GitHub repository URL. The public application URL is the CECO Lab subdomain.
 
 Current landing page state:
 
@@ -295,6 +295,8 @@ Policy:
 - verifies `dist/index.html`;
 - force-updates the generated `gh-pages` branch;
 - writes `.nojekyll`;
+- publishes `public/CNAME`, preserving `language-doctor.cecolab.cat` on every generated `gh-pages` deployment;
+- publishes `robots.txt` and `sitemap.xml` for the custom domain;
 - Vite uses `base: './'`.
 
 The rebuilt v0.5.0 public baseline passed the local Windows CI suite and the Pages deployment workflow recreated `gh-pages` successfully before the GitHub Release was republished.
