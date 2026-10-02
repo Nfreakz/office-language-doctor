@@ -6,7 +6,7 @@ Application: **Office Language Doctor**
 
 NeoRS application repository: `Nfreakz/office-language-doctor`
 
-Public URL: `https://nfreakz.github.io/office-language-doctor/`
+Public URL: `https://language-doctor.cecolab.cat/`
 
 Public author/maintainer identity: **NeoRS**
 
