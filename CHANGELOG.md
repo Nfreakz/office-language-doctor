@@ -15,7 +15,7 @@
 - OTT, OTP and OTS passed a real LibreOffice 25.2.3.2 headless engine round-trip on 2026-10-02;
 - the template round-trip preserved text while changing proofing locale from `en-US` to `ca-ES`;
 - OTS preserved `=SUM(B1:B2)` and its result `42`;
-- the approved runner was checked for live VBA automation but has no Word/PowerPoint executable, App Path or COM registration, so live macro execution remains pending rather than being marked as passed;
+- live VBA execution was manually validated end-to-end on 2026-10-02 for both DOCM and PPTM through the public web app: the real macros executed successfully before and after Language Doctor repair;
 - ODS coordinate regression covers self-closing empty cells, a 27-column offset (`AB1`), repeated columns (`AC1:AD1`), repeated rows (`A1:A2`) and a merged 2×2 range (`B3:C4`).
 
 ## 0.5.0 · Community Edition — 2026-09-30
@@ -52,8 +52,7 @@ Office Language Doctor 0.5.0 is the initial public Community Edition baseline.
 
 ### Known limitations
 
-- live VBA execution before/after repair has not yet been validated with a real macro-enabled fixture;
-- OTT, OTP and OTS are supported through the shared ODF engine but still lack representative manual template validation;
+- OTT, OTP and OTS have real LibreOffice 25.2.3.2 engine round-trip validation; an additional visual/manual GUI pass remains optional.
 - XLSX is not a proofing-language repair target;
 - legacy binary `.doc`, `.ppt` and `.xls` formats remain out of scope;
 - language detection is advisory, and Catalan / Valencian remains an explicit user choice.

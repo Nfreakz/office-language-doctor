@@ -41,8 +41,8 @@ The current public UI advertises **17 repairable formats**.
 
 | Family | Formats | Manual validation |
 | --- | --- | --- |
-| Word OOXML | DOCX, DOCM, DOTX, DOTM | All four open correctly after repair in Microsoft Word; live VBA execution still pending |
-| PowerPoint OOXML | PPTX, PPTM, POTX, POTM, PPSX, PPSM | All six open correctly after repair in Microsoft PowerPoint; live VBA execution still pending |
+| Word OOXML | DOCX, DOCM, DOTX, DOTM | All four open correctly after repair in Microsoft Word; DOCM live VBA execution validated before and after public web repair |
+| PowerPoint OOXML | PPTX, PPTM, POTX, POTM, PPSX, PPSM | All six open correctly after repair in Microsoft PowerPoint; PPTM live VBA execution validated before and after public web repair |
 | OpenDocument Text | ODT, OTT | ODT manually validated; OTT real LibreOffice 25.2.3.2 engine round-trip validated |
 | OpenDocument Presentation | ODP, OTP | ODP manually validated; OTP real LibreOffice 25.2.3.2 engine round-trip validated |
 | OpenDocument Spreadsheet | ODS, OTS | ODS manually validated; OTS real LibreOffice 25.2.3.2 engine round-trip validated with formula preservation |
@@ -110,9 +110,7 @@ Selected repair writes a direct `w:lang w:val` on the reviewed run.
 
 DOCX manual validation confirmed Catalan, Galician and Basque repairs. DOCM, DOTX and DOTM passed structural/open validation in Word.
 
-DOCM and DOTM fixtures used for manual testing did not contain live VBA.
-
-Automated variant regression preserves `vbaProject.bin` byte-for-byte in DOCM packages.
+On 2026-10-02, a real DOCM containing a VBA macro was repaired through the public web app. The macro executed successfully in Microsoft Word before repair and executed successfully again afterward. Automated variant regression also preserves `vbaProject.bin` byte-for-byte in DOCM packages.
 
 ## PowerPoint engine
 
@@ -129,7 +127,7 @@ PPTX manual validation covered Catalan, Galician, Basque and mixed-language repa
 
 PPTM, POTX, POTM, PPSX and PPSM passed manual open/repair validation in PowerPoint.
 
-Macro-enabled manual fixtures did not contain live VBA. Automated regression preserves `vbaProject.bin` byte-for-byte in PPTM packages.
+On 2026-10-02, a real PPTM containing a VBA macro was repaired through the public web app. The macro executed successfully in Microsoft PowerPoint before repair and executed successfully again afterward. Automated regression also preserves `vbaProject.bin` byte-for-byte in PPTM packages.
 
 ## OpenDocument engine
 
@@ -309,9 +307,8 @@ Version 0.5.0 is the first public Community Edition release in the rebuilt repos
 
 ## Remaining validation / next steps
 
-1. Validate live VBA execution before/after repair using the new DOCM/PPTM harness on a Windows runner with desktop Word and PowerPoint installed. The approved `DESKTOP-0NEP6ON` runner was inspected on 2026-10-02 and currently has no Word/PowerPoint executable, App Path or COM registration, so this test cannot run there.
-2. Optional: perform a visual/manual GUI pass for OTT / OTP / OTS. Real LibreOffice 25.2.3.2 engine round-trip validation is complete.
-3. Keep XLSX audit-only work separate from metadata repair.
+1. Optional: perform a visual/manual GUI pass for OTT / OTP / OTS. Real LibreOffice 25.2.3.2 engine round-trip validation is complete.
+2. Keep XLSX audit-only work separate from metadata repair.
 
 ## Historical ODS fixture note
 
