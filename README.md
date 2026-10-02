@@ -34,8 +34,8 @@ Files are processed locally in the browser. There is no document upload, backend
 
 | Family | Repairable formats | Validation state |
 | --- | --- | --- |
-| Microsoft Word OOXML | `.docx`, `.docm`, `.dotx`, `.dotm` | All listed variants opened correctly after repair in Microsoft Word; live VBA execution not yet tested |
-| Microsoft PowerPoint OOXML | `.pptx`, `.pptm`, `.potx`, `.potm`, `.ppsx`, `.ppsm` | All listed variants opened correctly after repair in Microsoft PowerPoint; live VBA execution not yet tested |
+| Microsoft Word OOXML | `.docx`, `.docm`, `.dotx`, `.dotm` | All listed variants opened correctly after repair in Microsoft Word; DOCM live VBA execution validated before and after public web repair |
+| Microsoft PowerPoint OOXML | `.pptx`, `.pptm`, `.potx`, `.potm`, `.ppsx`, `.ppsm` | All listed variants opened correctly after repair in Microsoft PowerPoint; PPTM live VBA execution validated before and after public web repair |
 | OpenDocument Text | `.odt`, `.ott` | ODT manually validated; OTT round-trip validated with LibreOffice 25.2.3.2 engine |
 | OpenDocument Presentation | `.odp`, `.otp` | ODP manually validated; OTP round-trip validated with LibreOffice 25.2.3.2 engine |
 | OpenDocument Spreadsheet | `.ods`, `.ots` | ODS manually validated; OTS round-trip validated with LibreOffice 25.2.3.2 engine, including formula preservation |
@@ -65,7 +65,7 @@ Version 0.5.0 is the initial public Community Edition baseline under MPL-2.0, wi
 - initial RTF audit and repair support using `\\langN` and `\\deflangN`;
 - the NeoRS public identity, document-check logo, favicon, source/issue/license links and local-processing guidance.
 
-Macro-enabled fixtures used for manual compatibility tests did not contain live VBA. A repeatable live-VBA harness is now available, but the approved runner currently has no Word or PowerPoint installation, so live macro execution remains pending. OTT, OTP and OTS have now passed a real LibreOffice 25.2.3.2 headless engine round-trip; RTF has passed representative Microsoft Word open/repair validation.
+Live VBA execution has been validated end-to-end with real DOCM and PPTM files through the public web app. In both Word and PowerPoint, the macro executed before repair, the document was repaired by Language Doctor, and the same macro executed successfully again afterward. Automated regression also preserves `vbaProject.bin` byte-for-byte. OTT, OTP and OTS have passed a real LibreOffice 25.2.3.2 headless engine round-trip; RTF has passed representative Microsoft Word open/repair validation.
 
 ## What it changes
 
@@ -162,7 +162,6 @@ The public repository does not execute untrusted pull-request code on that machi
 
 ## Roadmap
 
-- run the live VBA preservation harness on a Windows self-hosted runner that has desktop Word and PowerPoint installed;
 - optionally add a visual/manual GUI pass for OTT, OTP and OTS; real LibreOffice-engine round-trip validation is already complete;
 - keep XLSX as a separate audit-only possibility.
 
