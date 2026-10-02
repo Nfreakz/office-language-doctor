@@ -62,6 +62,10 @@ assert.ok(
 )
 assert.ok(html.includes('name="twitter:card" content="summary_large_image"'), 'Twitter/X large card metadata missing')
 assert.ok(existsSync('public/social-preview.jpg'), 'Missing social preview image')
+assert.ok(existsSync('public/CNAME'), 'Missing GitHub Pages CNAME')
+assert.equal(readFileSync('public/CNAME', 'utf8').trim(), 'language-doctor.cecolab.cat', 'Wrong custom domain')
+assert.ok(existsSync('public/robots.txt'), 'Missing robots.txt')
+assert.ok(existsSync('public/sitemap.xml'), 'Missing sitemap.xml')
 assert.ok(
   html.includes('<img class="app-mark" src="./favicon.svg" alt="" aria-hidden="true" />'),
   'Header must use the document-check logo',
