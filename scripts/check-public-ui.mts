@@ -57,11 +57,15 @@ assert.ok(html.includes('<section id="changes" class="info-card"'), 'Repair scop
 assert.ok(html.includes('<section id="privacy" class="info-card"'), 'Privacy card missing')
 assert.ok(html.includes('<meta name="author" content="NeoRS" />'), 'NeoRS author metadata missing')
 assert.ok(
-  html.includes('https://nfreakz.github.io/office-language-doctor/social-preview.jpg'),
+  html.includes('https://language-doctor.cecolab.cat/social-preview.jpg'),
   'Social preview metadata missing',
 )
 assert.ok(html.includes('name="twitter:card" content="summary_large_image"'), 'Twitter/X large card metadata missing')
 assert.ok(existsSync('public/social-preview.jpg'), 'Missing social preview image')
+assert.ok(existsSync('public/CNAME'), 'Missing GitHub Pages CNAME')
+assert.equal(readFileSync('public/CNAME', 'utf8').trim(), 'language-doctor.cecolab.cat', 'Wrong custom domain')
+assert.ok(existsSync('public/robots.txt'), 'Missing robots.txt')
+assert.ok(existsSync('public/sitemap.xml'), 'Missing sitemap.xml')
 assert.ok(
   html.includes('<img class="app-mark" src="./favicon.svg" alt="" aria-hidden="true" />'),
   'Header must use the document-check logo',
@@ -85,3 +89,17 @@ assert.match(sample, /Grazas/)
 assert.match(sample, /Eskerrik/)
 
 console.log('Public landing page identity and trust links: OK')
+
+
+assert.ok(
+  html.includes('<link rel="canonical" href="https://language-doctor.cecolab.cat/"'),
+  'Canonical URL must use the public custom domain',
+)
+assert.ok(
+  html.includes('<meta property="og:url" content="https://language-doctor.cecolab.cat/"'),
+  'Open Graph URL must use the public custom domain',
+)
+assert.ok(
+  html.includes('content="https://language-doctor.cecolab.cat/social-preview.jpg"'),
+  'Social preview image must use the public custom domain',
+)
