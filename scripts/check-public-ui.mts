@@ -85,3 +85,17 @@ assert.match(sample, /Grazas/)
 assert.match(sample, /Eskerrik/)
 
 console.log('Public landing page identity and trust links: OK')
+
+
+assert.ok(
+  html.includes('<link rel="canonical" href="https://language-doctor.cecolab.cat/"'),
+  'Canonical URL must use the public custom domain',
+)
+assert.ok(
+  html.includes('<meta property="og:url" content="https://language-doctor.cecolab.cat/"'),
+  'Open Graph URL must use the public custom domain',
+)
+assert.ok(
+  html.includes('content="https://language-doctor.cecolab.cat/social-preview.jpg"'),
+  'Social preview image must use the public custom domain',
+)
