@@ -57,7 +57,7 @@ assert.ok(html.includes('<section id="changes" class="info-card"'), 'Repair scop
 assert.ok(html.includes('<section id="privacy" class="info-card"'), 'Privacy card missing')
 assert.ok(html.includes('<meta name="author" content="NeoRS" />'), 'NeoRS author metadata missing')
 assert.ok(
-  html.includes('https://nfreakz.github.io/office-language-doctor/social-preview.jpg'),
+  html.includes('https://language-doctor.cecolab.cat/social-preview.jpg'),
   'Social preview metadata missing',
 )
 assert.ok(html.includes('name="twitter:card" content="summary_large_image"'), 'Twitter/X large card metadata missing')
