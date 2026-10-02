@@ -10,6 +10,7 @@ for (const expected of [
   'Created and maintained by NeoRS.',
   'https://github.com/Nfreakz/office-language-doctor',
   'https://github.com/Nfreakz/office-language-doctor/issues',
+  'https://buymeacoffee.com/neors',
   'https://github.com/Nfreakz/office-language-doctor/blob/main/LICENSE',
   './samples/LanguageDoctor_SAMPLE.rtf',
   './favicon.svg',
@@ -66,6 +67,8 @@ assert.ok(
   'Header must use the document-check logo',
 )
 assert.ok(!html.includes('>LD</span>'), 'Legacy LD placeholder must not remain in the header')
+assert.ok(html.includes('class="support-link"'), 'Hero Buy Me a Coffee action missing')
+assert.ok(html.includes('>☕ Buy me a coffee</a>'), 'Hero support label missing')
 assert.ok(html.includes(`Office Language Doctor · ${visibleVersion}`), 'Header version must match package.json')
 assert.ok(html.includes(`<span>${visibleVersion}</span>`), 'Footer version must match package.json')
 assert.equal(packageJson.license, 'MPL-2.0', 'package.json must declare the Community Edition license')
