@@ -176,9 +176,9 @@ Current scope:
 - decodes Windows-1252 `\'hh` escapes;
 - skips common non-user-facing destinations;
 - repairs reviewed runs with scoped `{\langN ...}` groups;
-- supports the configured language set, including Valencian LCID 2051, British English 2057, Brazilian Portuguese 1046, Dutch 1043, Polish 1045, Romanian 1048, Czech 1029, Swedish 1053, Danish 1030, Norwegian Bokmål 1044, Finnish 1035, Hungarian 1038, Greek 1032, Turkish 1055, Slovak 1051, Slovenian 1060, Croatian 1050 and Bulgarian 1026.
+- supports the configured language set, including Valencian LCID 2051, British English 2057, Brazilian Portuguese 1046, Dutch 1043, Polish 1045, Romanian 1048, Czech 1029, Swedish 1053, Danish 1030, Norwegian Bokmål 1044, Finnish 1035, Hungarian 1038, Greek 1032, Turkish 1055, Slovak 1051, Slovenian 1060, Croatian 1050, Bulgarian 1026, Estonian 1061, Irish 2108, Latvian 1062, Lithuanian 1063 and Maltese 1082.
 
-Automated regression covers Catalan, Galician and Basque mismatches, selected repair, re-scan to zero mismatches, Unicode and hex escapes.
+Automated regression covers Catalan, Galician and Basque mismatches, selected repair, re-scan to zero mismatches, Unicode and hex escapes, plus LCID round trips for the expanded European language set.
 
 RTF passed a representative manual Microsoft Word validation on 2026-09-30 using `LanguageDoctor_TEST_20260930.rtf`.
 
@@ -291,7 +291,7 @@ The public repository does not execute CI on untrusted `pull_request` events.
 Current automated checks:
 
 - PowerPoint XML regression;
-- language detector calibration across all 24 supported families, including Nordic-language separation and third-pack Balkan/Central-European coverage;
+- language detector calibration across all 29 supported families, including all 24 official EU languages, Nordic-language separation and conservative Estonian/Latvian rescue calibration;
 - DOCX scan + repair, including context-aware recovery for Word paragraphs split into short proofing runs;
 - ODF scan + repair, including exact ODS cell/range coordinates across repeated and merged geometry;
 - variant routing and macro-binary preservation;
