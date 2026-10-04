@@ -4,6 +4,7 @@
 
 ### Added
 
+- context-aware Word detection that can classify short/ambiguous runs from reliable same-paragraph language evidence while keeping repair at individual-run granularity; contextual suggestions are explicitly marked and never auto-preselected;
 - official public custom domain `https://language-doctor.cecolab.cat/`, including canonical, Open Graph, Twitter/X and JSON-LD URLs so shared links use the project social preview image;
 
 - full-width public hero layout with a visible voluntary Buy Me a Coffee action for NeoRS at `https://buymeacoffee.com/neors`;
@@ -12,6 +13,7 @@
 
 ### Validation
 
+- Word regression now covers a real-world proofing-fragmentation pattern where one Catalan sentence is split into eight runs by Word/proofing markup; seven linguistic runs recover Catalan from paragraph context while punctuation remains undetected;
 - OTT, OTP and OTS passed a real LibreOffice 25.2.3.2 headless engine round-trip on 2026-10-02;
 - the template round-trip preserved text while changing proofing locale from `en-US` to `ca-ES`;
 - OTS preserved `=SUM(B1:B2)` and its result `42`;

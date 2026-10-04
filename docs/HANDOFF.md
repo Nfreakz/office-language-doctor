@@ -58,6 +58,7 @@ XLSX is not a proofing-language repair target because SpreadsheetML does not exp
 - local advisory language detection;
 - medium/high-confidence mismatch reporting;
 - conservative Smart Fix;
+- context-aware Word paragraph detection for short/ambiguous runs;
 - explicit Catalan vs Valencian choice;
 - human-readable fragment locations;
 - stored-language source diagnostics;
@@ -80,7 +81,8 @@ Smart Fix must remain conservative:
 - medium-confidence mismatches are suggestions only;
 - Catalan/Valencian detections always require explicit variant choice;
 - low-confidence, matching and undetected fragments are not preselected;
-- short/non-linguistic values such as `2026` remain unchanged.
+- short/non-linguistic values such as `2026` remain unchanged;
+- detections inferred from Word paragraph context are suggestions only and are never preselected automatically.
 
 Exact labels such as `Català:`, `Valencià:`, `Galego:` and `Euskara:` are handled before the general short-text cutoff.
 
@@ -107,6 +109,8 @@ Effective proofing-language resolution order:
 6. none.
 
 Selected repair writes a direct `w:lang w:val` on the reviewed run.
+
+Word detection can use the normalized text of the containing paragraph when an individual run is too short or ambiguous. Paragraph context is used only when the paragraph detection is medium/high confidence, the paragraph contains multiple text runs, the current run contains linguistic text, and no reliably detected run in the paragraph contradicts the paragraph language. The UI labels these results as `paragraph context`; Smart Fix requires explicit review for them. Regression covers the real-world eight-run pattern observed in Word proofing markup (`Benvinguts a la sessió. Aquesta prova valida el document.`), with punctuation left undetected.
 
 DOCX manual validation confirmed Catalan, Galician and Basque repairs. DOCM, DOTX and DOTM passed structural/open validation in Word.
 
@@ -271,7 +275,7 @@ Current automated checks:
 
 - PowerPoint XML regression;
 - language detector calibration;
-- DOCX scan + repair;
+- DOCX scan + repair, including context-aware recovery for Word paragraphs split into short proofing runs;
 - ODF scan + repair, including exact ODS cell/range coordinates across repeated and merged geometry;
 - variant routing and macro-binary preservation;
 - Smart Fix safety policy;

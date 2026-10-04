@@ -60,6 +60,7 @@ Version 0.5.0 is the initial public Community Edition baseline under MPL-2.0, wi
 - byte-for-byte `vbaProject.bin` preservation checks for DOCM and PPTM;
 - calibrated Catalan, Valencian, Galician and Basque detection;
 - conservative Smart Fix selection;
+- context-aware Word paragraph detection for short or internally fragmented runs;
 - human-readable fragment locations, including numbered ODP slides and exact ODS sheet + cell/range coordinates, plus stored-language source diagnostics;
 - local CSV and JSON audit exports;
 - initial RTF audit and repair support using `\\langN` and `\\deflangN`;
@@ -71,14 +72,14 @@ Live VBA execution has been validated end-to-end with real DOCM and PPTM files t
 
 Office Language Doctor changes only proofing-language metadata selected for repair. It does not rewrite the document text.
 
-Smart Fix preselects only high-confidence non-Catalan/Valencian mismatches. Medium-confidence suggestions and Catalan/Valencian choices require explicit review.
+Smart Fix preselects only high-confidence non-Catalan/Valencian mismatches. Medium-confidence suggestions, Catalan/Valencian choices and detections inferred from Word paragraph context require explicit review.
 
 ## Capabilities
 
 - reads stored proofing-language metadata;
 - detects the likely written language locally;
 - flags reliable mismatches;
-- leaves short or ambiguous fragments unchanged;
+- leaves short or ambiguous fragments unchanged unless a reliable, non-conflicting Word paragraph context can classify them;
 - repairs selected fragments without changing their text;
 - supports global remapping when mixed-language content is not detected;
 - keeps Catalan and Valencian as an explicit user choice;
@@ -95,7 +96,7 @@ CSV export neutralizes leading spreadsheet-formula prefixes before download.
 
 The audit covers the main document, headers, footers, footnotes, endnotes and comments.
 
-Effective language is resolved from direct run metadata, character styles, paragraph properties/styles and document defaults. Fragment repair writes a direct `w:lang w:val` on the selected run.
+Effective language is resolved from direct run metadata, character styles, paragraph properties/styles and document defaults. Language detection remains run-level for repair, but Word can now use a reliable same-paragraph detection as advisory context when an individual run is too short or ambiguous. Context is rejected if a reliable run in that paragraph contradicts it, punctuation/numeric-only runs are not promoted, and contextual Smart Fix suggestions are never preselected. Fragment repair still writes a direct `w:lang w:val` only on the reviewed run.
 
 DOCX has been validated in Microsoft Word with Catalan, Galician and Basque content. DOCM, DOTX and DOTM have also passed manual open/repair checks.
 
