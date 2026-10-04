@@ -32,7 +32,9 @@ for (const text of neutralFragments) {
   if (result.tag !== null || result.confidence !== 'unknown') {
     failures.push(`neutral "${text}" expected unknown, got ${result.tag ?? 'null'} / ${result.confidence}`)
   }
-  assert.equal(isLikelyMismatch('en-US', result.tag, result.confidence), false)
+  if (isLikelyMismatch('en-US', result.tag, result.confidence)) {
+    failures.push(`"${text}" unexpectedly became a reliable mismatch`)
+  }
 }
 
 const mixedLanguageLabels = [
@@ -53,7 +55,9 @@ for (const text of mixedLanguageLabels) {
   if (result.tag !== null || result.confidence !== 'unknown') {
     failures.push(`mixed "${text}" expected unknown, got ${result.tag ?? 'null'} / ${result.confidence}`)
   }
-  assert.equal(isLikelyMismatch('en-US', result.tag, result.confidence), false)
+  if (isLikelyMismatch('en-US', result.tag, result.confidence)) {
+    failures.push(`"${text}" unexpectedly became a reliable mismatch`)
+  }
 }
 
 const ambiguousShortText = [
@@ -67,7 +71,9 @@ for (const text of ambiguousShortText) {
   if (result.tag !== null || result.confidence !== 'unknown') {
     failures.push(`ambiguous short "${text}" expected unknown, got ${result.tag ?? 'null'} / ${result.confidence}`)
   }
-  assert.equal(isLikelyMismatch('en-US', result.tag, result.confidence), false)
+  if (isLikelyMismatch('en-US', result.tag, result.confidence)) {
+    failures.push(`"${text}" unexpectedly became a reliable mismatch`)
+  }
 }
 
 const shortReliableControls: Array<[string, string]> = [

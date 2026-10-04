@@ -201,7 +201,7 @@ export function detectTextLanguage(text: string): LanguageDetection {
   const exactLabel = detectExactLanguageLabel(normalized)
   if (exactLabel) return exactLabel
 
-  if (looksLikeNonProseIdentifier(normalized) || looksLikeSlashSeparatedLabel(normalized)) {
+  if (looksLikeNonProseIdentifier(normalized) || looksLikeDelimitedLabel(normalized)) {
     return unknownDetection()
   }
 
@@ -351,11 +351,11 @@ function looksLikeNonProseIdentifier(text: string): boolean {
   return false
 }
 
-function looksLikeSlashSeparatedLabel(text: string): boolean {
-  if (!text.includes('/')) return false
+function looksLikeDelimitedLabel(text: string): boolean {
+  if (!/[\/·|]/u.test(text)) return false
 
   const parts = text
-    .split('/')
+    .split(/[\/·|]/u)
     .map((part) => part.trim())
     .filter(Boolean)
 
@@ -364,7 +364,7 @@ function looksLikeSlashSeparatedLabel(text: string): boolean {
   return parts.every((part) => {
     const words = part.match(/\p{L}+/gu) ?? []
     const letters = part.match(/\p{L}/gu)?.length ?? 0
-    return words.length >= 1 && words.length <= 3 && letters <= 20
+    return words.length >= 1 && words.length <= 4 && letters <= 30
   })
 }
 
