@@ -63,6 +63,7 @@ XLSX is not a proofing-language repair target because SpreadsheetML does not exp
 - context-aware Word paragraph detection for short/ambiguous runs;
 - paragraph-aware Word audit grouping with collapsible run-level detail;
 - explicit paragraph review actions for compatible run-level fixes;
+- Catalan / Spanish / English interface localization with a persistent browser-local preference;
 - explicit direct vs paragraph-context detection diagnostics;
 - explicit Catalan vs Valencian choice;
 - human-readable fragment locations;
@@ -218,6 +219,10 @@ The public identity is **NeoRS**. `Nfreakz` is used only where technically requi
 
 Current landing page state:
 
+- the complete UI is available in Catalan, Spanish and English;
+- the initial interface language follows the browser language when it is Catalan, Spanish or English, otherwise English is used;
+- the CA / ES / EN selector stores the choice only in browser local storage; no backend or account is involved;
+- dynamic analysis, repair, Smart Fix, paragraph diagnostics and pagination copy are localized as well as the landing page;
 - document-check SVG is the canonical product icon;
 - Open Graph and Twitter/X use `social-preview.jpg` with `summary_large_image` metadata;
 - the same SVG is used as favicon and header application mark;
@@ -288,6 +293,7 @@ Current automated checks:
 - variant routing and macro-binary preservation;
 - Smart Fix safety policy, including explicit paragraph review eligibility and rejection cases;
 - fragment diagnostics labels;
+- CA / ES / EN interface localization and location-label localization;
 - paragraph-aware audit grouping and paragraph/language isolation;
 - CSV/JSON audit report serialization, including detection source;
 - RTF scan + repair;

@@ -4,6 +4,8 @@
 
 ### Added
 
+- Catalan, Spanish and English interface localization with a visible CA / ES / EN selector, browser-language initialization and local preference persistence;
+- localization of dynamic audit, repair, diagnostic, pagination and status copy, not just the public landing page;
 - explicit paragraph review actions that select multiple compatible Word run fixes only after user confirmation, while blocking grouped selection for conflicting or mixed-language evidence and preserving the Catalan / Valencian choice;
 - paragraph-aware Word audit UX that collapses multiple internal runs into one readable paragraph summary while preserving individual run-level review and repair;
 - explicit audit diagnostics for direct detection, paragraph-context detection, conflicting paragraph evidence and stored-language inheritance;
@@ -17,6 +19,7 @@
 
 ### Validation
 
+- interface localization regression covers translation-key parity, browser-language resolution, interpolation and human-readable location localization;
 - Smart Fix regression now covers paragraph review eligibility, including same-language grouping, Catalan / Valencian variant choice, conflict rejection, mixed-language rejection and the requirement for contextual evidence;
 - paragraph-grouping regression keeps separate Word paragraphs and different detected languages isolated even when their runs are interleaved by audit ordering/filtering;
 - report regression covers direct and paragraph-context `detectionSource` serialization;

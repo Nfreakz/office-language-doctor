@@ -16,6 +16,17 @@ import {
   shouldPreselectSmartFix,
 } from './lib/language/smart-fix'
 import { auditReportFileName, auditReportToCsv, auditReportToJson, buildAuditReport } from './lib/report/audit'
+import {
+  applyStaticTranslations,
+  formatLabel,
+  formatNumber,
+  initLocale,
+  localizeLocationLabel,
+  onLocaleChange,
+  setLocale,
+  t,
+  type UiLocale,
+} from './i18n'
 
 const DEFAULT_AUDIT_PAGE_SIZE = 10
 
@@ -73,6 +84,48 @@ let auditPage = 0
 let auditPageSizeValue: number | 'all' = DEFAULT_AUDIT_PAGE_SIZE
 const fragmentFixState = new Map<string, FragmentFixState>()
 const expandedParagraphGroups = new Set<string>()
+
+initLocale()
+applyStaticTranslations()
+
+for (const button of document.querySelectorAll<HTMLButtonElement>('[data-ui-locale]')) {
+  button.addEventListener('click', () => {
+    const locale = button.dataset.uiLocale
+    if (locale === 'ca' || locale === 'es' || locale === 'en') {
+      setLocale(locale as UiLocale)
+    }
+  })
+}
+
+onLocaleChange(() => {
+  const preparedMappings = getLanguageSelectValues()
+  const globalValue = globalLanguage.value
+  const previousFilter = auditFilter
+  const previousPage = auditPage
+
+  applyStaticTranslations()
+  populateLanguageSelect(globalLanguage, '')
+  if ([...globalLanguage.options].some((option) => option.value === globalValue)) {
+    globalLanguage.value = globalValue
+  }
+
+  if (currentScan) {
+    renderScan(currentScan)
+    restoreLanguageSelectValues(preparedMappings)
+    auditFilter = previousFilter
+    auditPage = previousPage
+    renderAuditRows()
+    updatePreparedChanges()
+    if (currentFile) {
+      status.textContent = t('status.analyzed', {
+        file: currentFile.name,
+        format: formatLabel(currentScan.format),
+      })
+    }
+  } else {
+    status.textContent = t('upload.none')
+  }
+})
 
 populateLanguageSelect(globalLanguage, '')
 fileInput.addEventListener('change', () => {
@@ -138,7 +191,7 @@ auditNext.addEventListener('click', () => {
 
 async function analyseFile(file: File): Promise<void> {
   setBusy(true)
-  status.textContent = `Analysing ${file.name}…`
+  status.textContent = t('status.analyzing', { file: file.name })
   results.classList.add('hidden')
 
   try {
@@ -148,14 +201,14 @@ async function analyseFile(file: File): Promise<void> {
     fragmentFixState.clear()
     expandedParagraphGroups.clear()
     renderScan(scan)
-    status.textContent = `${file.name} analysed locally as ${scan.formatLabel}. Nothing was uploaded.`
+    status.textContent = t('status.analyzed', { file: file.name, format: formatLabel(scan.format) })
     results.classList.remove('hidden')
   } catch (error) {
     currentFile = null
     currentScan = null
     fragmentFixState.clear()
     expandedParagraphGroups.clear()
-    status.textContent = error instanceof Error ? error.message : 'Could not analyse this document.'
+    status.textContent = error instanceof Error ? error.message : t('status.analyzeError')
   } finally {
     setBusy(false)
   }
@@ -165,13 +218,16 @@ function renderScan(scan: ScanResult): void {
   const reliableDetectedLanguages = scan.detectedLanguages.filter((language) => language.reliableCount > 0)
   const undetectedCount = scan.fragments.filter(isUndetectedFragment).length
 
-  statFragments.textContent = scan.totalTextFragments.toLocaleString()
-  statLanguages.textContent = reliableDetectedLanguages.length.toLocaleString()
-  statIssues.textContent = scan.likelyMismatches.toLocaleString()
-  statUndetected.textContent = undetectedCount.toLocaleString()
+  statFragments.textContent = formatNumber(scan.totalTextFragments)
+  statLanguages.textContent = formatNumber(reliableDetectedLanguages.length)
+  statIssues.textContent = formatNumber(scan.likelyMismatches)
+  statUndetected.textContent = formatNumber(undetectedCount)
   statIssues.parentElement?.classList.toggle('is-clean', scan.likelyMismatches === 0)
 
-  summary.textContent = `${scan.formatLabel} · ${scan.languages.length} stored language tag${scan.languages.length === 1 ? '' : 's'}`
+  summary.textContent = t(
+    scan.languages.length === 1 ? 'summary.storedTags.one' : 'summary.storedTags.many',
+    { format: formatLabel(scan.format), count: formatNumber(scan.languages.length) },
+  )
   languageRows.replaceChildren()
 
   globalFixAllowed = reliableDetectedLanguages.length <= 1
@@ -179,10 +235,13 @@ function renderScan(scan: ScanResult): void {
 
   if (scan.languages.length === 0) {
     const row = document.createElement('tr')
-    row.innerHTML = '<td colspan="4">No proofing-language tags were found on text fragments in this document.</td>'
+    const cell = document.createElement('td')
+    cell.colSpan = 4
+    cell.textContent = t('stored.noTags')
+    row.append(cell)
     languageRows.append(row)
     repairButton.disabled = true
-    changeSummary.textContent = 'No editable language metadata found.'
+    changeSummary.textContent = t('stored.noEditable')
   } else {
     for (const language of scan.languages) {
       const row = document.createElement('tr')
@@ -194,8 +253,11 @@ function renderScan(scan: ScanResult): void {
 
       labelCell.textContent = languageLabel(language.tag)
       tagCell.innerHTML = `<code>${escapeHtml(language.tag)}</code>`
-      countCell.textContent = language.count.toLocaleString()
-      countCell.title = `Found across ${language.parts} document XML part(s)`
+      countCell.textContent = formatNumber(language.count)
+      countCell.title = t(
+        language.parts === 1 ? 'stored.parts.one' : 'stored.parts.many',
+        { count: formatNumber(language.parts) },
+      )
 
       select.dataset.sourceTag = language.tag
       populateLanguageSelect(select, language.tag)
@@ -219,18 +281,24 @@ function renderTextAudit(scan: ScanResult): void {
     .filter((name, index, all) => all.indexOf(name) === index)
 
   detectionSummary.textContent = detectedNames.length > 0
-    ? `${detectedNames.length} reliable language${detectedNames.length === 1 ? '' : 's'} · ${scan.likelyMismatches} likely mismatch${scan.likelyMismatches === 1 ? '' : 'es'}`
-    : 'No reliable language guesses'
+    ? t(
+        detectedNames.length === 1 ? 'detection.summary.one' : 'detection.summary.many',
+        {
+          languages: formatNumber(detectedNames.length),
+          mismatches: formatNumber(scan.likelyMismatches),
+        },
+      )
+    : t('detection.none')
 
   initializeFragmentFixState(scan)
 
   auditFilter = scan.likelyMismatches > 0 ? 'issues' : 'all'
   auditPage = 0
 
-  filterIssuesCount.textContent = scan.fragments.filter((fragment) => fragment.mismatch).length.toLocaleString()
-  filterAllCount.textContent = scan.fragments.length.toLocaleString()
-  filterMatchesCount.textContent = scan.fragments.filter(isMatchedFragment).length.toLocaleString()
-  filterUndetectedCount.textContent = scan.fragments.filter(isUndetectedFragment).length.toLocaleString()
+  filterIssuesCount.textContent = formatNumber(scan.fragments.filter((fragment) => fragment.mismatch).length)
+  filterAllCount.textContent = formatNumber(scan.fragments.length)
+  filterMatchesCount.textContent = formatNumber(scan.fragments.filter(isMatchedFragment).length)
+  filterUndetectedCount.textContent = formatNumber(scan.fragments.filter(isUndetectedFragment).length)
 
   smartActions.classList.toggle('hidden', scan.likelyMismatches === 0)
   renderAuditRows()
@@ -241,10 +309,12 @@ function initializeFragmentFixState(scan: ScanResult): void {
     if (!isReliableMismatch(fragment) || !fragment.detectedTag) continue
 
     const needsVariantChoice = requiresVariantChoice(fragment)
-    fragmentFixState.set(fragment.id, {
-      checked: shouldPreselectSmartFix(fragment),
-      targetTag: needsVariantChoice ? '' : fragment.detectedTag,
-    })
+    if (!fragmentFixState.has(fragment.id)) {
+      fragmentFixState.set(fragment.id, {
+        checked: shouldPreselectSmartFix(fragment),
+        targetTag: needsVariantChoice ? '' : fragment.detectedTag,
+      })
+    }
   }
 }
 
@@ -315,12 +385,24 @@ function renderAuditRows(): void {
   updateAuditFilterButtons()
 
   auditRange.textContent = entries.length === 0
-    ? '0 results'
+    ? t('audit.noResults')
     : currentScan?.format === 'docx'
-      ? `${(start + 1).toLocaleString()}–${end.toLocaleString()} of ${entries.length.toLocaleString()} audit items · ${filtered.length.toLocaleString()} filtered run${filtered.length === 1 ? '' : 's'}`
-      : `${(start + 1).toLocaleString()}–${end.toLocaleString()} of ${entries.length.toLocaleString()}`
+      ? t('audit.range.docx', {
+          start: formatNumber(start + 1),
+          end: formatNumber(end),
+          items: formatNumber(entries.length),
+          runs: formatNumber(filtered.length),
+        })
+      : t('audit.range.default', {
+          start: formatNumber(start + 1),
+          end: formatNumber(end),
+          items: formatNumber(entries.length),
+        })
 
-  auditPageLabel.textContent = `Page ${Math.min(auditPage + 1, pageCount)} of ${pageCount}`
+  auditPageLabel.textContent = t('pagination.page', {
+    page: formatNumber(Math.min(auditPage + 1, pageCount)),
+    pages: formatNumber(pageCount),
+  })
   auditPrevious.disabled = auditPage === 0
   auditNext.disabled = auditPage >= pageCount - 1
   auditPagination.classList.toggle(
@@ -357,10 +439,10 @@ function updateAuditFilterButtons(): void {
 }
 
 function emptyAuditMessage(): string {
-  if (auditFilter === 'issues') return 'No likely language mismatches found.'
-  if (auditFilter === 'matches') return 'No reliable matching fragments found.'
-  if (auditFilter === 'undetected') return 'No fragments without a detectable language.'
-  return 'No textual fragments were found in the document content.'
+  if (auditFilter === 'issues') return t('audit.emptyIssues')
+  if (auditFilter === 'matches') return t('audit.emptyMatches')
+  if (auditFilter === 'undetected') return t('audit.emptyUndetected')
+  return t('audit.emptyAll')
 }
 
 function createParagraphAuditRows(entry: AuditEntry): DocumentFragment {
@@ -389,10 +471,12 @@ function createParagraphAuditRows(entry: AuditEntry): DocumentFragment {
   const copy = document.createElement('div')
   copy.className = 'paragraph-summary-copy'
 
-  const location = sample.location ?? fragmentLocationLabel(currentScan?.format ?? 'docx', sample.part)
+  const location = localizeLocationLabel(
+    sample.location ?? fragmentLocationLabel(currentScan?.format ?? 'docx', sample.part),
+  )
   const label = document.createElement('small')
   label.className = 'paragraph-label'
-  label.textContent = `Paragraph · ${location}`
+  label.textContent = t('paragraph.label', { location })
 
   const preview = document.createElement('span')
   preview.className = 'paragraph-preview'
@@ -409,16 +493,23 @@ function createParagraphAuditRows(entry: AuditEntry): DocumentFragment {
   ).length
   const hasConflict = entry.allFragments.some((fragment) => fragment.paragraphContextConflict)
   const detectionSummary = contextualCount > 0
-    ? `${contextualCount} from paragraph context`
+    ? t('paragraph.context', { count: formatNumber(contextualCount) })
     : directDetectedCount > 0
-      ? `${directDetectedCount} detected directly`
-      : 'No reliable detection'
+      ? t('paragraph.direct', { count: formatNumber(directDetectedCount) })
+      : t('paragraph.noReliable')
 
   for (const text of [
-    `${entry.allFragments.length} run${entry.allFragments.length === 1 ? '' : 's'}`,
-    issueCount > 0 ? `${issueCount} issue${issueCount === 1 ? '' : 's'}` : 'No issues',
+    t(
+      entry.allFragments.length === 1 ? 'paragraph.runs.one' : 'paragraph.runs.many',
+      { count: formatNumber(entry.allFragments.length) },
+    ),
+    issueCount > 0
+      ? t(issueCount === 1 ? 'paragraph.issues.one' : 'paragraph.issues.many', {
+          count: formatNumber(issueCount),
+        })
+      : t('paragraph.noIssues'),
     detectionSummary,
-    hasConflict ? 'Conflicting paragraph evidence' : '',
+    hasConflict ? t('paragraph.conflict') : '',
   ].filter(Boolean)) {
     const chip = document.createElement('span')
     chip.textContent = text
@@ -433,8 +524,11 @@ function createParagraphAuditRows(entry: AuditEntry): DocumentFragment {
   toggle.className = 'secondary compact-button paragraph-toggle'
   toggle.setAttribute('aria-expanded', String(expanded))
   toggle.textContent = expanded
-    ? 'Hide runs'
-    : `Show ${entry.fragments.length} run${entry.fragments.length === 1 ? '' : 's'}`
+    ? t('paragraph.hideRuns')
+    : t(
+        entry.fragments.length === 1 ? 'paragraph.showRuns.one' : 'paragraph.showRuns.many',
+        { count: formatNumber(entry.fragments.length) },
+      )
 
   const actions = document.createElement('div')
   actions.className = 'paragraph-actions'
@@ -466,8 +560,11 @@ function createParagraphAuditRows(entry: AuditEntry): DocumentFragment {
     for (const row of detailRows) row.hidden = !nextExpanded
     toggle.setAttribute('aria-expanded', String(nextExpanded))
     toggle.textContent = nextExpanded
-      ? 'Hide runs'
-      : `Show ${entry.fragments.length} run${entry.fragments.length === 1 ? '' : 's'}`
+      ? t('paragraph.hideRuns')
+      : t(
+          entry.fragments.length === 1 ? 'paragraph.showRuns.one' : 'paragraph.showRuns.many',
+          { count: formatNumber(entry.fragments.length) },
+        )
   })
 
   return output
@@ -497,8 +594,8 @@ function createParagraphReviewControl(entry: AuditEntry): HTMLElement | null {
   if (plan.requiresVariantChoice) {
     variantSelect = document.createElement('select')
     variantSelect.className = 'paragraph-review-target'
-    variantSelect.setAttribute('aria-label', 'Choose Català or Valencià for this paragraph')
-    addOption(variantSelect, '', 'Choose Català / Valencià…')
+    variantSelect.setAttribute('aria-label', t('paragraph.variantAria'))
+    addOption(variantSelect, '', t('paragraph.variant'))
     addOption(variantSelect, 'ca-ES', 'Català · ca-ES')
     addOption(variantSelect, 'ca-ES-valencia', 'Valencià · ca-ES-valencia')
     variantSelect.value = commonSelectedTarget
@@ -508,7 +605,7 @@ function createParagraphReviewControl(entry: AuditEntry): HTMLElement | null {
   const button = document.createElement('button')
   button.type = 'button'
   button.className = 'secondary compact-button paragraph-review-button'
-  button.title = 'Selects reviewed run-level fixes for this paragraph. Nothing is repaired until you use Repair selected fixes.'
+  button.title = t('paragraph.reviewTitle')
 
   const refreshButton = () => {
     const targetTag = variantSelect?.value ?? plan.targetTag ?? ''
@@ -522,8 +619,8 @@ function createParagraphReviewControl(entry: AuditEntry): HTMLElement | null {
 
     button.disabled = !targetTag || allSelected
     button.textContent = allSelected
-      ? `${plan.fragmentIds.length} paragraph fixes selected`
-      : `Select ${plan.fragmentIds.length} paragraph fix${plan.fragmentIds.length === 1 ? '' : 'es'}`
+      ? t('paragraph.selected', { count: formatNumber(plan.fragmentIds.length) })
+      : t('paragraph.select', { count: formatNumber(plan.fragmentIds.length) })
   }
 
   variantSelect?.addEventListener('change', refreshButton)
@@ -562,17 +659,26 @@ function createFragmentRow(fragment: TextFragment, grouped = false): HTMLTableRo
   preview.className = 'text-preview'
   preview.textContent = fragment.text
 
-  const location = fragment.location ?? fragmentLocationLabel(currentScan?.format ?? 'docx', fragment.part)
+  const location = localizeLocationLabel(
+    fragment.location ?? fragmentLocationLabel(currentScan?.format ?? 'docx', fragment.part),
+  )
   const locationHint = document.createElement('small')
   locationHint.className = 'fragment-location'
-  locationHint.textContent = grouped ? `Run ${fragment.runIndex + 1}` : location
+  locationHint.textContent = grouped
+    ? t('fragment.run', { number: formatNumber(fragment.runIndex + 1) })
+    : location
 
-  preview.title = `${location} · ${fragment.part} · run ${fragment.runIndex + 1}`
+  preview.title = `${location} · ${fragment.part} · ${t('fragment.run', { number: formatNumber(fragment.runIndex + 1) })}`
   textCell.append(preview, locationHint)
 
-  storedCell.innerHTML = fragment.storedTag
-    ? `<span class="language-name">${escapeHtml(languageLabel(fragment.storedTag))}</span><code>${escapeHtml(fragment.storedTag)}</code>`
-    : '<span class="muted">No stored tag</span>'
+  if (fragment.storedTag) {
+    storedCell.innerHTML = `<span class="language-name">${escapeHtml(languageLabel(fragment.storedTag))}</span><code>${escapeHtml(fragment.storedTag)}</code>`
+  } else {
+    const noTag = document.createElement('span')
+    noTag.className = 'muted'
+    noTag.textContent = t('stored.noTag')
+    storedCell.append(noTag)
+  }
 
   if (fragment.storedTag) {
     const sourceHint = document.createElement('small')
@@ -586,37 +692,37 @@ function createFragmentRow(fragment: TextFragment, grouped = false): HTMLTableRo
 
     if (fragment.confidence !== 'unknown') {
       const confidenceHint = document.createElement('small')
-      confidenceHint.textContent = `${capitalize(fragment.confidence)} confidence`
+      confidenceHint.textContent = t(`confidence.${fragment.confidence}`)
       detectedCell.append(confidenceHint)
     }
 
     const sourceHint = document.createElement('small')
     sourceHint.className = 'detection-source'
     sourceHint.textContent = fragment.detectionSource === 'paragraph-context'
-      ? 'Detected from paragraph context'
-      : 'Detected directly'
+      ? t('detected.context')
+      : t('detected.direct')
     detectedCell.append(sourceHint)
 
     if (fragment.paragraphContextConflict) {
       const conflictHint = document.createElement('small')
       conflictHint.className = 'detection-conflict'
-      conflictHint.textContent = 'Conflicting paragraph evidence'
+      conflictHint.textContent = t('detected.conflict')
       detectedCell.append(conflictHint)
     }
 
     if (fragment.detectionSource === 'paragraph-context') {
-      detectedCell.title = 'Language inferred from surrounding text in the same Word paragraph. Review this suggestion before repairing the individual run.'
+      detectedCell.title = t('detected.contextTitle')
     }
   } else {
     const undetected = document.createElement('span')
     undetected.className = 'muted'
-    undetected.textContent = 'Too short / non-linguistic'
+    undetected.textContent = t('detected.tooShort')
     detectedCell.append(undetected)
 
     if (fragment.paragraphContextConflict) {
       const conflictHint = document.createElement('small')
       conflictHint.className = 'detection-conflict'
-      conflictHint.textContent = 'Paragraph context rejected: conflicting evidence'
+      conflictHint.textContent = t('detected.contextRejected')
       detectedCell.append(conflictHint)
     }
   }
@@ -627,10 +733,10 @@ function createFragmentRow(fragment: TextFragment, grouped = false): HTMLTableRo
   badge.textContent = statusInfo.label
   if (isUndetectedFragment(fragment)) {
     badge.title = fragment.paragraphContextConflict
-      ? 'Reliable evidence in this Word paragraph conflicts, so paragraph context was rejected and this run remains unchanged.'
-      : 'There is not enough linguistic text to identify a language safely. This fragment will be left unchanged.'
+      ? t('badge.conflictTitle')
+      : t('badge.undetectedTitle')
   } else if (fragment.detectionSource === 'paragraph-context') {
-    badge.title = 'Detected from the surrounding Word paragraph because this run is too short or ambiguous on its own. Contextual fixes require review.'
+    badge.title = t('badge.contextTitle')
   }
   statusCell.append(badge)
 
@@ -641,7 +747,10 @@ function createFragmentRow(fragment: TextFragment, grouped = false): HTMLTableRo
   ) {
     fixCell.append(createFragmentFixControl(fragment))
   } else {
-    fixCell.innerHTML = '<span class="muted">No suggestion</span>'
+    const noSuggestion = document.createElement('span')
+    noSuggestion.className = 'muted'
+    noSuggestion.textContent = t('fix.noSuggestion')
+    fixCell.append(noSuggestion)
   }
 
   row.append(textCell, storedCell, detectedCell, statusCell, fixCell)
@@ -649,15 +758,12 @@ function createFragmentRow(fragment: TextFragment, grouped = false): HTMLTableRo
 }
 
 function storedLanguageDiagnostic(fragment: TextFragment): string {
-  if (fragment.storedSource === 'run') return 'Stored language set on this run'
-  if (fragment.storedSource === 'style') return 'Stored language inherited from style'
-  if (fragment.storedSource === 'paragraph-default') return 'Stored language inherited from paragraph'
-  if (fragment.storedSource === 'document-default') return 'Stored language inherited from document default'
+  if (fragment.storedSource === 'run') return t('stored.run')
+  if (fragment.storedSource === 'style') return t('stored.style')
+  if (fragment.storedSource === 'paragraph-default') return t('stored.paragraph')
+  if (fragment.storedSource === 'document-default') return t('stored.document')
+  if (fragment.storedSource === 'none') return t('stored.noneSource')
   return storedLanguageSourceLabel(fragment.storedSource)
-}
-
-function capitalize(value: string): string {
-  return value.length > 0 ? value[0].toUpperCase() + value.slice(1) : value
 }
 
 function createFragmentFixControl(fragment: TextFragment): HTMLElement {
@@ -668,12 +774,12 @@ function createFragmentFixControl(fragment: TextFragment): HTMLElement {
   checkbox.type = 'checkbox'
   checkbox.className = 'fragment-fix-check'
   checkbox.dataset.fragmentId = fragment.id
-  checkbox.setAttribute('aria-label', `Select repair for: ${fragment.text}`)
+  checkbox.setAttribute('aria-label', t('fix.selectAria', { text: fragment.text }))
 
   const select = document.createElement('select')
   select.className = 'fragment-fix-target'
   select.dataset.fragmentId = fragment.id
-  select.setAttribute('aria-label', `Repair language for: ${fragment.text}`)
+  select.setAttribute('aria-label', t('fix.languageAria', { text: fragment.text }))
 
   const state = fragmentFixState.get(fragment.id) ?? {
     checked: false,
@@ -682,7 +788,7 @@ function createFragmentFixControl(fragment: TextFragment): HTMLElement {
   fragmentFixState.set(fragment.id, state)
 
   if (fragment.detectedTag?.toLowerCase() === 'ca-es') {
-    addOption(select, '', 'Choose Català / Valencià…')
+    addOption(select, '', t('fix.variant'))
     addOption(select, 'ca-ES', 'Català · ca-ES')
     addOption(select, 'ca-ES-valencia', 'Valencià · ca-ES-valencia')
   } else if (fragment.detectedTag) {
@@ -749,7 +855,7 @@ function updateSmartFixes(): void {
   smartRepairButton.disabled = fixes.length === 0 || !currentFile
 
   if (!currentScan) {
-    smartFixSummary.textContent = 'No fragment fixes selected.'
+    smartFixSummary.textContent = t('smart.none')
     return
   }
 
@@ -761,14 +867,19 @@ function updateSmartFixes(): void {
 
   if (fixes.length === 0) {
     smartFixSummary.textContent = pendingReview > 0
-      ? `${pendingReview} suggestion${pendingReview === 1 ? '' : 's'} need review.`
-      : 'No fragment fixes selected.'
+      ? t(pendingReview === 1 ? 'smart.pending.one' : 'smart.pending.many', {
+          count: formatNumber(pendingReview),
+        })
+      : t('smart.none')
     return
   }
 
   smartFixSummary.textContent = pendingReview > 0
-    ? `${fixes.length} fix${fixes.length === 1 ? '' : 'es'} selected · ${pendingReview} suggestion${pendingReview === 1 ? '' : 's'} still need review.`
-    : `${fixes.length} fix${fixes.length === 1 ? '' : 'es'} selected · all suggestions reviewed.`
+    ? t('smart.selectedPending', {
+        selected: formatNumber(fixes.length),
+        pending: formatNumber(pendingReview),
+      })
+    : t('smart.selectedDone', { selected: formatNumber(fixes.length) })
 }
 
 function isUndetectedFragment(fragment: TextFragment): boolean {
@@ -786,18 +897,18 @@ function isMatchedFragment(fragment: TextFragment): boolean {
 
 function fragmentStatus(fragment: TextFragment): { label: string; className: string } {
   if (isUndetectedFragment(fragment)) {
-    return { label: 'No language detected', className: 'neutral' }
+    return { label: t('badge.noLanguage'), className: 'neutral' }
   }
   if (fragment.confidence === 'low') {
-    return { label: 'Low confidence', className: 'neutral' }
+    return { label: t('badge.lowConfidence'), className: 'neutral' }
   }
   if (!fragment.storedTag) {
-    return { label: 'Missing tag', className: 'warning' }
+    return { label: t('badge.missingTag'), className: 'warning' }
   }
   if (fragment.mismatch) {
-    return { label: 'Mismatch', className: 'danger' }
+    return { label: t('badge.mismatch'), className: 'danger' }
   }
-  return { label: 'Matches', className: 'ok' }
+  return { label: t('badge.matches'), className: 'ok' }
 }
 
 function populateLanguageSelect(select: HTMLSelectElement, currentTag: string): void {
@@ -805,7 +916,9 @@ function populateLanguageSelect(select: HTMLSelectElement, currentTag: string): 
 
   const keep = document.createElement('option')
   keep.value = currentTag
-  keep.textContent = currentTag ? `Keep ${currentTag}` : 'Choose language…'
+  keep.textContent = currentTag
+    ? t('select.keep', { tag: currentTag })
+    : t('select.chooseLanguage')
   select.append(keep)
 
   for (const language of LANGUAGE_OPTIONS) {
@@ -814,6 +927,27 @@ function populateLanguageSelect(select: HTMLSelectElement, currentTag: string): 
     option.value = language.tag
     option.textContent = `${language.label} · ${language.tag}`
     select.append(option)
+  }
+}
+
+function getLanguageSelectValues(): Map<string, string> {
+  const values = new Map<string, string>()
+
+  for (const select of languageRows.querySelectorAll<HTMLSelectElement>('select[data-source-tag]')) {
+    const source = select.dataset.sourceTag
+    if (source) values.set(source, select.value)
+  }
+
+  return values
+}
+
+function restoreLanguageSelectValues(values: ReadonlyMap<string, string>): void {
+  for (const select of languageRows.querySelectorAll<HTMLSelectElement>('select[data-source-tag]')) {
+    const source = select.dataset.sourceTag
+    const value = source ? values.get(source) : undefined
+    if (value && [...select.options].some((option) => option.value === value)) {
+      select.value = value
+    }
   }
 }
 
@@ -835,8 +969,11 @@ function updatePreparedChanges(): void {
   const replacements = getPreparedReplacements()
   repairButton.disabled = replacements.size === 0 || !currentFile
   changeSummary.textContent = replacements.size === 0
-    ? 'No changes prepared.'
-    : `${replacements.size} language mapping${replacements.size === 1 ? '' : 's'} prepared.`
+    ? t('change.none')
+    : t(
+        replacements.size === 1 ? 'change.prepared.one' : 'change.prepared.many',
+        { count: formatNumber(replacements.size) },
+      )
 }
 
 async function repairWholeDocument(): Promise<void> {
@@ -845,14 +982,17 @@ async function repairWholeDocument(): Promise<void> {
   if (replacements.size === 0) return
 
   setBusy(true)
-  status.textContent = 'Repairing stored language metadata locally…'
+  status.textContent = t('repair.globalWorking')
 
   try {
     const result = await patchDocument(currentFile, replacements)
     downloadBlob(result.blob, repairedFileName(currentFile, false))
-    status.textContent = `Done. ${result.changedFragments} language tags changed across ${result.changedParts} document XML part(s).`
+    status.textContent = t('repair.globalDone', {
+      fragments: formatNumber(result.changedFragments),
+      parts: formatNumber(result.changedParts),
+    })
   } catch (error) {
-    status.textContent = error instanceof Error ? error.message : 'Could not repair this document.'
+    status.textContent = error instanceof Error ? error.message : t('repair.globalError')
   } finally {
     setBusy(false)
   }
@@ -864,14 +1004,17 @@ async function repairSelectedFragments(): Promise<void> {
   if (fixes.length === 0) return
 
   setBusy(true)
-  status.textContent = 'Repairing selected text fragments locally…'
+  status.textContent = t('repair.selectedWorking')
 
   try {
     const result = await patchDocumentFragments(currentFile, fixes)
     downloadBlob(result.blob, repairedFileName(currentFile, true))
-    status.textContent = `Done. ${result.changedFragments} selected text fragment${result.changedFragments === 1 ? '' : 's'} repaired across ${result.changedParts} document XML part(s).`
+    status.textContent = t('repair.selectedDone', {
+      fragments: formatNumber(result.changedFragments),
+      parts: formatNumber(result.changedParts),
+    })
   } catch (error) {
-    status.textContent = error instanceof Error ? error.message : 'Could not repair the selected fragments.'
+    status.textContent = error instanceof Error ? error.message : t('repair.selectedError')
   } finally {
     setBusy(false)
   }
@@ -905,7 +1048,10 @@ function exportAuditReport(format: 'csv' | 'json'): void {
     auditReportFileName(currentScan.fileName, format),
   )
 
-  status.textContent = `${format.toUpperCase()} audit report generated locally for ${currentScan.fileName}.`
+  status.textContent = t('export.done', {
+    format: format.toUpperCase(),
+    file: currentScan.fileName,
+  })
 }
 
 function setBusy(busy: boolean): void {

@@ -65,6 +65,9 @@ jobs:
       - name: Check fragment diagnostics labels
         run: npm run check:diagnostics
 
+      - name: Check interface localization
+        run: npm run check:i18n
+
       - name: Check paragraph-aware audit grouping
         run: npm run check:paragraph-audit
 
