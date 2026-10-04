@@ -312,7 +312,7 @@ function renderAuditRows(): void {
   auditRange.textContent = entries.length === 0
     ? '0 results'
     : currentScan?.format === 'docx'
-      ? `${(start + 1).toLocaleString()}–${end.toLocaleString()} of ${entries.length.toLocaleString()} audit items · ${filtered.length.toLocaleString()} matching run${filtered.length === 1 ? '' : 's'}`
+      ? `${(start + 1).toLocaleString()}–${end.toLocaleString()} of ${entries.length.toLocaleString()} audit items · ${filtered.length.toLocaleString()} filtered run${filtered.length === 1 ? '' : 's'}`
       : `${(start + 1).toLocaleString()}–${end.toLocaleString()} of ${entries.length.toLocaleString()}`
 
   auditPageLabel.textContent = `Page ${Math.min(auditPage + 1, pageCount)} of ${pageCount}`
