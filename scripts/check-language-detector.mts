@@ -9,6 +9,16 @@ const reliableCases: Array<[string, string, string]> = [
   ['Catalan short', 'Benvinguts a la sessió.', 'ca-ES'],
   ['Galician fixture', 'Grazas pola súa colaboración. Esta frase está escrita en galego.', 'gl-ES'],
   ['Basque short', 'Eskerrik asko zuen laguntzagatik.', 'eu-ES'],
+  ['English', 'Welcome to the working session. Thank you for your participation and collaboration on this project.', 'en-US'],
+  ['French', 'Bienvenue à cette session de travail. Merci pour votre participation et votre collaboration à ce projet.', 'fr-FR'],
+  ['Portuguese', 'Bem-vindos a esta sessão de trabalho. Obrigado pela vossa participação e colaboração neste projeto.', 'pt-PT'],
+  ['German', 'Willkommen zu dieser Arbeitssitzung. Vielen Dank für Ihre Teilnahme und Zusammenarbeit an diesem Projekt.', 'de-DE'],
+  ['Italian', 'Benvenuti a questa sessione di lavoro. Grazie per la vostra partecipazione e collaborazione al progetto.', 'it-IT'],
+  ['Dutch', 'Welkom bij deze werksessie. Bedankt voor uw deelname en samenwerking aan dit project.', 'nl-NL'],
+  ['Polish', 'Witamy na spotkaniu roboczym. Dziękujemy za udział i współpracę przy tym projekcie.', 'pl-PL'],
+  ['Romanian', 'Bine ați venit la această sesiune de lucru. Vă mulțumim pentru participare și colaborare.', 'ro-RO'],
+  ['Czech', 'Vítejte na pracovním setkání. Děkujeme za vaši účast a spolupráci na tomto projektu.', 'cs-CZ'],
+  ['Swedish', 'Välkommen till arbetsmötet. Tack för ditt deltagande och ditt samarbete i projektet.', 'sv-SE'],
 ]
 
 for (const [name, text, expectedTag] of reliableCases) {
@@ -32,6 +42,11 @@ const exactLabels: Array<[string, string]> = [
   ['Português:', 'pt-PT'],
   ['Deutsch:', 'de-DE'],
   ['Italiano:', 'it-IT'],
+  ['Nederlands:', 'nl-NL'],
+  ['Polski:', 'pl-PL'],
+  ['Română:', 'ro-RO'],
+  ['Čeština:', 'cs-CZ'],
+  ['Svenska:', 'sv-SE'],
 ]
 
 for (const [text, expectedTag] of exactLabels) {
@@ -46,6 +61,13 @@ for (const text of ['2026', 'Total', 'EU', 'CA / GL / EU']) {
   assert.equal(result.tag, null, `${text} should remain undetected`)
   assert.equal(result.confidence, 'unknown', `${text} should remain unknown`)
 }
+
+assert.equal(isLikelyMismatch('en-GB', 'en-US', 'high'), false)
+assert.equal(isLikelyMismatch('pt-BR', 'pt-PT', 'high'), false)
+assert.equal(isLikelyMismatch('nl-BE', 'nl-NL', 'high'), false)
+assert.equal(isLikelyMismatch('ro-MD', 'ro-RO', 'high'), false)
+assert.equal(isLikelyMismatch('sv-FI', 'sv-SE', 'high'), false)
+assert.equal(isLikelyMismatch('pl-PL', 'cs-CZ', 'high'), true)
 
 const fixtureEnglish = detectTextLanguage('Office Language Doctor · compatibility fixture')
 assert.notEqual(fixtureEnglish.confidence, 'high')

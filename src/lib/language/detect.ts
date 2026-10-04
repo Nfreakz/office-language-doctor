@@ -1,7 +1,10 @@
 import { francAll } from 'franc-all'
 import type { DetectionConfidence } from '../document/types'
 
-const DETECTION_CODES = ['cat', 'glg', 'eus', 'spa', 'eng', 'fra', 'por', 'deu', 'ita']
+const DETECTION_CODES = [
+  'cat', 'glg', 'eus', 'spa', 'eng', 'fra', 'por', 'deu', 'ita',
+  'nld', 'pol', 'ron', 'ces', 'swe',
+]
 
 const ISO3_TO_TAG: Record<string, string> = {
   cat: 'ca-ES',
@@ -13,6 +16,11 @@ const ISO3_TO_TAG: Record<string, string> = {
   por: 'pt-PT',
   deu: 'de-DE',
   ita: 'it-IT',
+  nld: 'nl-NL',
+  pol: 'pl-PL',
+  ron: 'ro-RO',
+  ces: 'cs-CZ',
+  swe: 'sv-SE',
 }
 
 const EXACT_LANGUAGE_LABELS: Record<string, string> = {
@@ -39,6 +47,18 @@ const EXACT_LANGUAGE_LABELS: Record<string, string> = {
   'german': 'deu',
   'italiano': 'ita',
   'italian': 'ita',
+  'nederlands': 'nld',
+  'dutch': 'nld',
+  'polski': 'pol',
+  'polish': 'pol',
+  'română': 'ron',
+  'romana': 'ron',
+  'romanian': 'ron',
+  'čeština': 'ces',
+  'cestina': 'ces',
+  'czech': 'ces',
+  'svenska': 'swe',
+  'swedish': 'swe',
 }
 
 const GALICIAN_ANCHORS = new Set([
@@ -124,6 +144,11 @@ export function languageFamily(tag: string | null): string | null {
   if (normalized.startsWith('pt-')) return 'pt'
   if (normalized.startsWith('de-')) return 'de'
   if (normalized.startsWith('it-')) return 'it'
+  if (normalized.startsWith('nl-')) return 'nl'
+  if (normalized.startsWith('pl-')) return 'pl'
+  if (normalized.startsWith('ro-')) return 'ro'
+  if (normalized.startsWith('cs-')) return 'cs'
+  if (normalized.startsWith('sv-')) return 'sv'
 
   return normalized
 }

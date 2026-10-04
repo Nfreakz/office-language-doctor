@@ -57,7 +57,7 @@ XLSX is not a proofing-language repair target because SpreadsheetML does not exp
 ## Current capabilities
 
 - stored proofing-language audit;
-- local advisory language detection;
+- local advisory language detection across 14 language families;
 - medium/high-confidence mismatch reporting;
 - conservative Smart Fix;
 - context-aware Word paragraph detection for short/ambiguous runs;
@@ -66,6 +66,7 @@ XLSX is not a proofing-language repair target because SpreadsheetML does not exp
 - Catalan / Spanish / English interface localization with a persistent browser-local preference;
 - explicit direct vs paragraph-context detection diagnostics;
 - explicit Catalan vs Valencian choice;
+- Dutch, Polish, Romanian, Czech and Swedish detection/repair coverage;
 - human-readable fragment locations;
 - stored-language source diagnostics;
 - audit filters and pagination;
@@ -95,6 +96,8 @@ Smart Fix must remain conservative:
 Exact labels such as `Català:`, `Valencià:`, `Galego:` and `Euskara:` are handled before the general short-text cutoff.
 
 Galician promotion remains constrained to cases where Franc already ranks Galician first and the configured anchor evidence is present.
+
+Current detected language families: Catalan/Valencian, Galician, Basque, Spanish, English, French, Portuguese, German, Italian, Dutch, Polish, Romanian, Czech and Swedish. English and Portuguese family matching treats regional variants as the same language for mismatch purposes.
 
 ## Word engine
 
@@ -173,7 +176,7 @@ Current scope:
 - decodes Windows-1252 `\'hh` escapes;
 - skips common non-user-facing destinations;
 - repairs reviewed runs with scoped `{\langN ...}` groups;
-- supports the same configured language set as the rest of the app, including Valencian LCID 2051.
+- supports the configured language set, including Valencian LCID 2051, British English 2057, Brazilian Portuguese 1046, Dutch 1043, Polish 1045, Romanian 1048, Czech 1029 and Swedish 1053.
 
 Automated regression covers Catalan, Galician and Basque mismatches, selected repair, re-scan to zero mismatches, Unicode and hex escapes.
 
@@ -287,7 +290,7 @@ The public repository does not execute CI on untrusted `pull_request` events.
 Current automated checks:
 
 - PowerPoint XML regression;
-- language detector calibration;
+- language detector calibration across all 14 supported families;
 - DOCX scan + repair, including context-aware recovery for Word paragraphs split into short proofing runs;
 - ODF scan + repair, including exact ODS cell/range coordinates across repeated and merged geometry;
 - variant routing and macro-binary preservation;

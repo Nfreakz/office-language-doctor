@@ -19,6 +19,22 @@ assert.equal(rtfLcidToTag(1110), 'gl-ES')
 assert.equal(rtfLcidToTag(1069), 'eu-ES')
 assert.equal(rtfTagToLcid('ca-ES'), 1027)
 assert.equal(rtfTagToLcid('ca-ES-valencia'), 2051)
+assert.equal(rtfLcidToTag(2057), 'en-GB')
+assert.equal(rtfLcidToTag(1046), 'pt-BR')
+assert.equal(rtfTagToLcid('en-GB'), 2057)
+assert.equal(rtfTagToLcid('pt-BR'), 1046)
+
+const expandedRtfMappings: Array<[number, string]> = [
+  [1043, 'nl-NL'],
+  [1045, 'pl-PL'],
+  [1048, 'ro-RO'],
+  [1029, 'cs-CZ'],
+  [1053, 'sv-SE'],
+]
+for (const [lcid, tag] of expandedRtfMappings) {
+  assert.equal(rtfLcidToTag(lcid), tag)
+  assert.equal(rtfTagToLcid(tag), lcid)
+}
 
 const extracted = extractRtfTextFragments(source)
 assert.equal(extracted.length, 4)
@@ -62,6 +78,52 @@ assert.equal(repaired.fragments[0].storedTag, 'ca-ES')
 assert.equal(repaired.fragments[1].storedTag, 'gl-ES')
 assert.equal(repaired.fragments[2].storedTag, 'eu-ES')
 assert.equal(repaired.fragments[3].storedTag, 'en-US')
+
+const expandedSource = String.raw\`{\rtf1\ansi\ansicpg1252\deff0\deflang1033
+{\fonttbl{\f0 Arial;}}
+\viewkind4\uc1
+\pard\lang1033 Nederlands:\par
+\lang1033 Polski:\par
+\lang1033 Romana:\par
+\lang1033 Cestina:\par
+\lang1033 Svenska:\par
+}\`
+
+const expandedFile = new File([expandedSource], 'LanguageDoctor_EU_LANGUAGES.rtf', { type: 'application/rtf' })
+const expandedScan = await scanRtf(expandedFile)
+assert.equal(expandedScan.totalTextFragments, 5)
+assert.deepEqual(expandedScan.fragments.map((fragment) => fragment.detectedTag), [
+  'nl-NL',
+  'pl-PL',
+  'ro-RO',
+  'cs-CZ',
+  'sv-SE',
+])
+assert.equal(expandedScan.likelyMismatches, 5)
+
+const expandedPatched = await patchRtfFragments(
+  expandedFile,
+  expandedScan.fragments.map((fragment) => ({
+    fragmentId: fragment.id,
+    part: fragment.part,
+    runIndex: fragment.runIndex,
+    targetTag: fragment.detectedTag!,
+  })),
+)
+const expandedRepairedFile = new File(
+  [await expandedPatched.blob.arrayBuffer()],
+  'LanguageDoctor_EU_LANGUAGES-language-smart-fixed.rtf',
+  { type: 'application/rtf' },
+)
+const expandedRepaired = await scanRtf(expandedRepairedFile)
+assert.equal(expandedRepaired.likelyMismatches, 0)
+assert.deepEqual(expandedRepaired.fragments.map((fragment) => fragment.storedTag), [
+  'nl-NL',
+  'pl-PL',
+  'ro-RO',
+  'cs-CZ',
+  'sv-SE',
+])
 
 const hexSource = String.raw`{\rtf1\ansi\ansicpg1252\deflang1036\lang1036 Fran\'e7ais\par}`
 const hexFragments = extractRtfTextFragments(hexSource)
