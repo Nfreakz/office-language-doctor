@@ -143,6 +143,34 @@ code { display: inline-block; padding: 3px 6px; border-radius: 5px; background: 
   font-weight: 750;
 }
 
+
+.paragraph-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.paragraph-review {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.paragraph-review-target {
+  width: auto;
+  min-height: 34px;
+  padding-top: 0;
+  padding-bottom: 0;
+  font-size: .78rem;
+}
+
+.paragraph-review-button {
+  white-space: nowrap;
+}
+
 .paragraph-toggle {
   flex: 0 0 auto;
   white-space: nowrap;
@@ -174,9 +202,21 @@ code { display: inline-block; padding: 3px 6px; border-radius: 5px; background: 
     gap: 10px;
   }
 
+  .paragraph-actions {
+    align-items: stretch;
+    justify-content: flex-start;
+    flex-direction: column;
+  }
+
+  .paragraph-review {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .paragraph-review-target,
+  .paragraph-review-button,
   .paragraph-toggle {
-    width: auto;
-    align-self: flex-start;
+    width: 100%;
   }
 }
 

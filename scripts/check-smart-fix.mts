@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import type { TextFragment } from '../src/lib/document/types.ts'
 import {
+  getParagraphReviewPlan,
   isReliableMismatch,
   requiresVariantChoice,
   shouldPreselectSmartFix,
@@ -56,4 +57,94 @@ const matching = fragment({ mismatch: false })
 assert.equal(isReliableMismatch(matching), false)
 assert.equal(shouldPreselectSmartFix(matching), false)
 
-console.log('Smart Fix safety policy: OK')
+const contextualCatalanA = fragment({
+  id: 'word/document.xml#1',
+  detectedIso3: 'cat',
+  detectedTag: 'ca-ES',
+  detectionSource: 'paragraph-context',
+  paragraphGroupId: 'word/document.xml#paragraph-0',
+})
+const contextualCatalanB = fragment({
+  id: 'word/document.xml#2',
+  detectedIso3: 'cat',
+  detectedTag: 'ca-ES',
+  detectionSource: 'paragraph-context',
+  paragraphGroupId: 'word/document.xml#paragraph-0',
+})
+const directCatalan = fragment({
+  id: 'word/document.xml#3',
+  detectedIso3: 'cat',
+  detectedTag: 'ca-ES',
+  detectionSource: 'direct',
+  paragraphGroupId: 'word/document.xml#paragraph-0',
+})
+
+const catalanParagraphPlan = getParagraphReviewPlan([
+  contextualCatalanA,
+  contextualCatalanB,
+  directCatalan,
+])
+assert.ok(catalanParagraphPlan)
+assert.deepEqual(catalanParagraphPlan.fragmentIds, [
+  'word/document.xml#1',
+  'word/document.xml#2',
+  'word/document.xml#3',
+])
+assert.equal(catalanParagraphPlan.detectedTag, 'ca-ES')
+assert.equal(catalanParagraphPlan.targetTag, null)
+assert.equal(catalanParagraphPlan.requiresVariantChoice, true)
+assert.equal(shouldPreselectSmartFix(contextualCatalanA), false)
+
+const germanParagraphPlan = getParagraphReviewPlan([
+  fragment({
+    id: 'word/document.xml#10',
+    detectedIso3: 'deu',
+    detectedTag: 'de-DE',
+    detectionSource: 'paragraph-context',
+    paragraphGroupId: 'word/document.xml#paragraph-1',
+  }),
+  fragment({
+    id: 'word/document.xml#11',
+    detectedIso3: 'deu',
+    detectedTag: 'de-DE',
+    detectionSource: 'paragraph-context',
+    paragraphGroupId: 'word/document.xml#paragraph-1',
+  }),
+])
+assert.ok(germanParagraphPlan)
+assert.equal(germanParagraphPlan.targetTag, 'de-DE')
+assert.equal(germanParagraphPlan.requiresVariantChoice, false)
+
+assert.equal(getParagraphReviewPlan([
+  contextualCatalanA,
+  { ...contextualCatalanB, paragraphContextConflict: true },
+]), null)
+
+assert.equal(getParagraphReviewPlan([
+  contextualCatalanA,
+  fragment({
+    id: 'word/document.xml#20',
+    detectedIso3: 'eus',
+    detectedTag: 'eu-ES',
+    detectionSource: 'paragraph-context',
+  }),
+]), null)
+
+assert.equal(getParagraphReviewPlan([
+  contextualCatalanA,
+  fragment({
+    id: 'word/document.xml#21',
+    mismatch: false,
+    detectedTag: null,
+    detectedIso3: null,
+    confidence: 'unknown',
+    detectionSource: 'direct',
+  }),
+]), null)
+
+assert.equal(getParagraphReviewPlan([
+  fragment({ id: 'word/document.xml#30', detectionSource: 'direct' }),
+  fragment({ id: 'word/document.xml#31', detectionSource: 'direct' }),
+]), null)
+
+console.log('Smart Fix safety policy + explicit paragraph review: OK')

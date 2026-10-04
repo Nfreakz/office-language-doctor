@@ -9,7 +9,12 @@ import {
 import type { FragmentFix, ScanResult, TextFragment } from './lib/document/types'
 import { buildAuditEntries, type AuditEntry } from './lib/document/audit-groups'
 import { fragmentLocationLabel, storedLanguageSourceLabel } from './lib/document/labels'
-import { isReliableMismatch, requiresVariantChoice, shouldPreselectSmartFix } from './lib/language/smart-fix'
+import {
+  getParagraphReviewPlan,
+  isReliableMismatch,
+  requiresVariantChoice,
+  shouldPreselectSmartFix,
+} from './lib/language/smart-fix'
 import { auditReportFileName, auditReportToCsv, auditReportToJson, buildAuditReport } from './lib/report/audit'
 
 const DEFAULT_AUDIT_PAGE_SIZE = 10
@@ -431,7 +436,14 @@ function createParagraphAuditRows(entry: AuditEntry): DocumentFragment {
     ? 'Hide runs'
     : `Show ${entry.fragments.length} run${entry.fragments.length === 1 ? '' : 's'}`
 
-  wrapper.append(copy, toggle)
+  const actions = document.createElement('div')
+  actions.className = 'paragraph-actions'
+
+  const reviewControl = createParagraphReviewControl(entry)
+  if (reviewControl) actions.append(reviewControl)
+  actions.append(toggle)
+
+  wrapper.append(copy, actions)
   cell.append(wrapper)
   summaryRow.append(cell)
   output.append(summaryRow)
@@ -459,6 +471,80 @@ function createParagraphAuditRows(entry: AuditEntry): DocumentFragment {
   })
 
   return output
+}
+
+function createParagraphReviewControl(entry: AuditEntry): HTMLElement | null {
+  const plan = getParagraphReviewPlan(entry.allFragments)
+  if (!plan) return null
+
+  const visibleIds = new Set(entry.fragments.map((fragment) => fragment.id))
+  if (!plan.fragmentIds.some((fragmentId) => visibleIds.has(fragmentId))) return null
+
+  const wrapper = document.createElement('div')
+  wrapper.className = 'paragraph-review'
+
+  const selectedTargets = plan.fragmentIds
+    .map((fragmentId) => fragmentFixState.get(fragmentId))
+    .filter((state): state is FragmentFixState => Boolean(state?.checked && state.targetTag))
+    .map((state) => state.targetTag)
+
+  const commonSelectedTarget = selectedTargets.length === plan.fragmentIds.length &&
+    new Set(selectedTargets.map((target) => target.toLowerCase())).size === 1
+    ? selectedTargets[0]
+    : ''
+
+  let variantSelect: HTMLSelectElement | null = null
+  if (plan.requiresVariantChoice) {
+    variantSelect = document.createElement('select')
+    variantSelect.className = 'paragraph-review-target'
+    variantSelect.setAttribute('aria-label', 'Choose Català or Valencià for this paragraph')
+    addOption(variantSelect, '', 'Choose Català / Valencià…')
+    addOption(variantSelect, 'ca-ES', 'Català · ca-ES')
+    addOption(variantSelect, 'ca-ES-valencia', 'Valencià · ca-ES-valencia')
+    variantSelect.value = commonSelectedTarget
+    wrapper.append(variantSelect)
+  }
+
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = 'secondary compact-button paragraph-review-button'
+  button.title = 'Selects reviewed run-level fixes for this paragraph. Nothing is repaired until you use Repair selected fixes.'
+
+  const refreshButton = () => {
+    const targetTag = variantSelect?.value ?? plan.targetTag ?? ''
+    const allSelected = Boolean(targetTag) && plan.fragmentIds.every((fragmentId) => {
+      const state = fragmentFixState.get(fragmentId)
+      return Boolean(
+        state?.checked &&
+        state.targetTag.toLowerCase() === targetTag.toLowerCase(),
+      )
+    })
+
+    button.disabled = !targetTag || allSelected
+    button.textContent = allSelected
+      ? `${plan.fragmentIds.length} paragraph fixes selected`
+      : `Select ${plan.fragmentIds.length} paragraph fix${plan.fragmentIds.length === 1 ? '' : 'es'}`
+  }
+
+  variantSelect?.addEventListener('change', refreshButton)
+
+  button.addEventListener('click', () => {
+    const targetTag = variantSelect?.value ?? plan.targetTag
+    if (!targetTag) return
+
+    for (const fragmentId of plan.fragmentIds) {
+      const state = fragmentFixState.get(fragmentId)
+      if (!state) continue
+      state.targetTag = targetTag
+      state.checked = true
+    }
+
+    renderAuditRows()
+  })
+
+  refreshButton()
+  wrapper.append(button)
+  return wrapper
 }
 
 function createFragmentRow(fragment: TextFragment, grouped = false): HTMLTableRowElement {

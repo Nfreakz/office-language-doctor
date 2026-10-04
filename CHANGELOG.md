@@ -4,6 +4,7 @@
 
 ### Added
 
+- explicit paragraph review actions that select multiple compatible Word run fixes only after user confirmation, while blocking grouped selection for conflicting or mixed-language evidence and preserving the Catalan / Valencian choice;
 - paragraph-aware Word audit UX that collapses multiple internal runs into one readable paragraph summary while preserving individual run-level review and repair;
 - explicit audit diagnostics for direct detection, paragraph-context detection, conflicting paragraph evidence and stored-language inheritance;
 - `detectionSource` in local CSV/JSON audit reports;
@@ -16,6 +17,7 @@
 
 ### Validation
 
+- Smart Fix regression now covers paragraph review eligibility, including same-language grouping, Catalan / Valencian variant choice, conflict rejection, mixed-language rejection and the requirement for contextual evidence;
 - paragraph-grouping regression keeps separate Word paragraphs and different detected languages isolated even when their runs are interleaved by audit ordering/filtering;
 - report regression covers direct and paragraph-context `detectionSource` serialization;
 - Word regression now covers paragraph identity metadata in addition to a real-world proofing-fragmentation pattern where one Catalan sentence is split into eight runs by Word/proofing markup; seven linguistic runs recover Catalan from paragraph context while punctuation remains undetected;

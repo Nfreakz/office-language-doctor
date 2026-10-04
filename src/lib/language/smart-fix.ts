@@ -23,3 +23,41 @@ export function shouldPreselectSmartFix(fragment: TextFragment): boolean {
     !requiresVariantChoice(fragment),
   )
 }
+
+
+export interface ParagraphReviewPlan {
+  fragmentIds: string[]
+  detectedTag: string
+  targetTag: string | null
+  requiresVariantChoice: boolean
+}
+
+export function getParagraphReviewPlan(
+  fragments: readonly TextFragment[],
+): ParagraphReviewPlan | null {
+  if (fragments.some((fragment) => fragment.paragraphContextConflict)) return null
+
+  const candidates = fragments.filter(isReliableMismatch)
+  if (candidates.length < 2) return null
+  if (!candidates.some((fragment) => fragment.detectionSource === 'paragraph-context')) return null
+
+  const detectedTags = new Map<string, string>()
+  for (const fragment of candidates) {
+    if (!fragment.detectedTag) return null
+    detectedTags.set(fragment.detectedTag.toLowerCase(), fragment.detectedTag)
+  }
+
+  if (detectedTags.size !== 1) return null
+
+  const detectedTag = detectedTags.values().next().value
+  if (!detectedTag) return null
+
+  const needsVariantChoice = detectedTag.toLowerCase() === 'ca-es'
+
+  return {
+    fragmentIds: candidates.map((fragment) => fragment.id),
+    detectedTag,
+    targetTag: needsVariantChoice ? null : detectedTag,
+    requiresVariantChoice: needsVariantChoice,
+  }
+}
