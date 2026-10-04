@@ -16,6 +16,11 @@ export const LANGUAGE_OPTIONS: LanguageOption[] = [
   { tag: 'pt-BR', label: 'Português (Brasil)' },
   { tag: 'de-DE', label: 'Deutsch' },
   { tag: 'it-IT', label: 'Italiano' },
+  { tag: 'nl-NL', label: 'Nederlands' },
+  { tag: 'pl-PL', label: 'Polski' },
+  { tag: 'ro-RO', label: 'Română' },
+  { tag: 'cs-CZ', label: 'Čeština' },
+  { tag: 'sv-SE', label: 'Svenska' },
 ]
 
 export function languageLabel(tag: string): string {

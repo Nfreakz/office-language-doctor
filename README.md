@@ -58,7 +58,7 @@ Version 0.5.0 is the initial public Community Edition baseline under MPL-2.0, wi
 - expanded Word, PowerPoint and OpenDocument format variants;
 - extension- and MIME-preserving repaired downloads;
 - byte-for-byte `vbaProject.bin` preservation checks for DOCM and PPTM;
-- calibrated Catalan, Valencian, Galician and Basque detection;
+- calibrated detection across 14 language families: Catalan/Valencian, Galician, Basque, Spanish, English, French, Portuguese, German, Italian, Dutch, Polish, Romanian, Czech and Swedish;
 - conservative Smart Fix selection;
 - context-aware Word paragraph detection for short or internally fragmented runs;
 - paragraph-aware Word audit UX that shows one readable paragraph summary and expands the underlying repairable runs only when needed;
@@ -87,6 +87,7 @@ Smart Fix preselects only high-confidence non-Catalan/Valencian mismatches. Medi
 - repairs selected fragments without changing their text;
 - supports global remapping when mixed-language content is not detected;
 - keeps Catalan and Valencian as an explicit user choice;
+- exposes Dutch, Polish, Romanian, Czech and Swedish as repair targets alongside the existing language set;
 - shows a human-readable location for each fragment;
 - shows whether stored language comes from direct text, paragraph defaults, styles or document defaults;
 - groups Word runs from the same paragraph into a collapsible audit unit while keeping each run independently repairable;
@@ -114,6 +115,8 @@ The audit covers slides, notes, charts and SmartArt data while excluding master/
 PPTX has been validated with Catalan, Galician, Basque and mixed-language repairs. PPTM, POTX, POTM, PPSX and PPSM have also passed manual open/repair checks.
 
 ### RTF
+
+RTF language mapping includes both English variants (`en-US`, `en-GB`), both Portuguese variants (`pt-PT`, `pt-BR`) and the full detected European expansion (`nl-NL`, `pl-PL`, `ro-RO`, `cs-CZ`, `sv-SE`).
 
 RTF support reads character-language metadata from `\\langN` and document defaults from `\\deflangN`. Selected repair scopes the target LCID to the reviewed text run.
 

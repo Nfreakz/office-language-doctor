@@ -4,6 +4,8 @@
 
 ### Added
 
+- expanded language detection from 9 to 14 language families by adding Dutch, Polish, Romanian, Czech and Swedish;
+- RTF LCID support for `en-GB`, `pt-BR`, `nl-NL`, `pl-PL`, `ro-RO`, `cs-CZ` and `sv-SE`;
 - Catalan, Spanish and English interface localization with a visible CA / ES / EN selector, browser-language initialization and local preference persistence;
 - localization of dynamic audit, repair, diagnostic, pagination and status copy, not just the public landing page;
 - explicit paragraph review actions that select multiple compatible Word run fixes only after user confirmation, while blocking grouped selection for conflicting or mixed-language evidence and preserving the Catalan / Valencian choice;
@@ -19,6 +21,8 @@
 
 ### Validation
 
+- detector regression now exercises reliable long-form samples for all 14 supported language families plus exact language-name labels;
+- RTF regression verifies the new LCID mappings and end-to-end selected repair for Dutch, Polish, Romanian, Czech and Swedish;
 - interface localization regression covers translation-key parity, browser-language resolution, interpolation and human-readable location localization;
 - Smart Fix regression now covers paragraph review eligibility, including same-language grouping, Catalan / Valencian variant choice, conflict rejection, mixed-language rejection and the requirement for contextual evidence;
 - paragraph-grouping regression keeps separate Word paragraphs and different detected languages isolated even when their runs are interleaved by audit ordering/filtering;
