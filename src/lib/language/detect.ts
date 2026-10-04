@@ -201,6 +201,10 @@ export function detectTextLanguage(text: string): LanguageDetection {
   const exactLabel = detectExactLanguageLabel(normalized)
   if (exactLabel) return exactLabel
 
+  if (looksLikeNonProseIdentifier(normalized) || looksLikeSlashSeparatedLabel(normalized)) {
+    return unknownDetection()
+  }
+
   const letterCount = normalized.match(/\p{L}/gu)?.length ?? 0
 
   if (letterCount < 10) {
@@ -328,6 +332,30 @@ export function isLikelyMismatch(
   }
 
   return languageFamily(storedTag) !== languageFamily(detectedTag)
+}
+
+function looksLikeNonProseIdentifier(text: string): boolean {
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(text)) return true
+  if (/^[a-z][a-z0-9+.-]*:\/\/\S+$/iu.test(text)) return true
+  if (/^[^\s/]+\.[a-z]{2,}(?:\/\S*)?$/iu.test(text)) return true
+  return false
+}
+
+function looksLikeSlashSeparatedLabel(text: string): boolean {
+  if (!text.includes('/')) return false
+
+  const parts = text
+    .split('/')
+    .map((part) => part.trim())
+    .filter(Boolean)
+
+  if (parts.length < 2 || parts.length > 4) return false
+
+  return parts.every((part) => {
+    const words = part.match(/\p{L}+/gu) ?? []
+    const letters = part.match(/\p{L}/gu)?.length ?? 0
+    return words.length >= 1 && words.length <= 3 && letters <= 20
+  })
 }
 
 function detectExactLanguageLabel(text: string): LanguageDetection | null {
