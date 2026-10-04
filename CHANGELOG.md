@@ -26,6 +26,7 @@
 
 ### Changed
 
+- CSV/JSON audit reports now emit `detection_source: none` when no language was detected instead of incorrectly labelling undetected fragments as direct detections;
 - a failed attempt to analyse a replacement file no longer destroys the previously valid document session; the existing audit, review decisions and paragraph state remain available while the localized error is reported;
 - explicit Smart Fix review decisions now survive post-repair rescans for fragments that remain actionable, so a high-confidence suggestion the user deliberately unchecked is not silently preselected again on the next pass;
 - the file picker now clears its native selection after capturing the chosen File, allowing the exact same document to be selected again for a fresh audit without reloading the page;

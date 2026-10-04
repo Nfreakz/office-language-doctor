@@ -214,7 +214,7 @@ Each fragment can include:
 - stored language tag;
 - stored-language source;
 - detected language tag;
-- detection source (`direct` or `paragraph-context`);
+- detection source (`direct`, `paragraph-context` or `none` when no language was detected);
 - confidence;
 - audit status;
 - selected repair target;
