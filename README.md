@@ -58,7 +58,7 @@ Version 0.5.0 is the initial public Community Edition baseline under MPL-2.0, wi
 - expanded Word, PowerPoint and OpenDocument format variants;
 - extension- and MIME-preserving repaired downloads;
 - byte-for-byte `vbaProject.bin` preservation checks for DOCM and PPTM;
-- calibrated detection across 24 language families: Catalan/Valencian, Galician, Basque, Spanish, English, French, Portuguese, German, Italian, Dutch, Polish, Romanian, Czech, Swedish, Danish, Norwegian Bokmål, Finnish, Hungarian, Greek, Turkish, Slovak, Slovenian, Croatian and Bulgarian;
+- calibrated detection across 29 language families, covering all 24 official EU languages plus Catalan/Valencian, Galician, Basque, Norwegian Bokmål and Turkish;
 - conservative Smart Fix selection;
 - context-aware Word paragraph detection for short or internally fragmented runs;
 - paragraph-aware Word audit UX that shows one readable paragraph summary and expands the underlying repairable runs only when needed;

@@ -29,6 +29,11 @@ const reliableCases: Array<[string, string, string]> = [
   ['Slovenian', 'Dobrodošli na delovnem srečanju. Hvala za vaše sodelovanje in udeležbo pri tem projektu.', 'sl-SI'],
   ['Croatian', 'Dobrodošli na radni sastanak. Hvala vam na sudjelovanju i suradnji na ovom projektu.', 'hr-HR'],
   ['Bulgarian', 'Добре дошли на работната среща. Благодарим ви за участието и сътрудничеството по този проект.', 'bg-BG'],
+  ['Estonian', 'Tere tulemast töökoosolekule. Täname teid osalemise ja koostöö eest selles projektis.', 'et-EE'],
+  ['Irish', 'Fáilte chuig an gcruinniú oibre. Go raibh maith agaibh as bhur rannpháirtíocht agus bhur gcomhoibriú sa tionscadal seo.', 'ga-IE'],
+  ['Latvian', 'Laipni lūdzam darba sanāksmē. Paldies par jūsu dalību un sadarbību šajā projektā.', 'lv-LV'],
+  ['Lithuanian', 'Sveiki atvykę į darbo susitikimą. Dėkojame už jūsų dalyvavimą ir bendradarbiavimą šiame projekte.', 'lt-LT'],
+  ['Maltese', "Merħba għal-laqgħa ta' ħidma. Grazzi tal-parteċipazzjoni u l-kollaborazzjoni tagħkom f'dan il-proġett.", 'mt-MT'],
 ]
 
 for (const [name, text, expectedTag] of reliableCases) {
@@ -67,6 +72,11 @@ const exactLabels: Array<[string, string]> = [
   ['Slovenščina:', 'sl-SI'],
   ['Hrvatski:', 'hr-HR'],
   ['Български:', 'bg-BG'],
+  ['Eesti:', 'et-EE'],
+  ['Gaeilge:', 'ga-IE'],
+  ['Latviešu:', 'lv-LV'],
+  ['Lietuvių:', 'lt-LT'],
+  ['Malti:', 'mt-MT'],
 ]
 
 for (const [text, expectedTag] of exactLabels) {
@@ -95,6 +105,10 @@ assert.equal(isLikelyMismatch('pl-PL', 'cs-CZ', 'high'), true)
 assert.equal(isLikelyMismatch('sk-SK', 'cs-CZ', 'high'), true)
 assert.equal(isLikelyMismatch('sl-SI', 'hr-HR', 'high'), true)
 assert.equal(isLikelyMismatch('bg-BG', 'el-GR', 'high'), true)
+assert.equal(isLikelyMismatch('et-EE', 'fi-FI', 'high'), true)
+assert.equal(isLikelyMismatch('ga-IE', 'en-GB', 'high'), true)
+assert.equal(isLikelyMismatch('lv-LV', 'lt-LT', 'high'), true)
+assert.equal(isLikelyMismatch('mt-MT', 'it-IT', 'high'), true)
 
 const fixtureEnglish = detectTextLanguage('Office Language Doctor · compatibility fixture')
 assert.notEqual(fixtureEnglish.confidence, 'high')
