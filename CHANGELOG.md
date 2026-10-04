@@ -4,6 +4,9 @@
 
 ### Added
 
+- paragraph-aware Word audit UX that collapses multiple internal runs into one readable paragraph summary while preserving individual run-level review and repair;
+- explicit audit diagnostics for direct detection, paragraph-context detection, conflicting paragraph evidence and stored-language inheritance;
+- `detectionSource` in local CSV/JSON audit reports;
 - context-aware Word detection that can classify short/ambiguous runs from reliable same-paragraph language evidence while keeping repair at individual-run granularity; contextual suggestions are explicitly marked and never auto-preselected;
 - official public custom domain `https://language-doctor.cecolab.cat/`, including canonical, Open Graph, Twitter/X and JSON-LD URLs so shared links use the project social preview image;
 
@@ -13,7 +16,9 @@
 
 ### Validation
 
-- Word regression now covers a real-world proofing-fragmentation pattern where one Catalan sentence is split into eight runs by Word/proofing markup; seven linguistic runs recover Catalan from paragraph context while punctuation remains undetected;
+- paragraph-grouping regression keeps separate Word paragraphs and different detected languages isolated even when their runs are interleaved by audit ordering/filtering;
+- report regression covers direct and paragraph-context `detectionSource` serialization;
+- Word regression now covers paragraph identity metadata in addition to a real-world proofing-fragmentation pattern where one Catalan sentence is split into eight runs by Word/proofing markup; seven linguistic runs recover Catalan from paragraph context while punctuation remains undetected;
 - OTT, OTP and OTS passed a real LibreOffice 25.2.3.2 headless engine round-trip on 2026-10-02;
 - the template round-trip preserved text while changing proofing locale from `en-US` to `ca-ES`;
 - OTS preserved `=SUM(B1:B2)` and its result `42`;
