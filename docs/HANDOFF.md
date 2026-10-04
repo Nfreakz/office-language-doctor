@@ -33,7 +33,7 @@ Version `0.5.0` is the first public Community Edition release in the rebuilt rep
 
 Changes after the release tag must accumulate under Unreleased without automatically changing the package version.
 
-Current Unreleased work includes paragraph-aware Word auditing, explicit paragraph review controls, expanded European language coverage, dedicated near-neighbor detector regressions, ambiguous-fragment safety and a real-world Office fragment corpus. The package version remains 0.5.0.
+Current Unreleased work includes paragraph-aware Word auditing, explicit paragraph review controls, expanded European language coverage, dedicated near-neighbor detector regressions, ambiguous-fragment safety, a real-world Office fragment corpus and synthetic full-document DOCX/PPTX regression. The package version remains 0.5.0.
 
 ## Product scope
 
@@ -295,6 +295,7 @@ Current automated checks:
 - neighboring-language duel regression across Iberian Romance, Czech/Slovak, Croatian/Slovenian, Swedish/Danish/Norwegian, Finnish/Estonian and Latvian/Lithuanian samples;
 - ambiguous-fragment safety covering neutral codes/values, multilingual labels, short title-case/project metadata, compact authorship lines and short reliable-language controls;
 - real-world Office fragment corpus covering document chrome, contact blocks, table content, project names, short titles, headings and footers;
+- synthetic full-document DOCX/PPTX corpus covering location correctness, selective repair, final zero-mismatch repair, text preservation and unrelated binary preservation;
 - DOCX scan + repair, including context-aware recovery for Word paragraphs split into short proofing runs;
 - ODF scan + repair, including exact ODS cell/range coordinates across repeated and merged geometry;
 - variant routing and macro-binary preservation;
