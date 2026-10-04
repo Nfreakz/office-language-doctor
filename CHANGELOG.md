@@ -4,6 +4,8 @@
 
 ### Added
 
+- complete EU official-language coverage by adding Estonian, Irish, Latvian, Lithuanian and Maltese detection/repair targets, bringing the detector to 29 language families;
+- public CA / ES / EN copy now highlights support for all 24 official EU languages instead of listing every detected family inline;
 - third European language coverage pack with Greek, Turkish, Slovak, Slovenian, Croatian and Bulgarian detection/repair targets, including RTF LCID mappings and public CA/ES/EN coverage copy;
 - second European language coverage pack with Danish, Norwegian Bokmål, Finnish and Hungarian detection/repair targets, including RTF LCID support and detector regressions;
 - expanded language detection from 9 to 14 language families by adding Dutch, Polish, Romanian, Czech and Swedish;
@@ -29,6 +31,8 @@
 
 ### Validation
 
+- detector calibration now covers 29 language families, including dedicated long-form samples and exact-label checks for Estonian, Irish, Latvian, Lithuanian and Maltese;
+- RTF regression validates LCID mapping and selected-repair round trips for `et-EE`, `ga-IE`, `lv-LV`, `lt-LT` and `mt-MT`;
 - detector calibration now covers 24 supported language families, with dedicated long-form samples for Greek, Turkish, Slovak, Slovenian, Croatian and Bulgarian;
 - RTF regression now validates LCID mapping and selected-repair round trips for the six third-pack languages;
 - detector calibration now covers 18 supported language families and explicitly checks Nordic-family separation plus Norwegian regional-family matching;

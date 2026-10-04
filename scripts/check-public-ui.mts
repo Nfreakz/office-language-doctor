@@ -18,7 +18,8 @@ for (const expected of [
   'What does it change?',
   'Created and maintained by NeoRS.',
   '17 supported formats',
-  '24 detected language families',
+  '29 detected language families',
+  'all 24 official EU languages',
 ]) {
   assert.ok(html.includes(expected), `Missing public UI content: ${expected}`)
 }

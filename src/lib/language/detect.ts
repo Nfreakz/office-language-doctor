@@ -4,7 +4,7 @@ import type { DetectionConfidence } from '../document/types'
 const DETECTION_CODES = [
   'cat', 'glg', 'eus', 'spa', 'eng', 'fra', 'por', 'deu', 'ita',
   'nld', 'pol', 'ron', 'ces', 'swe', 'dan', 'nob', 'fin', 'hun',
-  'ell', 'tur', 'slk', 'slv', 'hrv', 'bul',
+  'ell', 'tur', 'slk', 'slv', 'hrv', 'bul', 'est', 'gle', 'lav', 'lit', 'mlt',
 ]
 
 const ISO3_TO_TAG: Record<string, string> = {
@@ -32,6 +32,11 @@ const ISO3_TO_TAG: Record<string, string> = {
   slv: 'sl-SI',
   hrv: 'hr-HR',
   bul: 'bg-BG',
+  est: 'et-EE',
+  gle: 'ga-IE',
+  lav: 'lv-LV',
+  lit: 'lt-LT',
+  mlt: 'mt-MT',
 }
 
 const EXACT_LANGUAGE_LABELS: Record<string, string> = {
@@ -98,6 +103,18 @@ const EXACT_LANGUAGE_LABELS: Record<string, string> = {
   'croatian': 'hrv',
   'български': 'bul',
   'bulgarian': 'bul',
+  'eesti': 'est',
+  'estonian': 'est',
+  'gaeilge': 'gle',
+  'irish': 'gle',
+  'latviešu': 'lav',
+  'latviesu': 'lav',
+  'latvian': 'lav',
+  'lietuvių': 'lit',
+  'lietuviu': 'lit',
+  'lithuanian': 'lit',
+  'malti': 'mlt',
+  'maltese': 'mlt',
 }
 
 const DANISH_ANCHORS = new Set([
@@ -216,6 +233,11 @@ export function languageFamily(tag: string | null): string | null {
   if (normalized.startsWith('sl-')) return 'sl'
   if (normalized.startsWith('hr-')) return 'hr'
   if (normalized.startsWith('bg-')) return 'bg'
+  if (normalized.startsWith('et-')) return 'et'
+  if (normalized.startsWith('ga-')) return 'ga'
+  if (normalized.startsWith('lv-')) return 'lv'
+  if (normalized.startsWith('lt-')) return 'lt'
+  if (normalized.startsWith('mt-')) return 'mt'
 
   return normalized
 }

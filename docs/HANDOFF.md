@@ -57,7 +57,7 @@ XLSX is not a proofing-language repair target because SpreadsheetML does not exp
 ## Current capabilities
 
 - stored proofing-language audit;
-- local advisory language detection across 24 language families;
+- local advisory language detection across 29 language families, including all 24 official EU languages;
 - medium/high-confidence mismatch reporting;
 - conservative Smart Fix;
 - context-aware Word paragraph detection for short/ambiguous runs;
@@ -66,7 +66,7 @@ XLSX is not a proofing-language repair target because SpreadsheetML does not exp
 - Catalan / Spanish / English interface localization with a persistent browser-local preference;
 - explicit direct vs paragraph-context detection diagnostics;
 - explicit Catalan vs Valencian choice;
-- Dutch, Polish, Romanian, Czech, Swedish, Danish, Norwegian Bokmål, Finnish, Hungarian, Greek, Turkish, Slovak, Slovenian, Croatian and Bulgarian detection/repair coverage;
+- all 24 official EU languages are available for detection/repair; additional supported families are Catalan/Valencian, Galician, Basque, Norwegian Bokmål and Turkish;
 - human-readable fragment locations;
 - stored-language source diagnostics;
 - audit filters and pagination;
@@ -97,7 +97,7 @@ Exact labels such as `Català:`, `Valencià:`, `Galego:` and `Euskara:` are hand
 
 Galician promotion remains constrained to cases where Franc already ranks Galician first and the configured anchor evidence is present.
 
-Current detected language families: Catalan/Valencian, Galician, Basque, Spanish, English, French, Portuguese, German, Italian, Dutch, Polish, Romanian, Czech, Swedish, Danish, Norwegian Bokmål, Finnish, Hungarian, Greek, Turkish, Slovak, Slovenian, Croatian and Bulgarian. English and Portuguese family matching treats regional variants as the same language for mismatch purposes. Norwegian Bokmål detection uses `nb-NO`, while stored `no-NO` / `nn-NO` tags are treated as the same Norwegian family for mismatch comparison to avoid false regional mismatches.
+Current detected language families: Catalan/Valencian, Galician, Basque, Spanish, English, French, Portuguese, German, Italian, Dutch, Polish, Romanian, Czech, Swedish, Danish, Norwegian Bokmål, Finnish, Hungarian, Greek, Turkish, Slovak, Slovenian, Croatian, Bulgarian, Estonian, Irish, Latvian, Lithuanian and Maltese. This includes every official language of the European Union. English and Portuguese family matching treats regional variants as the same language for mismatch purposes. Norwegian Bokmål detection uses `nb-NO`, while stored `no-NO` / `nn-NO` tags are treated as the same Norwegian family for mismatch comparison to avoid false regional mismatches.
 
 ## Word engine
 
