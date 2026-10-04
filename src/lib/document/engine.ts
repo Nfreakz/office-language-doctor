@@ -85,5 +85,7 @@ export function repairedFileName(file: File, smart: boolean): string {
   }
 
   const suffix = smart ? '-language-smart-fixed' : '-language-fixed'
-  return file.name.replace(new RegExp(`\\.${extension}$`, 'i'), '') + suffix + `.${extension}`
+  const base = file.name.replace(new RegExp(`\\.${extension}$`, 'i'), '')
+  const normalizedBase = base.replace(/(?:-language-(?:smart-)?fixed)+$/i, '')
+  return normalizedBase + suffix + `.${extension}`
 }

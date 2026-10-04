@@ -86,6 +86,9 @@ jobs:
       - name: Check paragraph-aware audit grouping
         run: npm run check:paragraph-audit
 
+      - name: Check audit session scale and repair follow-up
+        run: npm run check:audit-session
+
       - name: Check local audit report exports
         run: npm run check:report
 

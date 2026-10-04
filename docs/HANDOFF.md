@@ -33,7 +33,7 @@ Version `0.5.0` is the first public Community Edition release in the rebuilt rep
 
 Changes after the release tag must accumulate under Unreleased without automatically changing the package version.
 
-Current Unreleased work includes paragraph-aware Word auditing, explicit paragraph review controls, expanded European language coverage, dedicated near-neighbor detector regressions, ambiguous-fragment safety, a real-world Office fragment corpus, synthetic full-document DOCX/PPTX regression and full-document Smart Fix policy validation. The package version remains 0.5.0.
+Current Unreleased work includes paragraph-aware Word auditing, explicit paragraph review controls, expanded European language coverage, dedicated near-neighbor detector regressions, ambiguous-fragment safety, a real-world Office fragment corpus, synthetic full-document DOCX/PPTX regression, full-document Smart Fix policy validation and a reliable post-repair audit session that rescans the repaired copy in-browser. The package version remains 0.5.0.
 
 ## Product scope
 
@@ -69,7 +69,8 @@ XLSX is not a proofing-language repair target because SpreadsheetML does not exp
 - all 24 official EU languages are available for detection/repair; additional supported families are Catalan/Valencian, Galician, Basque, Norwegian Bokmål and Turkish;
 - human-readable fragment locations;
 - stored-language source diagnostics;
-- audit filters and pagination;
+- audit filters and bounded pagination at 10 / 25 / 50 / 100 visible items, while CSV/JSON export still covers the full document;
+- repaired copies are immediately rescanned in-browser so the active audit, Smart Fix state and exported report reflect the repaired file without a manual re-upload;
 - selected-fragment repair;
 - safe global remapping when mixed-language content is not detected;
 - extension/MIME-preserving repaired downloads;
@@ -262,6 +263,7 @@ The visit counter is a direct HitsCounter.dev image request:
 
 - `src/lib/document/types.ts`: format-neutral types
 - `src/lib/document/engine.ts`: routes PPTX / DOCX / ODT / ODP / ODS / RTF
+- `src/lib/document/audit-view.ts`: bounded audit pagination and post-repair view-state rules
 - `src/lib/language/detect.ts`: shared advisory detector
 - `src/lib/language/smart-fix.ts`: Smart Fix policy
 - `src/lib/pptx/*`: PowerPoint OOXML
@@ -304,6 +306,7 @@ Current automated checks:
 - fragment diagnostics labels;
 - CA / ES / EN interface localization and location-label localization;
 - paragraph-aware audit grouping and paragraph/language isolation;
+- large-audit session regression covering 12,000 fragments, bounded pagination, post-repair filter fallback and iterative repaired-file naming;
 - CSV/JSON audit report serialization, including detection source;
 - RTF scan + repair;
 - public UI identity, trust links, sample asset and logo;
@@ -336,7 +339,8 @@ Version 0.5.0 is the first public Community Edition release in the rebuilt repos
 ## Remaining validation / next steps
 
 1. Optional: perform a visual/manual GUI pass for OTT / OTP / OTS. Real LibreOffice 25.2.3.2 engine round-trip validation is complete.
-2. Keep XLSX audit-only work separate from metadata repair.
+2. When a genuinely large real-world document is available, do one browser/device manual pass to complement the 12,000-fragment automated scale regression.
+3. Keep XLSX audit-only work separate from metadata repair.
 
 ## Historical ODS fixture note
 

@@ -9,6 +9,7 @@ import {
 } from '../src/lib/language/smart-fix.ts'
 import { patchPowerPointFragments } from '../src/lib/pptx/patch.ts'
 import { scanPowerPoint } from '../src/lib/pptx/scan.ts'
+import { buildAuditReport } from '../src/lib/report/audit.ts'
 
 const WORD_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 const PPTX_MIME = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
@@ -195,6 +196,10 @@ async function checkWordSmartFix() {
   assert.equal(after.likelyMismatches, 10)
   assertTextsPreserved(before.fragments, after.fragments)
 
+  const repairedReport = buildAuditReport(after)
+  assert.equal(repairedReport.document.likelyMismatches, 10)
+  assert.equal(repairedReport.fragments.filter((fragment) => fragment.status === 'mismatch').length, 10)
+
   assert.ok(findAllByText(after.fragments, basqueHigh).every((fragment) => fragment.storedTag === 'eu-ES'))
   assert.ok(findAllByText(after.fragments, portugueseMedium).every((fragment) => fragment.storedTag === 'en-US'))
   assert.equal(findAllByText(after.fragments, catalanChoice)[0].storedTag, 'en-US')
@@ -299,6 +304,10 @@ async function checkPowerPointSmartFix() {
   const after = await scanPowerPoint(repairedFile)
   assert.equal(after.likelyMismatches, 4)
   assertTextsPreserved(before.fragments, after.fragments)
+
+  const repairedReport = buildAuditReport(after)
+  assert.equal(repairedReport.document.likelyMismatches, 4)
+  assert.equal(repairedReport.fragments.filter((fragment) => fragment.status === 'mismatch').length, 4)
 
   assert.ok(findAllByText(after.fragments, basqueHigh).every((fragment) => fragment.storedTag === 'eu-ES'))
   assert.ok(findAllByText(after.fragments, portugueseMedium).every((fragment) => fragment.storedTag === 'en-US'))

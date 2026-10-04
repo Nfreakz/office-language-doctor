@@ -80,6 +80,8 @@ for (const locale of ['ca', 'es', 'en']) {
 assert.ok(html.includes('data-i18n="hero.title"'), 'Hero title must participate in UI localization')
 assert.ok(html.includes('data-i18n="audit.title"'), 'Audit UI must participate in localization')
 assert.ok(html.includes('data-i18n-aria-label="locale.aria"'), 'Locale switcher accessible label missing')
+assert.ok(html.includes('<option value="100">100</option>'), 'Safe 100-item audit page size missing')
+assert.ok(!html.includes('<option value="all"'), 'Unbounded audit page rendering must stay disabled')
 const headerStart = html.indexOf('<header class="hero">')
 const headerEnd = html.indexOf('</header>', headerStart)
 const footerStart = html.indexOf('<footer class="site-footer">')
