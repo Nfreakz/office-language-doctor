@@ -130,6 +130,11 @@ const fragmentedFile = new File([fragmentedBytes], 'Word_fragmented_by_proofing.
 const fragmented = await scanWord(fragmentedFile)
 
 assert.equal(fragmented.totalTextFragments, 8)
+assert.equal(new Set(fragmented.fragments.map((fragment) => fragment.paragraphGroupId)).size, 1)
+assert.ok(fragmented.fragments.every((fragment) => fragment.paragraphIndex === 0))
+assert.ok(fragmented.fragments.every(
+  (fragment) => fragment.paragraphText === 'Benvinguts a la sessió. Aquesta prova valida el document.',
+))
 const punctuation = fragmented.fragments.find((fragment) => fragment.text === '.')
 assert.ok(punctuation)
 assert.equal(punctuation.detectedTag, null)
