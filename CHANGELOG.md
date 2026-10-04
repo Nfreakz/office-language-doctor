@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-No unreleased changes after the 0.6.0 publication candidate.
+No unreleased product changes after the 0.6.0 release.
 
 ## 0.6.0 · Community Edition — 2026-10-04
 
