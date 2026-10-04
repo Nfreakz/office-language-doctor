@@ -25,6 +25,7 @@ import {
 import { auditReportFileName, auditReportToCsv, auditReportToJson, buildAuditReport } from './lib/report/audit'
 import {
   applyStaticTranslations,
+  documentErrorMessage,
   formatLabel,
   formatNumber,
   initLocale,
@@ -207,7 +208,7 @@ async function analyseFile(file: File): Promise<void> {
     currentScan = null
     fragmentFixState.clear()
     expandedParagraphGroups.clear()
-    status.textContent = error instanceof Error ? error.message : t('status.analyzeError')
+    status.textContent = documentErrorMessage(error, 'status.analyzeError')
   } finally {
     setBusy(false)
   }
@@ -1014,7 +1015,7 @@ async function repairWholeDocument(): Promise<void> {
       status.textContent = `${done} ${t('repair.recheckError')}`
     }
   } catch (error) {
-    status.textContent = error instanceof Error ? error.message : t('repair.globalError')
+    status.textContent = documentErrorMessage(error, 'repair.globalError')
   } finally {
     setBusy(false)
   }
@@ -1046,7 +1047,7 @@ async function repairSelectedFragments(): Promise<void> {
       status.textContent = `${done} ${t('repair.recheckError')}`
     }
   } catch (error) {
-    status.textContent = error instanceof Error ? error.message : t('repair.selectedError')
+    status.textContent = documentErrorMessage(error, 'repair.selectedError')
   } finally {
     setBusy(false)
   }

@@ -26,6 +26,7 @@
 
 ### Changed
 
+- recoverable document/package errors now use stable internal error codes and are localized at the UI boundary in Catalan, Spanish and English; unknown library exceptions fall back to localized generic messages instead of leaking raw technical English;
 - audit page sizes are bounded to 10 / 25 / 50 / 100 visible items; full CSV/JSON export remains available for the complete document, avoiding an accidental thousands-row DOM render;
 - iterative repair filenames no longer stack repeated `-language-fixed` / `-language-smart-fixed` suffixes;
 - short title-case metadata and compact authorship lines are treated conservatively as non-prose; Spanish and Portuguese long-form rescues use multiple language-specific anchors to recover reliable Office headings without lowering global thresholds;
@@ -36,6 +37,7 @@
 
 ### Validation
 
+- localized-error regression covers every document error code in CA/ES/EN plus corrupt DOCX, PPTX, ODF and RTF inputs and confirms unknown exceptions do not leak their raw message;
 - audit-session scale regression exercises 12,000 Word-style fragments, paragraph grouping, bounded pagination, post-repair filter fallback and iterative repaired-file naming;
 - full-document Smart Fix regression now also serializes the repaired scan into the audit report, closing the analyse → review → repair → report loop;
 - full-document Smart Fix regression now scans synthetic DOCX/PPTX packages and proves that only high-confidence direct non-Catalan/Valencian mismatches are automatically selected; medium-confidence Portuguese, Catalan/Valencian choices, Word paragraph-context suggestions, correct-language text and non-linguistic values remain untouched after the Smart Fix pass;

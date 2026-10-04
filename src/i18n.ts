@@ -1,3 +1,5 @@
+import { isDocumentError, type DocumentErrorCode } from './lib/document/errors'
+
 export type UiLocale = 'en' | 'es' | 'ca'
 
 type Variables = Record<string, string | number>
@@ -83,6 +85,19 @@ const EN = {
   'status.analyzing': 'Analysing {file}…',
   'status.analyzed': '{file} analysed locally as {format}. Nothing was uploaded.',
   'status.analyzeError': 'Could not analyse this document.',
+  'error.unsupportedFormat': 'Choose a supported Word, PowerPoint, OpenDocument or RTF file.',
+  'error.unsupportedWordFormat': 'Choose a supported Word file: DOCX, DOCM, DOTX or DOTM.',
+  'error.unsupportedPowerPointFormat': 'Choose a supported PowerPoint file: PPTX, PPTM, POTX, POTM, PPSX or PPSM.',
+  'error.unsupportedOdfFormat': 'Choose a supported OpenDocument file: ODT, OTT, ODP, OTP, ODS or OTS.',
+  'error.unsupportedRtfFormat': 'Choose an RTF file.',
+  'error.invalidWordPackage': 'This file is not a valid or readable Word document package.',
+  'error.invalidPowerPointPackage': 'This file is not a valid or readable PowerPoint document package.',
+  'error.invalidOdfPackage': 'This file is not a valid or readable OpenDocument package.',
+  'error.odfMimetypeMismatch': 'The file extension does not match its internal OpenDocument type ({mime}).',
+  'error.odfContentMissing': 'The OpenDocument file is missing its content.xml document content.',
+  'error.invalidRtfDocument': 'This file is not a valid or readable RTF document.',
+  'error.rtfLcidMissing': 'RTF repair is not configured for the target language {tag}.',
+  'error.odfStyleInsertionFailed': 'The OpenDocument file does not contain a safe location for the repaired language style.',
   'summary.storedTags.one': '{format} · 1 stored language tag',
   'summary.storedTags.many': '{format} · {count} stored language tags',
   'stored.noTags': 'No proofing-language tags were found on text fragments in this document.',
@@ -271,6 +286,19 @@ const ES: Record<MessageKey, string> = {
   'status.analyzing': 'Analizando {file}…',
   'status.analyzed': '{file} analizado localmente como {format}. No se ha subido nada.',
   'status.analyzeError': 'No se ha podido analizar este documento.',
+  'error.unsupportedFormat': 'Elige un archivo compatible de Word, PowerPoint, OpenDocument o RTF.',
+  'error.unsupportedWordFormat': 'Elige un archivo Word compatible: DOCX, DOCM, DOTX o DOTM.',
+  'error.unsupportedPowerPointFormat': 'Elige un archivo PowerPoint compatible: PPTX, PPTM, POTX, POTM, PPSX o PPSM.',
+  'error.unsupportedOdfFormat': 'Elige un archivo OpenDocument compatible: ODT, OTT, ODP, OTP, ODS u OTS.',
+  'error.unsupportedRtfFormat': 'Elige un archivo RTF.',
+  'error.invalidWordPackage': 'Este archivo no es un documento Word válido o no se puede leer.',
+  'error.invalidPowerPointPackage': 'Este archivo no es un documento PowerPoint válido o no se puede leer.',
+  'error.invalidOdfPackage': 'Este archivo no es un paquete OpenDocument válido o no se puede leer.',
+  'error.odfMimetypeMismatch': 'La extensión no coincide con el tipo OpenDocument interno ({mime}).',
+  'error.odfContentMissing': 'Al archivo OpenDocument le falta el contenido del documento content.xml.',
+  'error.invalidRtfDocument': 'Este archivo no es un documento RTF válido o no se puede leer.',
+  'error.rtfLcidMissing': 'La reparación RTF no está configurada para el idioma de destino {tag}.',
+  'error.odfStyleInsertionFailed': 'El archivo OpenDocument no contiene una ubicación segura para el estilo de idioma reparado.',
   'summary.storedTags.one': '{format} · 1 etiqueta de idioma guardada',
   'summary.storedTags.many': '{format} · {count} etiquetas de idioma guardadas',
   'stored.noTags': 'No se han encontrado etiquetas de idioma de corrección en los fragmentos de texto de este documento.',
@@ -457,6 +485,19 @@ const CA: Record<MessageKey, string> = {
   'status.analyzing': 'Analitzant {file}…',
   'status.analyzed': "{file} analitzat localment com a {format}. No s'ha pujat res.",
   'status.analyzeError': "No s'ha pogut analitzar aquest document.",
+  'error.unsupportedFormat': 'Tria un fitxer compatible de Word, PowerPoint, OpenDocument o RTF.',
+  'error.unsupportedWordFormat': 'Tria un fitxer Word compatible: DOCX, DOCM, DOTX o DOTM.',
+  'error.unsupportedPowerPointFormat': 'Tria un fitxer PowerPoint compatible: PPTX, PPTM, POTX, POTM, PPSX o PPSM.',
+  'error.unsupportedOdfFormat': 'Tria un fitxer OpenDocument compatible: ODT, OTT, ODP, OTP, ODS o OTS.',
+  'error.unsupportedRtfFormat': 'Tria un fitxer RTF.',
+  'error.invalidWordPackage': 'Aquest fitxer no és un document Word vàlid o no es pot llegir.',
+  'error.invalidPowerPointPackage': 'Aquest fitxer no és un document PowerPoint vàlid o no es pot llegir.',
+  'error.invalidOdfPackage': 'Aquest fitxer no és un paquet OpenDocument vàlid o no es pot llegir.',
+  'error.odfMimetypeMismatch': "L'extensió no coincideix amb el tipus OpenDocument intern ({mime}).",
+  'error.odfContentMissing': "Al fitxer OpenDocument li falta el contingut del document content.xml.",
+  'error.invalidRtfDocument': 'Aquest fitxer no és un document RTF vàlid o no es pot llegir.',
+  'error.rtfLcidMissing': "La reparació RTF no està configurada per a la llengua de destinació {tag}.",
+  'error.odfStyleInsertionFailed': "El fitxer OpenDocument no conté una ubicació segura per a l'estil de llengua reparat.",
   'summary.storedTags.one': '{format} · 1 etiqueta de llengua desada',
   'summary.storedTags.many': '{format} · {count} etiquetes de llengua desades',
   'stored.noTags': "No s'han trobat etiquetes de llengua de correcció als fragments de text d'aquest document.",
@@ -632,6 +673,32 @@ export function t(key: MessageKey, variables: Variables = {}, locale = currentLo
   }
 
   return message
+}
+
+
+const DOCUMENT_ERROR_MESSAGE_KEYS: Record<DocumentErrorCode, MessageKey> = {
+  'unsupported-format': 'error.unsupportedFormat',
+  'unsupported-word-format': 'error.unsupportedWordFormat',
+  'unsupported-powerpoint-format': 'error.unsupportedPowerPointFormat',
+  'unsupported-odf-format': 'error.unsupportedOdfFormat',
+  'unsupported-rtf-format': 'error.unsupportedRtfFormat',
+  'invalid-word-package': 'error.invalidWordPackage',
+  'invalid-powerpoint-package': 'error.invalidPowerPointPackage',
+  'invalid-odf-package': 'error.invalidOdfPackage',
+  'odf-mimetype-mismatch': 'error.odfMimetypeMismatch',
+  'odf-content-missing': 'error.odfContentMissing',
+  'invalid-rtf-document': 'error.invalidRtfDocument',
+  'rtf-lcid-missing': 'error.rtfLcidMissing',
+  'odf-style-insertion-failed': 'error.odfStyleInsertionFailed',
+}
+
+export function documentErrorMessage(
+  error: unknown,
+  fallbackKey: MessageKey,
+  locale = currentLocale,
+): string {
+  if (!isDocumentError(error)) return t(fallbackKey, {}, locale)
+  return t(DOCUMENT_ERROR_MESSAGE_KEYS[error.code], { ...error.details }, locale)
 }
 
 export function formatNumber(value: number, locale = currentLocale): string {
