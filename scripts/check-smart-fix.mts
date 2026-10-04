@@ -43,6 +43,15 @@ const lowConfidence = fragment({ confidence: 'low' })
 assert.equal(isReliableMismatch(lowConfidence), false)
 assert.equal(shouldPreselectSmartFix(lowConfidence), false)
 
+const contextualHigh = fragment({
+  detectedIso3: 'deu',
+  detectedTag: 'de-DE',
+  confidence: 'high',
+  detectionSource: 'paragraph-context',
+})
+assert.equal(isReliableMismatch(contextualHigh), true)
+assert.equal(shouldPreselectSmartFix(contextualHigh), false)
+
 const matching = fragment({ mismatch: false })
 assert.equal(isReliableMismatch(matching), false)
 assert.equal(shouldPreselectSmartFix(matching), false)

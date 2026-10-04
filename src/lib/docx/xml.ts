@@ -13,6 +13,8 @@ export interface ExtractedWordTextFragment {
   storedTag: string | null
   storedSource: StoredLanguageSource
   runIndex: number
+  paragraphIndex: number
+  paragraphText: string
 }
 
 export function extractWordTextFragments(
@@ -21,9 +23,15 @@ export function extractWordTextFragments(
 ): ExtractedWordTextFragment[] {
   const fragments: ExtractedWordTextFragment[] = []
   let runIndex = 0
+  let paragraphIndex = 0
 
   for (const paragraphMatch of xml.matchAll(PARAGRAPH)) {
     const paragraphXml = paragraphMatch[0]
+    const paragraphText = Array.from(paragraphXml.matchAll(TEXT))
+      .map((match) => decodeXmlText(match[1] ?? ''))
+      .join('')
+      .replace(/\s+/g, ' ')
+      .trim()
     const pPr = paragraphXml.match(PARAGRAPH_PROPERTIES)?.[0] ?? ''
     const paragraphDirectLanguage = readLanguageFromProperties(pPr)
     const paragraphStyleId = readValFromTag(pPr.match(/<w:pStyle\b[^>]*>/i)?.[0] ?? '')
@@ -55,11 +63,15 @@ export function extractWordTextFragments(
           storedTag: resolved.tag,
           storedSource: resolved.source,
           runIndex,
+          paragraphIndex,
+          paragraphText,
         })
       }
 
       runIndex += 1
     }
+
+    paragraphIndex += 1
   }
 
   return fragments

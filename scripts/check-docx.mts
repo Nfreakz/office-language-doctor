@@ -91,4 +91,62 @@ assert.deepEqual(after.fragments.map((fragment) => fragment.storedTag), [
 ])
 assert.deepEqual(after.fragments.map((fragment) => fragment.text), before.fragments.map((fragment) => fragment.text))
 
-console.log('DOCX scan + fragment repair: OK')
+const fragmentedDocumentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:r><w:rPr><w:lang w:val="en-GB"/></w:rPr><w:t>Benvinguts</w:t></w:r>
+      <w:proofErr w:type="spellStart"/>
+      <w:r><w:rPr><w:lang w:val="en-GB"/></w:rPr><w:t xml:space="preserve"> a la</w:t></w:r>
+      <w:proofErr w:type="spellEnd"/>
+      <w:r><w:rPr><w:lang w:val="en-GB"/></w:rPr><w:t xml:space="preserve"> sessió</w:t></w:r>
+      <w:r><w:rPr><w:lang w:val="en-GB"/></w:rPr><w:t>.</w:t></w:r>
+      <w:r><w:rPr><w:lang w:val="en-GB"/></w:rPr><w:t xml:space="preserve"> Aquesta</w:t></w:r>
+      <w:r><w:rPr><w:lang w:val="en-GB"/></w:rPr><w:t xml:space="preserve"> prova</w:t></w:r>
+      <w:r><w:rPr><w:lang w:val="en-GB"/></w:rPr><w:t xml:space="preserve"> valida</w:t></w:r>
+      <w:r><w:rPr><w:lang w:val="en-GB"/></w:rPr><w:t xml:space="preserve"> el document.</w:t></w:r>
+    </w:p>
+    <w:sectPr/>
+  </w:body>
+</w:document>`
+
+const fragmentedZip = new JSZip()
+fragmentedZip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
+</Types>`)
+fragmentedZip.file('_rels/.rels', `<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`)
+fragmentedZip.file('word/document.xml', fragmentedDocumentXml)
+fragmentedZip.file('word/styles.xml', stylesXml)
+
+const fragmentedBytes = await fragmentedZip.generateAsync({ type: 'uint8array' })
+const fragmentedFile = new File([fragmentedBytes], 'Word_fragmented_by_proofing.docx', { type: mime })
+const fragmented = await scanWord(fragmentedFile)
+
+assert.equal(fragmented.totalTextFragments, 8)
+const punctuation = fragmented.fragments.find((fragment) => fragment.text === '.')
+assert.ok(punctuation)
+assert.equal(punctuation.detectedTag, null)
+assert.equal(punctuation.detectionSource, 'direct')
+assert.equal(punctuation.mismatch, false)
+
+const contextualFragments = fragmented.fragments.filter((fragment) => fragment.text !== '.')
+assert.equal(contextualFragments.length, 7)
+for (const fragment of contextualFragments) {
+  assert.equal(fragment.detectedTag, 'ca-ES', `Expected Catalan context for "${fragment.text}"`)
+  assert.ok(
+    fragment.confidence === 'high' || fragment.confidence === 'medium',
+    `Expected reliable paragraph context for "${fragment.text}"`,
+  )
+  assert.equal(fragment.detectionSource, 'paragraph-context')
+  assert.equal(fragment.mismatch, true)
+}
+assert.equal(fragmented.likelyMismatches, 7)
+
+console.log('DOCX scan + fragment repair + paragraph context: OK')

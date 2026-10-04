@@ -19,6 +19,7 @@ export function shouldPreselectSmartFix(fragment: TextFragment): boolean {
   return Boolean(
     isReliableMismatch(fragment) &&
     fragment.confidence === 'high' &&
+    fragment.detectionSource !== 'paragraph-context' &&
     !requiresVariantChoice(fragment),
   )
 }

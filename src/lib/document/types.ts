@@ -1,5 +1,6 @@
 export type DocumentFormat = 'pptx' | 'docx' | 'odt' | 'odp' | 'ods' | 'rtf'
 export type DetectionConfidence = 'high' | 'medium' | 'low' | 'unknown'
+export type DetectionSource = 'direct' | 'paragraph-context'
 export type StoredLanguageSource =
   | 'run'
   | 'paragraph-default'
@@ -30,6 +31,7 @@ export interface TextFragment {
   detectedIso3: string | null
   detectedTag: string | null
   confidence: DetectionConfidence
+  detectionSource?: DetectionSource
   score: number | null
   margin: number | null
   mismatch: boolean

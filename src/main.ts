@@ -381,8 +381,12 @@ function createFragmentRow(fragment: TextFragment): HTMLTableRowElement {
   if (fragment.detectedTag) {
     const confidence = fragment.confidence === 'unknown'
       ? ''
-      : `<small>${escapeHtml(fragment.confidence)} confidence</small>`
+      : `<small>${escapeHtml(fragment.confidence)} confidence${fragment.detectionSource === 'paragraph-context' ? ' · paragraph context' : ''}</small>`
     detectedCell.innerHTML = `<span class="language-name">${escapeHtml(detectedLanguageLabel(fragment.detectedTag))}</span>${confidence}`
+
+    if (fragment.detectionSource === 'paragraph-context') {
+      detectedCell.title = 'Language inferred from surrounding text in the same Word paragraph. Review this suggestion before repairing the individual fragment.'
+    }
   } else {
     detectedCell.innerHTML = '<span class="muted">Too short / non-linguistic</span>'
   }
@@ -393,6 +397,8 @@ function createFragmentRow(fragment: TextFragment): HTMLTableRowElement {
   badge.textContent = statusInfo.label
   if (isUndetectedFragment(fragment)) {
     badge.title = 'There is not enough linguistic text to identify a language safely. This fragment will be left unchanged.'
+  } else if (fragment.detectionSource === 'paragraph-context') {
+    badge.title = 'Detected from the surrounding Word paragraph because this fragment is too short or ambiguous on its own. Contextual fixes require review.'
   }
   statusCell.append(badge)
 
