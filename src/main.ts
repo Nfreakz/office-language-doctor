@@ -135,6 +135,7 @@ onLocaleChange(() => {
 populateLanguageSelect(globalLanguage, '')
 fileInput.addEventListener('change', () => {
   const file = fileInput.files?.[0]
+  fileInput.value = ''
   if (file) void analyseFile(file)
 })
 

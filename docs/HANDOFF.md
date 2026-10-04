@@ -72,6 +72,7 @@ XLSX is not a proofing-language repair target because SpreadsheetML does not exp
 - audit filters and bounded pagination at 10 / 25 / 50 / 100 visible items, while CSV/JSON export still covers the full document;
 - repaired copies are immediately rescanned in-browser so the active audit, Smart Fix state and exported report reflect the repaired file without a manual re-upload;
 - analysis and repair operations are exclusive in the browser UI; drag-and-drop remains intercepted while busy so a second file cannot start an overlapping scan or fall through to browser default file handling;
+- the native file input is reset immediately after capturing the selected File so the same document can be selected again for a fresh audit without a page reload;
 - Word, PowerPoint, OpenDocument and RTF detection loops cooperatively yield after sustained CPU slices so large documents do not monopolize the browser event loop;
 - document/package failures use stable engine error codes and localized CA / ES / EN UI messages; unexpected library errors fall back to a localized generic message instead of exposing raw technical text;
 - selected-fragment repair;
