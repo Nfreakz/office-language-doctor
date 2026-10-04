@@ -6,6 +6,7 @@ import { patchPowerPoint, patchPowerPointFragments } from '../pptx/patch'
 import { scanPowerPoint } from '../pptx/scan'
 import { patchRtf, patchRtfFragments } from '../rtf/patch'
 import { scanRtf } from '../rtf/scan'
+import { DocumentError } from './errors'
 import type { DocumentFormat, FragmentFix, PatchResult, ScanResult } from './types'
 
 const FORMAT_BY_EXTENSION: Record<string, DocumentFormat> = {
@@ -39,7 +40,7 @@ export function supportedFileExtension(fileName: string): string | null {
 export function detectDocumentFormat(file: File): DocumentFormat {
   const extension = supportedFileExtension(file.name)
   if (!extension) {
-    throw new Error('Choose a supported Word, PowerPoint, OpenDocument or RTF file.')
+    throw new DocumentError('unsupported-format')
   }
   return FORMAT_BY_EXTENSION[extension]
 }
@@ -80,8 +81,7 @@ export async function patchDocumentFragments(
 export function repairedFileName(file: File, smart: boolean): string {
   const extension = supportedFileExtension(file.name)
   if (!extension) {
-    detectDocumentFormat(file)
-    throw new Error('Unsupported file extension.')
+    throw new DocumentError('unsupported-format')
   }
 
   const suffix = smart ? '-language-smart-fixed' : '-language-fixed'

@@ -1,4 +1,5 @@
 import JSZip from 'jszip'
+import { DocumentError } from '../document/errors'
 
 const POWERPOINT_MIME_BY_EXTENSION: Record<string, string> = {
   pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
@@ -19,9 +20,7 @@ const CONTENT_PART_PATTERNS = [
 function powerPointExtension(file: File): string {
   const extension = file.name.toLowerCase().split('.').pop() ?? ''
   if (!POWERPOINT_MIME_BY_EXTENSION[extension]) {
-    throw new Error(
-      'Please choose a supported PowerPoint file (.pptx, .pptm, .potx, .potm, .ppsx or .ppsm).',
-    )
+    throw new DocumentError('unsupported-powerpoint-format')
   }
   return extension
 }
@@ -33,9 +32,15 @@ export function powerPointMimeForFile(file: File): string {
 export async function loadPowerPoint(file: File): Promise<JSZip> {
   powerPointExtension(file)
 
-  const zip = await JSZip.loadAsync(file)
+  let zip: JSZip
+  try {
+    zip = await JSZip.loadAsync(file)
+  } catch {
+    throw new DocumentError('invalid-powerpoint-package')
+  }
+
   if (!zip.file('[Content_Types].xml') || !zip.file('ppt/presentation.xml')) {
-    throw new Error('This file does not look like a valid PowerPoint OOXML package.')
+    throw new DocumentError('invalid-powerpoint-package')
   }
 
   return zip

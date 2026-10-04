@@ -1,4 +1,5 @@
 import JSZip from 'jszip'
+import { DocumentError } from '../document/errors'
 import type { DocumentFormat } from '../document/types'
 
 type OdfFormat = 'odt' | 'odp' | 'ods'
@@ -21,20 +22,26 @@ export async function loadOdf(file: File): Promise<{ zip: JSZip; format: OdfForm
   const extension = file.name.toLowerCase().split('.').pop() ?? ''
   const variant = ODF_BY_EXTENSION[extension]
   if (!variant) {
-    throw new Error('Please choose a supported OpenDocument file (.odt, .ott, .odp, .otp, .ods or .ots).')
+    throw new DocumentError('unsupported-odf-format')
   }
 
-  const zip = await JSZip.loadAsync(file)
+  let zip: JSZip
+  try {
+    zip = await JSZip.loadAsync(file)
+  } catch {
+    throw new DocumentError('invalid-odf-package')
+  }
+
   const mimetypeEntry = zip.file('mimetype')
   const contentEntry = zip.file('content.xml')
 
   if (!mimetypeEntry || !contentEntry) {
-    throw new Error('This file does not look like a valid OpenDocument package.')
+    throw new DocumentError('invalid-odf-package')
   }
 
   const mime = (await mimetypeEntry.async('string')).trim()
   if (mime !== variant.mime) {
-    throw new Error(`The file extension and OpenDocument mimetype do not match (${mime}).`)
+    throw new DocumentError('odf-mimetype-mismatch', { mime })
   }
 
   return { zip, format: variant.format, mime }
@@ -42,7 +49,7 @@ export async function loadOdf(file: File): Promise<{ zip: JSZip; format: OdfForm
 
 export async function getOdfContentXml(zip: JSZip): Promise<string> {
   const entry = zip.file('content.xml')
-  if (!entry) throw new Error('OpenDocument content.xml is missing.')
+  if (!entry) throw new DocumentError('odf-content-missing')
   return entry.async('string')
 }
 

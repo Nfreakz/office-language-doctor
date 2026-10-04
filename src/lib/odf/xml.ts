@@ -6,6 +6,7 @@ import {
   parseOdfLanguageContext,
   resolveOdfStyleLanguage,
 } from './styles'
+import { DocumentError } from '../document/errors'
 import type { StoredLanguageSource } from '../document/types'
 
 const PARAGRAPH = /<text:p\b[^>]*>[\s\S]*?<\/text:p>/g
@@ -293,7 +294,7 @@ export function replaceOdfFragmentLanguages(
         `<office:automatic-styles>${insertion}</office:automatic-styles><office:body`,
       )
     } else {
-      throw new Error('Could not insert OpenDocument automatic styles.')
+      throw new DocumentError('odf-style-insertion-failed')
     }
   }
 

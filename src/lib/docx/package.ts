@@ -1,4 +1,5 @@
 import JSZip from 'jszip'
+import { DocumentError } from '../document/errors'
 
 const WORD_MIME_BY_EXTENSION: Record<string, string> = {
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -19,7 +20,7 @@ const CONTENT_PART_PATTERNS = [
 function wordExtension(file: File): string {
   const extension = file.name.toLowerCase().split('.').pop() ?? ''
   if (!WORD_MIME_BY_EXTENSION[extension]) {
-    throw new Error('Please choose a supported Word file (.docx, .docm, .dotx or .dotm).')
+    throw new DocumentError('unsupported-word-format')
   }
   return extension
 }
@@ -31,9 +32,15 @@ export function wordMimeForFile(file: File): string {
 export async function loadWord(file: File): Promise<JSZip> {
   wordExtension(file)
 
-  const zip = await JSZip.loadAsync(file)
+  let zip: JSZip
+  try {
+    zip = await JSZip.loadAsync(file)
+  } catch {
+    throw new DocumentError('invalid-word-package')
+  }
+
   if (!zip.file('[Content_Types].xml') || !zip.file('word/document.xml')) {
-    throw new Error('This file does not look like a valid Word OOXML package.')
+    throw new DocumentError('invalid-word-package')
   }
 
   return zip

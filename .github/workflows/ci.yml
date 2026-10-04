@@ -83,6 +83,9 @@ jobs:
       - name: Check interface localization
         run: npm run check:i18n
 
+      - name: Check localized document errors
+        run: npm run check:user-errors
+
       - name: Check paragraph-aware audit grouping
         run: npm run check:paragraph-audit
 

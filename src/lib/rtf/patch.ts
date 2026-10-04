@@ -1,3 +1,4 @@
+import { DocumentError } from '../document/errors'
 import type { FragmentFix, PatchResult } from '../document/types'
 import { generateRtf, loadRtf } from './package'
 import { extractRtfTextFragments } from './parser'
@@ -47,7 +48,7 @@ function patchRtfSource(source: string, fixes: readonly FragmentFix[]): PatchRes
 
     const lcid = rtfTagToLcid(fix.targetTag)
     if (lcid == null) {
-      throw new Error(`RTF does not have a configured LCID for ${fix.targetTag}.`)
+      throw new DocumentError('rtf-lcid-missing', { tag: fix.targetTag })
     }
 
     const raw = source.slice(fragment.rawStart, fragment.rawEnd)
