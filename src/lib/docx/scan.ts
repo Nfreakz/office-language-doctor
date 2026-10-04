@@ -1,4 +1,4 @@
-import { detectTextLanguage, isLikelyMismatch } from '../language/detect'
+import { detectTextLanguage, isLikelyMismatch, languageFamily, type LanguageDetection } from '../language/detect'
 import { getWordContentXmlParts, getWordStylesXml, loadWord } from './package'
 import { parseWordLanguageContext } from './styles'
 import { extractWordTextFragments } from './xml'
@@ -35,6 +35,39 @@ export async function scanWord(file: File): Promise<ScanResult> {
 
     const xml = await entry.async('string')
     const extracted = extractWordTextFragments(xml, context)
+    const directDetections = new Map(
+      extracted.map((raw) => [raw.runIndex, detectTextLanguage(raw.text)]),
+    )
+    const paragraphGroups = new Map<number, typeof extracted>()
+
+    for (const raw of extracted) {
+      const group = paragraphGroups.get(raw.paragraphIndex) ?? []
+      group.push(raw)
+      paragraphGroups.set(raw.paragraphIndex, group)
+    }
+
+    const paragraphContexts = new Map<number, {
+      detection: LanguageDetection
+      usable: boolean
+    }>()
+
+    for (const [paragraphIndex, group] of paragraphGroups) {
+      const detection = detectTextLanguage(group[0]?.paragraphText ?? '')
+      const contextFamily = languageFamily(detection.tag)
+      const usable = group.length > 1 &&
+        isReliableDetection(detection) &&
+        Boolean(contextFamily) &&
+        !group.some((raw) => {
+          const direct = directDetections.get(raw.runIndex)
+          return Boolean(
+            direct &&
+            isReliableDetection(direct) &&
+            languageFamily(direct.tag) !== contextFamily,
+          )
+        })
+
+      paragraphContexts.set(paragraphIndex, { detection, usable })
+    }
 
     for (const raw of extracted) {
       if (raw.storedTag) {
@@ -49,7 +82,18 @@ export async function scanWord(file: File): Promise<ScanResult> {
         storedCounts.set(key, current)
       }
 
-      const detection = detectTextLanguage(raw.text)
+      const directDetection = directDetections.get(raw.runIndex) ?? detectTextLanguage(raw.text)
+      const paragraphContext = paragraphContexts.get(raw.paragraphIndex)
+      const useParagraphContext = Boolean(
+        paragraphContext?.usable &&
+        !isReliableDetection(directDetection) &&
+        hasLinguisticText(raw.text),
+      )
+      const detection = useParagraphContext
+        ? paragraphContext!.detection
+        : directDetection
+      const detectionSource = useParagraphContext ? 'paragraph-context' : 'direct'
+
       if (detection.tag) {
         const key = detection.tag.toLowerCase()
         const detected = detectedCounts.get(key) ?? {
@@ -74,6 +118,7 @@ export async function scanWord(file: File): Promise<ScanResult> {
         detectedIso3: detection.iso3,
         detectedTag: detection.tag,
         confidence: detection.confidence,
+        detectionSource,
         score: detection.score,
         margin: detection.margin,
         mismatch: isLikelyMismatch(raw.storedTag, detection.tag, detection.confidence),
@@ -103,4 +148,16 @@ export async function scanWord(file: File): Promise<ScanResult> {
     detectedLanguages,
     fragments,
   }
+}
+
+
+function isReliableDetection(detection: LanguageDetection): boolean {
+  return Boolean(
+    detection.tag &&
+    (detection.confidence === 'high' || detection.confidence === 'medium'),
+  )
+}
+
+function hasLinguisticText(text: string): boolean {
+  return (text.match(/\p{L}/gu)?.length ?? 0) >= 2
 }
