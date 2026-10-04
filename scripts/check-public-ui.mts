@@ -86,6 +86,10 @@ assert.ok(html.includes('id="dropzone" class="dropzone" for="file-input" aria-di
 assert.ok(mainTs.includes('let appBusy = false'), 'Exclusive operation state missing')
 assert.ok(mainTs.includes("if (appBusy) return"), 'Busy document-operation guard missing')
 assert.ok(mainTs.includes("dropzone.setAttribute('aria-disabled', String(busy))"), 'Dropzone aria-disabled state must follow busy state')
+assert.ok(mainTs.includes("const localeButtons = Array.from("), 'Locale controls must be tracked for busy-state locking')
+assert.ok(mainTs.includes("for (const button of localeButtons) button.disabled = busy"), 'Locale controls must stay disabled while a document operation is active')
+assert.ok(mainTs.includes("smartRepairButton.disabled = appBusy || fixes.length === 0 || !currentFile"), 'Smart Fix CTA must not be re-enabled by a busy-state re-render')
+assert.ok(mainTs.includes("repairButton.disabled = appBusy || replacements.size === 0 || !currentFile"), 'Global repair CTA must not be re-enabled by a busy-state re-render')
 assert.ok(mainTs.includes("fileInput.value = ''"), 'File picker must reset after capturing a File so the same document can be selected again')
 const analyseFileSource = mainTs.match(/async function analyseFile[\s\S]*?\r?\n}\r?\n\r?\nfunction renderScan/)?.[0] ?? ''
 const analyseCatch = analyseFileSource.match(/catch \(error\) \{([\s\S]*?)\r?\n  } finally/)?.[1] ?? ''
