@@ -49,24 +49,29 @@ export async function scanWord(file: File): Promise<ScanResult> {
     const paragraphContexts = new Map<number, {
       detection: LanguageDetection
       usable: boolean
+      conflict: boolean
     }>()
 
     for (const [paragraphIndex, group] of paragraphGroups) {
       const detection = detectTextLanguage(group[0]?.paragraphText ?? '')
       const contextFamily = languageFamily(detection.tag)
-      const usable = group.length > 1 &&
+      const conflict = group.length > 1 &&
         isReliableDetection(detection) &&
         Boolean(contextFamily) &&
-        !group.some((raw) => {
+        group.some((raw) => {
           const direct = directDetections.get(raw.runIndex)
           return Boolean(
             direct &&
             isReliableDetection(direct) &&
-            languageFamily(direct.tag) !== contextFamily,
+            languageFamily(direct.tag) !== contextFamily
           )
         })
+      const usable = group.length > 1 &&
+        isReliableDetection(detection) &&
+        Boolean(contextFamily) &&
+        !conflict
 
-      paragraphContexts.set(paragraphIndex, { detection, usable })
+      paragraphContexts.set(paragraphIndex, { detection, usable, conflict })
     }
 
     for (const raw of extracted) {
@@ -119,6 +124,10 @@ export async function scanWord(file: File): Promise<ScanResult> {
         detectedTag: detection.tag,
         confidence: detection.confidence,
         detectionSource,
+        paragraphGroupId: `${path}#paragraph-${raw.paragraphIndex}`,
+        paragraphIndex: raw.paragraphIndex,
+        paragraphText: raw.paragraphText,
+        paragraphContextConflict: Boolean(paragraphContext?.conflict),
         score: detection.score,
         margin: detection.margin,
         mismatch: isLikelyMismatch(raw.storedTag, detection.tag, detection.confidence),
