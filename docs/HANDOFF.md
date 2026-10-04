@@ -33,7 +33,7 @@ Version `0.5.0` is the first public Community Edition release in the rebuilt rep
 
 Changes after the release tag must accumulate under Unreleased without automatically changing the package version.
 
-Current Unreleased work includes paragraph-aware Word auditing, explicit paragraph review controls and expanded European language coverage. The package version remains 0.5.0.
+Current Unreleased work includes paragraph-aware Word auditing, explicit paragraph review controls, expanded European language coverage and dedicated near-neighbor detector regressions. The package version remains 0.5.0.
 
 ## Product scope
 
@@ -292,6 +292,7 @@ Current automated checks:
 
 - PowerPoint XML regression;
 - language detector calibration across all 29 supported families, including all 24 official EU languages, Nordic-language separation and conservative Estonian/Latvian rescue calibration;
+- neighboring-language duel regression across Iberian Romance, Czech/Slovak, Croatian/Slovenian, Swedish/Danish/Norwegian, Finnish/Estonian and Latvian/Lithuanian samples;
 - DOCX scan + repair, including context-aware recovery for Word paragraphs split into short proofing runs;
 - ODF scan + repair, including exact ODS cell/range coordinates across repeated and merged geometry;
 - variant routing and macro-binary preservation;
