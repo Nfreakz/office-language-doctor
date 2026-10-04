@@ -18,12 +18,14 @@ This application is independent from every other NeoRS application. Do not reuse
 
 - Branch: `main`
 - Clean public root: `65dac5d41f44f3b34fc85d6f4e4247b7dd7a4c79`
-- Version: `0.5.0`
-- Release state: **published Community Edition**
+- Version: `0.6.0`
+- Release state: **0.6.0 publication candidate**
 - Public licensing: **MPL-2.0**
-- Annotated tag: `v0.5.0` pins the validated clean release baseline
-- GitHub Release: **Office Language Doctor 0.5.0 Community Edition**
-- Release published: **2026-09-30**
+- Baseline annotated tag: `v0.5.0` pins the validated clean release baseline
+- Baseline GitHub Release: **Office Language Doctor 0.5.0 Community Edition**
+- Baseline release published: **2026-09-30**
+- Target release: **Office Language Doctor 0.6.0 Community Edition**
+- Target publication: after final `main` CI and Pages validation
 - Public deployment source: `gh-pages / (root)`
 - Public branches: `main` and `gh-pages`
 - Clean local reconstruction snapshot: verified on the approved local runner before rebuilding this repository
@@ -31,9 +33,9 @@ This application is independent from every other NeoRS application. Do not reuse
 
 Version `0.5.0` is the first public Community Edition release in the rebuilt repository. The public `main` history starts at the clean 0.5.0 product root, and the release tag pins the validated release baseline after CI/Pages restoration.
 
-Changes after the release tag must accumulate under Unreleased without automatically changing the package version.
+Version `0.6.0` consolidates the accumulated Unreleased work: paragraph-aware Word auditing, explicit paragraph review controls, full EU official-language coverage, dedicated near-neighbor detector regressions, ambiguous-fragment safety, real-world and synthetic Office corpora, missing proofing-tag repair, reliable repeated-repair sessions, localized user-facing errors, exclusive document operations and cooperative large-document scanning.
 
-Current Unreleased work includes paragraph-aware Word auditing, explicit paragraph review controls, expanded European language coverage, dedicated near-neighbor detector regressions, ambiguous-fragment safety, a real-world Office fragment corpus, synthetic full-document DOCX/PPTX regression, full-document Smart Fix policy validation, a reliable post-repair audit session, localized user-facing document errors, exclusive document operations and cooperative large-document scanning. The package version remains 0.5.0.
+No additional product work should be added to the 0.6.0 publication candidate. New changes after release must accumulate under Unreleased until the next deliberate version.
 
 ## Product scope
 
@@ -349,9 +351,9 @@ The rebuilt v0.5.0 public baseline passed the local Windows CI suite and the Pag
 
 ## Release policy
 
-Current package version is `0.5.0`.
+Current package version is `0.6.0`.
 
-Version 0.5.0 is the first public Community Edition release in the rebuilt repository and is distributed under MPL-2.0 unless a file states otherwise. The annotated v0.5.0 tag pins the validated clean release baseline. Do not create a new patch/minor version for every PR; future changes should accumulate coherently under Unreleased until the next deliberate release.
+Version 0.5.0 remains the first public Community Edition baseline in the rebuilt repository and its annotated tag must remain untouched. Version 0.6.0 is the deliberate next Community Edition release candidate. Create the v0.6.0 tag and GitHub Release only after the release commit passes `main` CI and the Pages deployment succeeds. Future changes after publication should accumulate under Unreleased until the next deliberate release.
 
 ## Remaining validation / next steps
 

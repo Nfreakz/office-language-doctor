@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+No unreleased changes after the 0.6.0 publication candidate.
+
+## 0.6.0 · Community Edition — 2026-10-04
+
+Office Language Doctor 0.6.0 expands the Community Edition with full EU official-language coverage, CA / ES / EN UI localization, paragraph-aware review, reliable missing-tag repair, safer repeated-repair sessions, localized errors, large-document responsiveness and stronger end-to-end regression coverage.
+
 ### Added
 
 - reliable fragments with no stored proofing-language tag are now surfaced as review issues and can be repaired after explicit user selection; they are never auto-preselected by Smart Fix;
