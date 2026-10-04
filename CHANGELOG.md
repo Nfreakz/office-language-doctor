@@ -4,6 +4,7 @@
 
 ### Added
 
+- reliable fragments with no stored proofing-language tag are now surfaced as review issues and can be repaired after explicit user selection; they are never auto-preselected by Smart Fix;
 - repaired downloads are immediately rescanned in-browser so counters, filters, Smart Fix state and CSV/JSON reports follow the repaired copy without a manual re-upload;
 - complete EU official-language coverage by adding Estonian, Irish, Latvian, Lithuanian and Maltese detection/repair targets, bringing the detector to 29 language families;
 - public CA / ES / EN copy now highlights support for all 24 official EU languages instead of listing every detected family inline;
@@ -26,6 +27,7 @@
 
 ### Changed
 
+- the audit `Issues` view and issue counters now cover both reliable language mismatches and reliable missing proofing-language tags while the detector's `likelyMismatches` metric remains unchanged;
 - busy-state exclusivity is now enforced by the button-state calculators themselves, preventing filter/re-render interactions from re-enabling repair actions during an active scan or repair; CA / ES / EN switching is also locked until the operation completes;
 - a failed attempt to analyse a replacement file no longer destroys the previously valid document session; the existing audit, review decisions and paragraph state remain available while the localized error is reported;
 - explicit Smart Fix review decisions now survive post-repair rescans for fragments that remain actionable, so a high-confidence suggestion the user deliberately unchecked is not silently preselected again on the next pass;
@@ -43,6 +45,7 @@
 
 ### Validation
 
+- new cross-format missing-tag regression proves scan → manual review eligibility → selected repair → re-scan for DOCX, PPTX, ODT and RTF, including text preservation and no automatic preselection;
 - audit-session regression now proves reviewed Smart Fix selections, explicit deselections and Catalan/Valencian target choices survive a repair rescan while resolved fragments disappear and genuinely new issues keep their fresh defaults;
 - cooperative-scan scheduling regression verifies time-budgeted yielding, no unnecessary pauses under budget and slice reset after yielding;
 - localized-error regression covers every document error code in CA/ES/EN plus corrupt DOCX, PPTX, ODF and RTF inputs and confirms unknown exceptions do not leak their raw message;
