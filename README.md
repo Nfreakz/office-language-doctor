@@ -62,6 +62,7 @@ Version 0.5.0 is the initial public Community Edition baseline under MPL-2.0, wi
 - conservative Smart Fix selection;
 - context-aware Word paragraph detection for short or internally fragmented runs;
 - paragraph-aware Word audit UX that shows one readable paragraph summary and expands the underlying repairable runs only when needed;
+- explicit paragraph review actions that can select multiple compatible run-level fixes only after a user decision; Catalan / Valencian still requires a single explicit variant choice for the paragraph;
 - explicit direct-vs-paragraph-context diagnostics, including conflict and stored-language inheritance hints;
 - human-readable fragment locations, including numbered ODP slides and exact ODS sheet + cell/range coordinates, plus stored-language source diagnostics;
 - local CSV and JSON audit exports with explicit detection source;
@@ -88,6 +89,7 @@ Smart Fix preselects only high-confidence non-Catalan/Valencian mismatches. Medi
 - shows a human-readable location for each fragment;
 - shows whether stored language comes from direct text, paragraph defaults, styles or document defaults;
 - groups Word runs from the same paragraph into a collapsible audit unit while keeping each run independently repairable;
+- can prepare compatible paragraph fixes in one explicit review action without autoapplying or auto-preselecting contextual suggestions;
 - downloads a repaired copy in the original format;
 - exports the complete audit locally as CSV or JSON, including whether detection was direct or inferred from paragraph context.
 

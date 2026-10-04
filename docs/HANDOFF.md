@@ -33,6 +33,8 @@ Version `0.5.0` is the first public Community Edition release in the rebuilt rep
 
 Changes after the release tag must accumulate under Unreleased without automatically changing the package version.
 
+Current Unreleased work includes paragraph-aware Word auditing and explicit paragraph review controls. The package version remains 0.5.0.
+
 ## Product scope
 
 Office Language Doctor is a privacy-first browser utility for auditing and repairing proofing-language metadata without uploading the document.
@@ -60,6 +62,7 @@ XLSX is not a proofing-language repair target because SpreadsheetML does not exp
 - conservative Smart Fix;
 - context-aware Word paragraph detection for short/ambiguous runs;
 - paragraph-aware Word audit grouping with collapsible run-level detail;
+- explicit paragraph review actions for compatible run-level fixes;
 - explicit direct vs paragraph-context detection diagnostics;
 - explicit Catalan vs Valencian choice;
 - human-readable fragment locations;
@@ -84,7 +87,9 @@ Smart Fix must remain conservative:
 - Catalan/Valencian detections always require explicit variant choice;
 - low-confidence, matching and undetected fragments are not preselected;
 - short/non-linguistic values such as `2026` remain unchanged;
-- detections inferred from Word paragraph context are suggestions only and are never preselected automatically.
+- detections inferred from Word paragraph context are suggestions only and are never preselected automatically;
+- a paragraph review action may select multiple compatible reliable mismatches only after an explicit user click; conflicting evidence, mixed detected tags or paragraphs without contextual evidence do not receive a grouped action;
+- Catalan / Valencian paragraph review requires one explicit variant choice before any run fixes are selected.
 
 Exact labels such as `Català:`, `Valencià:`, `Galego:` and `Euskara:` are handled before the general short-text cutoff.
 
@@ -112,7 +117,7 @@ Effective proofing-language resolution order:
 
 Selected repair writes a direct `w:lang w:val` on the reviewed run.
 
-Word detection can use the normalized text of the containing paragraph when an individual run is too short or ambiguous. Paragraph context is used only when the paragraph detection is medium/high confidence, the paragraph contains multiple text runs, the current run contains linguistic text, and no reliably detected run in the paragraph contradicts the paragraph language. Each Word fragment now carries a paragraph group identity and normalized paragraph text. The audit UI renders multi-run paragraphs as one collapsed readable unit, then exposes the underlying runs only when the user expands it; repair remains strictly run-level. Direct detections, paragraph-context detections, stored-language inheritance and rejected conflicting paragraph evidence are visible diagnostics. Contextual Smart Fix suggestions remain review-only. Regression covers the real-world eight-run pattern observed in Word proofing markup (`Benvinguts a la sessió. Aquesta prova valida el document.`), with punctuation left undetected, plus grouping isolation so distinct paragraphs/languages cannot be merged by audit ordering.
+Word detection can use the normalized text of the containing paragraph when an individual run is too short or ambiguous. Paragraph context is used only when the paragraph detection is medium/high confidence, the paragraph contains multiple text runs, the current run contains linguistic text, and no reliably detected run in the paragraph contradicts the paragraph language. Each Word fragment now carries a paragraph group identity and normalized paragraph text. The audit UI renders multi-run paragraphs as one collapsed readable unit, then exposes the underlying runs only when the user expands it; repair remains strictly run-level. Direct detections, paragraph-context detections, stored-language inheritance and rejected conflicting paragraph evidence are visible diagnostics. Contextual Smart Fix suggestions remain review-only. For a non-conflicting paragraph with multiple compatible reliable mismatches, the UI can offer an explicit paragraph review action that selects the underlying run-level fixes in one step. This is selection only: it never auto-preselects contextual fixes and never repairs until the user activates the normal selected-fix repair action. Catalan / Valencian requires an explicit paragraph-level variant choice first. Regression covers the real-world eight-run pattern observed in Word proofing markup (`Benvinguts a la sessió. Aquesta prova valida el document.`), with punctuation left undetected, plus grouping isolation so distinct paragraphs/languages cannot be merged by audit ordering.
 
 DOCX manual validation confirmed Catalan, Galician and Basque repairs. DOCM, DOTX and DOTM passed structural/open validation in Word.
 
@@ -281,7 +286,7 @@ Current automated checks:
 - DOCX scan + repair, including context-aware recovery for Word paragraphs split into short proofing runs;
 - ODF scan + repair, including exact ODS cell/range coordinates across repeated and merged geometry;
 - variant routing and macro-binary preservation;
-- Smart Fix safety policy;
+- Smart Fix safety policy, including explicit paragraph review eligibility and rejection cases;
 - fragment diagnostics labels;
 - paragraph-aware audit grouping and paragraph/language isolation;
 - CSV/JSON audit report serialization, including detection source;
