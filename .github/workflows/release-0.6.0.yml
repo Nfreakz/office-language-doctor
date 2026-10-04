@@ -1,0 +1,125 @@
+name: Release · 0.6.0
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/releases/0.6.0.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: office-language-doctor-release-0.6.0
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish v0.6.0 on DESKTOP-0NEP6ON
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        shell: powershell
+
+    steps:
+      - name: Verify approved local runner
+        run: |
+          Write-Host "Runner: $env:RUNNER_NAME / Host: $env:COMPUTERNAME"
+          if ($env:RUNNER_NAME -ne 'DESKTOP-0NEP6ON') {
+            throw "Unexpected runner: $env:RUNNER_NAME"
+          }
+          if ($env:COMPUTERNAME -ne 'DESKTOP-0NEP6ON') {
+            throw "Unexpected host: $env:COMPUTERNAME"
+          }
+
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Validate release target
+        run: |
+          $target = '95d48d089a6bf726d90213c0031b8a71efc25262'
+          git fetch --tags --force
+
+          git cat-file -e "${target}^{commit}"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Release target commit does not exist: $target"
+          }
+
+          $package = (git show "${target}:package.json" | Out-String) | ConvertFrom-Json
+          if ($package.version -ne '0.6.0') {
+            throw "Release target package version is $($package.version), expected 0.6.0"
+          }
+
+      - name: Publish annotated tag and GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $target = '95d48d089a6bf726d90213c0031b8a71efc25262'
+          $tag = 'v0.6.0'
+          $releaseName = 'Office Language Doctor 0.6.0 Community Edition'
+
+          git fetch --tags --force
+          git show-ref --verify --quiet "refs/tags/$tag"
+          $tagExists = $LASTEXITCODE -eq 0
+
+          if ($tagExists) {
+            $existingTarget = (git rev-list -n 1 $tag).Trim()
+            if ($existingTarget -ne $target) {
+              throw "Existing $tag points to $existingTarget instead of $target"
+            }
+            Write-Host "$tag already points to the validated release commit."
+          } else {
+            git config user.name 'NeoRS'
+            git config user.email 'dahemo@gmail.com'
+            git tag -a $tag $target -m $releaseName
+            git push origin "refs/tags/$tag"
+          }
+
+          $headers = @{
+            Authorization = "Bearer $env:GITHUB_TOKEN"
+            Accept = 'application/vnd.github+json'
+            'X-GitHub-Api-Version' = '2022-11-28'
+          }
+
+          $releaseUri = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases/tags/$tag"
+          $releaseExists = $false
+
+          try {
+            $existingRelease = Invoke-RestMethod -Method Get -Uri $releaseUri -Headers $headers
+            $releaseExists = $true
+            Write-Host "GitHub Release already exists: $($existingRelease.html_url)"
+          } catch {
+            $statusCode = [int]$_.Exception.Response.StatusCode
+            if ($statusCode -ne 404) {
+              throw
+            }
+          }
+
+          if (-not $releaseExists) {
+            $notes = Get-Content '.github/releases/0.6.0.md' -Raw
+            $payload = @{
+              tag_name = $tag
+              target_commitish = $target
+              name = $releaseName
+              body = $notes
+              draft = $false
+              prerelease = $false
+              generate_release_notes = $false
+            } | ConvertTo-Json -Depth 5
+
+            $created = Invoke-RestMethod `
+              -Method Post `
+              -Uri "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases" `
+              -Headers $headers `
+              -ContentType 'application/json' `
+              -Body $payload
+
+            Write-Host "Published: $($created.html_url)"
+          }
