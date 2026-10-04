@@ -78,4 +78,8 @@ const alreadyFixed = new File([], 'demo-language-fixed.docx')
 assert.equal(repairedFileName(alreadyFixed, true), 'demo-language-smart-fixed.docx')
 assert.equal(repairedFileName(alreadyFixed, false), 'demo-language-fixed.docx')
 
+const legacyStacked = new File([], 'demo-language-fixed-language-smart-fixed.docx')
+assert.equal(repairedFileName(legacyStacked, true), 'demo-language-smart-fixed.docx')
+assert.equal(repairedFileName(legacyStacked, false), 'demo-language-fixed.docx')
+
 console.log('Audit session scale and post-repair state: OK')
