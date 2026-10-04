@@ -7,6 +7,10 @@ import {
   resolvePostRepairAuditFilter,
 } from '../src/lib/document/audit-view.ts'
 import { repairedFileName } from '../src/lib/document/engine.ts'
+import {
+  restoreReviewFixState,
+  snapshotReviewFixState,
+} from '../src/lib/document/repair-session.ts'
 import type { TextFragment } from '../src/lib/document/types.ts'
 
 function fragment(index: number): TextFragment {
@@ -81,5 +85,35 @@ assert.equal(repairedFileName(alreadyFixed, false), 'demo-language-fixed.docx')
 const legacyStacked = new File([], 'demo-language-fixed-language-smart-fixed.docx')
 assert.equal(repairedFileName(legacyStacked, true), 'demo-language-smart-fixed.docx')
 assert.equal(repairedFileName(legacyStacked, false), 'demo-language-fixed.docx')
+
+const reviewedBeforeRepair = new Map([
+  ['keep-rejected', { checked: false, targetTag: 'eu-ES' }],
+  ['keep-variant', { checked: true, targetTag: 'ca-ES-valencia' }],
+  ['no-longer-actionable', { checked: false, targetTag: 'pt-PT' }],
+])
+const reviewedSnapshot = snapshotReviewFixState(reviewedBeforeRepair)
+reviewedBeforeRepair.get('keep-rejected')!.checked = true
+assert.equal(reviewedSnapshot.get('keep-rejected')?.checked, false)
+
+const initializedAfterRepair = new Map([
+  ['keep-rejected', { checked: true, targetTag: 'eu-ES' }],
+  ['keep-variant', { checked: false, targetTag: '' }],
+  ['new-issue', { checked: true, targetTag: 'es-ES' }],
+])
+restoreReviewFixState(initializedAfterRepair, reviewedSnapshot)
+
+assert.deepEqual(initializedAfterRepair.get('keep-rejected'), {
+  checked: false,
+  targetTag: 'eu-ES',
+})
+assert.deepEqual(initializedAfterRepair.get('keep-variant'), {
+  checked: true,
+  targetTag: 'ca-ES-valencia',
+})
+assert.deepEqual(initializedAfterRepair.get('new-issue'), {
+  checked: true,
+  targetTag: 'es-ES',
+})
+assert.equal(initializedAfterRepair.has('no-longer-actionable'), false)
 
 console.log('Audit session scale and post-repair state: OK')

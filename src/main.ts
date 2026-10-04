@@ -17,6 +17,11 @@ import {
 } from './lib/document/audit-view'
 import { fragmentLocationLabel, storedLanguageSourceLabel } from './lib/document/labels'
 import {
+  restoreReviewFixState,
+  snapshotReviewFixState,
+  type ReviewFixState,
+} from './lib/document/repair-session'
+import {
   getParagraphReviewPlan,
   isReliableMismatch,
   requiresVariantChoice,
@@ -36,10 +41,7 @@ import {
   type UiLocale,
 } from './i18n'
 
-interface FragmentFixState {
-  checked: boolean
-  targetTag: string
-}
+type FragmentFixState = ReviewFixState
 
 const fileInput = requiredElement<HTMLInputElement>('file-input')
 const dropzone = requiredElement<HTMLLabelElement>('dropzone')
@@ -972,6 +974,7 @@ function updatePreparedChanges(): void {
 async function refreshRepairedSession(blob: Blob, fileName: string): Promise<ScanResult> {
   const previousFilter = auditFilter
   const previousPage = auditPage
+  const previousFixState = snapshotReviewFixState(fragmentFixState)
   const repairedFile = new File([blob], fileName, {
     type: blob.type || currentFile?.type || '',
     lastModified: Date.now(),
@@ -983,6 +986,7 @@ async function refreshRepairedSession(blob: Blob, fileName: string): Promise<Sca
   fragmentFixState.clear()
 
   renderScan(scan)
+  restoreReviewFixState(fragmentFixState, previousFixState)
   auditFilter = resolvePostRepairAuditFilter(previousFilter, scan.likelyMismatches)
   auditPage = previousPage
   renderAuditRows()
