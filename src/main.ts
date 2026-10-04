@@ -95,7 +95,11 @@ const expandedParagraphGroups = new Set<string>()
 initLocale()
 applyStaticTranslations()
 
-for (const button of document.querySelectorAll<HTMLButtonElement>('[data-ui-locale]')) {
+const localeButtons = Array.from(
+  document.querySelectorAll<HTMLButtonElement>('[data-ui-locale]'),
+)
+
+for (const button of localeButtons) {
   button.addEventListener('click', () => {
     const locale = button.dataset.uiLocale
     if (locale === 'ca' || locale === 'es' || locale === 'en') {
@@ -847,7 +851,7 @@ function getSelectedFragmentFixes(): FragmentFix[] {
 
 function updateSmartFixes(): void {
   const fixes = getSelectedFragmentFixes()
-  smartRepairButton.disabled = fixes.length === 0 || !currentFile
+  smartRepairButton.disabled = appBusy || fixes.length === 0 || !currentFile
 
   if (!currentScan) {
     smartFixSummary.textContent = t('smart.none')
@@ -962,7 +966,7 @@ function getPreparedReplacements(): Map<string, string> {
 
 function updatePreparedChanges(): void {
   const replacements = getPreparedReplacements()
-  repairButton.disabled = replacements.size === 0 || !currentFile
+  repairButton.disabled = appBusy || replacements.size === 0 || !currentFile
   changeSummary.textContent = replacements.size === 0
     ? t('change.none')
     : t(
@@ -1099,6 +1103,7 @@ function exportAuditReport(format: 'csv' | 'json'): void {
 function setBusy(busy: boolean): void {
   appBusy = busy
   fileInput.disabled = busy
+  for (const button of localeButtons) button.disabled = busy
   dropzone.classList.toggle('is-busy', busy)
   dropzone.setAttribute('aria-disabled', String(busy))
   repairButton.disabled = busy || getPreparedReplacements().size === 0 || !currentFile
