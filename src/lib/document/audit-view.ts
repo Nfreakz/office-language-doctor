@@ -40,9 +40,9 @@ export function resolveAuditWindow(
 
 export function resolvePostRepairAuditFilter(
   previousFilter: AuditFilter,
-  remainingIssues: number,
+  remainingMismatches: number,
 ): AuditFilter {
-  return previousFilter === 'issues' && remainingIssues <= 0
+  return previousFilter === 'issues' && remainingMismatches <= 0
     ? 'all'
     : previousFilter
 }

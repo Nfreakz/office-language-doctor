@@ -8,6 +8,8 @@ export type AuditReportStatus =
   | 'low_confidence'
   | 'no_language'
 
+export type AuditReportDetectionSource = NonNullable<TextFragment['detectionSource']> | 'none'
+
 export interface AuditReportFragment {
   id: string
   location: string
@@ -17,7 +19,7 @@ export interface AuditReportFragment {
   storedTag: string | null
   storedSource: string
   detectedTag: string | null
-  detectionSource: NonNullable<TextFragment['detectionSource']>
+  detectionSource: AuditReportDetectionSource
   confidence: TextFragment['confidence']
   status: AuditReportStatus
   mismatch: boolean
@@ -58,7 +60,7 @@ export function buildAuditReport(
       storedTag: fragment.storedTag,
       storedSource: storedLanguageSourceLabel(fragment.storedSource),
       detectedTag: fragment.detectedTag,
-      detectionSource: fragment.detectionSource ?? 'direct',
+      detectionSource: fragment.detectedTag ? (fragment.detectionSource ?? 'direct') : 'none',
       confidence: fragment.confidence,
       status: reportStatus(fragment),
       mismatch: fragment.mismatch,

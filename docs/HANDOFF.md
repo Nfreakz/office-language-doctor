@@ -59,7 +59,6 @@ XLSX is not a proofing-language repair target because SpreadsheetML does not exp
 - stored proofing-language audit;
 - local advisory language detection across 29 language families, including all 24 official EU languages;
 - medium/high-confidence mismatch reporting;
-- reliable medium/high detections with no stored proofing-language tag are surfaced as review issues and can be repaired after explicit selection;
 - conservative Smart Fix;
 - context-aware Word paragraph detection for short/ambiguous runs;
 - paragraph-aware Word audit grouping with collapsible run-level detail;
@@ -95,7 +94,6 @@ Smart Fix must remain conservative:
 
 - high-confidence non-Catalan/Valencian mismatches may be preselected;
 - medium-confidence mismatches are suggestions only;
-- missing proofing-language tags with reliable detection are review-only and are never preselected automatically;
 - Catalan/Valencian detections always require explicit variant choice;
 - low-confidence detector candidates are normalized to unknown and therefore cannot become mismatches or Smart Fix selections; matching and undetected fragments are not preselected;
 - short/non-linguistic values such as `2026` remain unchanged;
@@ -217,7 +215,7 @@ Each fragment can include:
 - stored language tag;
 - stored-language source;
 - detected language tag;
-- detection source (`direct` or `paragraph-context`);
+- detection source (`direct`, `paragraph-context` or `none` when no language was detected);
 - confidence;
 - audit status;
 - selected repair target;
@@ -316,7 +314,6 @@ Current automated checks:
 - ODF scan + repair, including exact ODS cell/range coordinates across repeated and merged geometry;
 - variant routing and macro-binary preservation;
 - Smart Fix safety policy, including explicit paragraph review eligibility and rejection cases;
-- cross-format missing-tag regression covering DOCX, PPTX, ODT and RTF scan → explicit review → selected repair → re-scan;
 - fragment diagnostics labels;
 - CA / ES / EN interface localization and location-label localization;
 - localized document error regression, including corrupt package inputs and raw-error leak prevention;

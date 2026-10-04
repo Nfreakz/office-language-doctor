@@ -81,9 +81,6 @@ jobs:
       - name: Check Smart Fix safety policy
         run: npm run check:smart-fix
 
-      - name: Check missing proofing-tag repair
-        run: npm run check:missing-tags
-
       - name: Check fragment diagnostics labels
         run: npm run check:diagnostics
 

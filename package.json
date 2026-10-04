@@ -13,7 +13,6 @@
     "preview": "vite preview",
     "check:variants": "tsx scripts/check-format-variants.mts",
     "check:smart-fix": "tsx scripts/check-smart-fix.mts",
-    "check:missing-tags": "tsx scripts/check-missing-tags.mts",
     "check:diagnostics": "tsx scripts/check-fragment-diagnostics.mts",
     "check:i18n": "tsx scripts/check-i18n.mts",
     "check:user-errors": "tsx scripts/check-user-errors.mts",
