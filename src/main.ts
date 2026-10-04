@@ -7,6 +7,7 @@ import {
   scanDocument,
 } from './lib/document/engine'
 import type { FragmentFix, ScanResult, TextFragment } from './lib/document/types'
+import { buildAuditEntries, type AuditEntry } from './lib/document/audit-groups'
 import { fragmentLocationLabel, storedLanguageSourceLabel } from './lib/document/labels'
 import { isReliableMismatch, requiresVariantChoice, shouldPreselectSmartFix } from './lib/language/smart-fix'
 import { auditReportFileName, auditReportToCsv, auditReportToJson, buildAuditReport } from './lib/report/audit'
@@ -66,6 +67,7 @@ let auditFilter: AuditFilter = 'issues'
 let auditPage = 0
 let auditPageSizeValue: number | 'all' = DEFAULT_AUDIT_PAGE_SIZE
 const fragmentFixState = new Map<string, FragmentFixState>()
+const expandedParagraphGroups = new Set<string>()
 
 populateLanguageSelect(globalLanguage, '')
 fileInput.addEventListener('change', () => {
@@ -120,7 +122,8 @@ auditPrevious.addEventListener('click', () => {
 })
 
 auditNext.addEventListener('click', () => {
-  const total = getFilteredAuditFragments().length
+  const filtered = getFilteredAuditFragments()
+  const total = buildAuditEntries(currentScan?.fragments ?? [], filtered).length
   const pageSize = getAuditPageSize(total)
   const pageCount = Math.max(1, Math.ceil(total / pageSize))
   if (auditPage >= pageCount - 1) return
@@ -138,6 +141,7 @@ async function analyseFile(file: File): Promise<void> {
     currentFile = file
     currentScan = scan
     fragmentFixState.clear()
+    expandedParagraphGroups.clear()
     renderScan(scan)
     status.textContent = `${file.name} analysed locally as ${scan.formatLabel}. Nothing was uploaded.`
     results.classList.remove('hidden')
@@ -145,6 +149,7 @@ async function analyseFile(file: File): Promise<void> {
     currentFile = null
     currentScan = null
     fragmentFixState.clear()
+    expandedParagraphGroups.clear()
     status.textContent = error instanceof Error ? error.message : 'Could not analyse this document.'
   } finally {
     setBusy(false)
@@ -275,18 +280,25 @@ function renderAuditRows(): void {
   fragmentRows.replaceChildren()
 
   const filtered = getFilteredAuditFragments()
-  const pageSize = getAuditPageSize(filtered.length)
-  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const entries = buildAuditEntries(currentScan?.fragments ?? [], filtered)
+  const pageSize = getAuditPageSize(entries.length)
+  const pageCount = Math.max(1, Math.ceil(entries.length / pageSize))
   auditPage = Math.min(auditPage, pageCount - 1)
 
   const start = auditPageSizeValue === 'all' ? 0 : auditPage * pageSize
   const end = auditPageSizeValue === 'all'
-    ? filtered.length
-    : Math.min(start + pageSize, filtered.length)
-  const visible = filtered.slice(start, end)
+    ? entries.length
+    : Math.min(start + pageSize, entries.length)
+  const visible = entries.slice(start, end)
 
-  for (const fragment of visible) {
-    fragmentRows.append(createFragmentRow(fragment))
+  for (const entry of visible) {
+    if (entry.kind === 'paragraph') {
+      fragmentRows.append(createParagraphAuditRows(entry))
+      continue
+    }
+
+    const fragment = entry.fragments[0]
+    if (fragment) fragmentRows.append(createFragmentRow(fragment))
   }
 
   if (visible.length === 0) {
@@ -297,16 +309,18 @@ function renderAuditRows(): void {
 
   updateAuditFilterButtons()
 
-  auditRange.textContent = filtered.length === 0
+  auditRange.textContent = entries.length === 0
     ? '0 results'
-    : `${(start + 1).toLocaleString()}–${end.toLocaleString()} of ${filtered.length.toLocaleString()}`
+    : currentScan?.format === 'docx'
+      ? `${(start + 1).toLocaleString()}–${end.toLocaleString()} of ${entries.length.toLocaleString()} audit items · ${filtered.length.toLocaleString()} filtered run${filtered.length === 1 ? '' : 's'}`
+      : `${(start + 1).toLocaleString()}–${end.toLocaleString()} of ${entries.length.toLocaleString()}`
 
   auditPageLabel.textContent = `Page ${Math.min(auditPage + 1, pageCount)} of ${pageCount}`
   auditPrevious.disabled = auditPage === 0
   auditNext.disabled = auditPage >= pageCount - 1
   auditPagination.classList.toggle(
     'hidden',
-    auditPageSizeValue === 'all' || filtered.length <= pageSize,
+    auditPageSizeValue === 'all' || entries.length <= pageSize,
   )
 
   updateSmartFixes()
@@ -344,7 +358,110 @@ function emptyAuditMessage(): string {
   return 'No textual fragments were found in the document content.'
 }
 
-function createFragmentRow(fragment: TextFragment): HTMLTableRowElement {
+function createParagraphAuditRows(entry: AuditEntry): DocumentFragment {
+  const output = document.createDocumentFragment()
+  const groupId = entry.paragraphGroupId
+  const sample = entry.allFragments[0] ?? entry.fragments[0]
+
+  if (!groupId || !sample) {
+    for (const fragment of entry.fragments) output.append(createFragmentRow(fragment))
+    return output
+  }
+
+  const summaryRow = document.createElement('tr')
+  summaryRow.className = 'paragraph-summary-row'
+  summaryRow.dataset.paragraphGroupId = groupId
+
+  const issueCount = entry.allFragments.filter((fragment) => fragment.mismatch).length
+  if (issueCount > 0) summaryRow.classList.add('has-issue')
+
+  const cell = document.createElement('td')
+  cell.colSpan = 5
+
+  const wrapper = document.createElement('div')
+  wrapper.className = 'paragraph-summary'
+
+  const copy = document.createElement('div')
+  copy.className = 'paragraph-summary-copy'
+
+  const location = sample.location ?? fragmentLocationLabel(currentScan?.format ?? 'docx', sample.part)
+  const label = document.createElement('small')
+  label.className = 'paragraph-label'
+  label.textContent = `Paragraph · ${location}`
+
+  const preview = document.createElement('span')
+  preview.className = 'paragraph-preview'
+  preview.textContent = entry.paragraphText ?? entry.allFragments.map((fragment) => fragment.text).join(' ')
+
+  const meta = document.createElement('div')
+  meta.className = 'paragraph-meta'
+
+  const contextualCount = entry.allFragments.filter(
+    (fragment) => fragment.detectionSource === 'paragraph-context',
+  ).length
+  const directDetectedCount = entry.allFragments.filter(
+    (fragment) => fragment.detectedTag && fragment.detectionSource !== 'paragraph-context',
+  ).length
+  const hasConflict = entry.allFragments.some((fragment) => fragment.paragraphContextConflict)
+  const detectionSummary = contextualCount > 0
+    ? `${contextualCount} from paragraph context`
+    : directDetectedCount > 0
+      ? `${directDetectedCount} detected directly`
+      : 'No reliable detection'
+
+  for (const text of [
+    `${entry.allFragments.length} run${entry.allFragments.length === 1 ? '' : 's'}`,
+    issueCount > 0 ? `${issueCount} issue${issueCount === 1 ? '' : 's'}` : 'No issues',
+    detectionSummary,
+    hasConflict ? 'Conflicting paragraph evidence' : '',
+  ].filter(Boolean)) {
+    const chip = document.createElement('span')
+    chip.textContent = text
+    meta.append(chip)
+  }
+
+  copy.append(label, preview, meta)
+
+  const expanded = expandedParagraphGroups.has(groupId)
+  const toggle = document.createElement('button')
+  toggle.type = 'button'
+  toggle.className = 'secondary compact-button paragraph-toggle'
+  toggle.setAttribute('aria-expanded', String(expanded))
+  toggle.textContent = expanded
+    ? 'Hide runs'
+    : `Show ${entry.fragments.length} run${entry.fragments.length === 1 ? '' : 's'}`
+
+  wrapper.append(copy, toggle)
+  cell.append(wrapper)
+  summaryRow.append(cell)
+  output.append(summaryRow)
+
+  const detailRows = entry.fragments.map((fragment) => {
+    const row = createFragmentRow(fragment, true)
+    row.classList.add('paragraph-run-row')
+    row.dataset.paragraphGroupId = groupId
+    row.hidden = !expanded
+    return row
+  })
+
+  for (const row of detailRows) output.append(row)
+
+  toggle.addEventListener('click', () => {
+    const nextExpanded = !expandedParagraphGroups.has(groupId)
+    if (nextExpanded) expandedParagraphGroups.add(groupId)
+    else expandedParagraphGroups.delete(groupId)
+
+    for (const row of detailRows) row.hidden = !nextExpanded
+    toggle.setAttribute('aria-expanded', String(nextExpanded))
+    toggle.textContent = nextExpanded
+      ? 'Hide runs'
+      : `Show ${entry.fragments.length} run${entry.fragments.length === 1 ? '' : 's'}`
+  })
+
+  return output
+}
+
+function createFragmentRow(fragment: TextFragment, grouped = false): HTMLTableRowElement {
   const row = document.createElement('tr')
   row.dataset.fragmentId = fragment.id
   if (fragment.mismatch) row.classList.add('has-issue')
@@ -362,7 +479,7 @@ function createFragmentRow(fragment: TextFragment): HTMLTableRowElement {
   const location = fragment.location ?? fragmentLocationLabel(currentScan?.format ?? 'docx', fragment.part)
   const locationHint = document.createElement('small')
   locationHint.className = 'fragment-location'
-  locationHint.textContent = location
+  locationHint.textContent = grouped ? `Run ${fragment.runIndex + 1}` : location
 
   preview.title = `${location} · ${fragment.part} · run ${fragment.runIndex + 1}`
   textCell.append(preview, locationHint)
@@ -374,21 +491,48 @@ function createFragmentRow(fragment: TextFragment): HTMLTableRowElement {
   if (fragment.storedTag) {
     const sourceHint = document.createElement('small')
     sourceHint.className = 'stored-source'
-    sourceHint.textContent = storedLanguageSourceLabel(fragment.storedSource)
+    sourceHint.textContent = storedLanguageDiagnostic(fragment)
     storedCell.append(sourceHint)
   }
 
   if (fragment.detectedTag) {
-    const confidence = fragment.confidence === 'unknown'
-      ? ''
-      : `<small>${escapeHtml(fragment.confidence)} confidence${fragment.detectionSource === 'paragraph-context' ? ' · paragraph context' : ''}</small>`
-    detectedCell.innerHTML = `<span class="language-name">${escapeHtml(detectedLanguageLabel(fragment.detectedTag))}</span>${confidence}`
+    detectedCell.innerHTML = `<span class="language-name">${escapeHtml(detectedLanguageLabel(fragment.detectedTag))}</span>`
+
+    if (fragment.confidence !== 'unknown') {
+      const confidenceHint = document.createElement('small')
+      confidenceHint.textContent = `${capitalize(fragment.confidence)} confidence`
+      detectedCell.append(confidenceHint)
+    }
+
+    const sourceHint = document.createElement('small')
+    sourceHint.className = 'detection-source'
+    sourceHint.textContent = fragment.detectionSource === 'paragraph-context'
+      ? 'Detected from paragraph context'
+      : 'Detected directly'
+    detectedCell.append(sourceHint)
+
+    if (fragment.paragraphContextConflict) {
+      const conflictHint = document.createElement('small')
+      conflictHint.className = 'detection-conflict'
+      conflictHint.textContent = 'Conflicting paragraph evidence'
+      detectedCell.append(conflictHint)
+    }
 
     if (fragment.detectionSource === 'paragraph-context') {
-      detectedCell.title = 'Language inferred from surrounding text in the same Word paragraph. Review this suggestion before repairing the individual fragment.'
+      detectedCell.title = 'Language inferred from surrounding text in the same Word paragraph. Review this suggestion before repairing the individual run.'
     }
   } else {
-    detectedCell.innerHTML = '<span class="muted">Too short / non-linguistic</span>'
+    const undetected = document.createElement('span')
+    undetected.className = 'muted'
+    undetected.textContent = 'Too short / non-linguistic'
+    detectedCell.append(undetected)
+
+    if (fragment.paragraphContextConflict) {
+      const conflictHint = document.createElement('small')
+      conflictHint.className = 'detection-conflict'
+      conflictHint.textContent = 'Paragraph context rejected: conflicting evidence'
+      detectedCell.append(conflictHint)
+    }
   }
 
   const badge = document.createElement('span')
@@ -396,9 +540,11 @@ function createFragmentRow(fragment: TextFragment): HTMLTableRowElement {
   badge.className = `status-badge ${statusInfo.className}`
   badge.textContent = statusInfo.label
   if (isUndetectedFragment(fragment)) {
-    badge.title = 'There is not enough linguistic text to identify a language safely. This fragment will be left unchanged.'
+    badge.title = fragment.paragraphContextConflict
+      ? 'Reliable evidence in this Word paragraph conflicts, so paragraph context was rejected and this run remains unchanged.'
+      : 'There is not enough linguistic text to identify a language safely. This fragment will be left unchanged.'
   } else if (fragment.detectionSource === 'paragraph-context') {
-    badge.title = 'Detected from the surrounding Word paragraph because this fragment is too short or ambiguous on its own. Contextual fixes require review.'
+    badge.title = 'Detected from the surrounding Word paragraph because this run is too short or ambiguous on its own. Contextual fixes require review.'
   }
   statusCell.append(badge)
 
@@ -414,6 +560,18 @@ function createFragmentRow(fragment: TextFragment): HTMLTableRowElement {
 
   row.append(textCell, storedCell, detectedCell, statusCell, fixCell)
   return row
+}
+
+function storedLanguageDiagnostic(fragment: TextFragment): string {
+  if (fragment.storedSource === 'run') return 'Stored language set on this run'
+  if (fragment.storedSource === 'style') return 'Stored language inherited from style'
+  if (fragment.storedSource === 'paragraph-default') return 'Stored language inherited from paragraph'
+  if (fragment.storedSource === 'document-default') return 'Stored language inherited from document default'
+  return storedLanguageSourceLabel(fragment.storedSource)
+}
+
+function capitalize(value: string): string {
+  return value.length > 0 ? value[0].toUpperCase() + value.slice(1) : value
 }
 
 function createFragmentFixControl(fragment: TextFragment): HTMLElement {

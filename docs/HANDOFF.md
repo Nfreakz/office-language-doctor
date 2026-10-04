@@ -59,6 +59,8 @@ XLSX is not a proofing-language repair target because SpreadsheetML does not exp
 - medium/high-confidence mismatch reporting;
 - conservative Smart Fix;
 - context-aware Word paragraph detection for short/ambiguous runs;
+- paragraph-aware Word audit grouping with collapsible run-level detail;
+- explicit direct vs paragraph-context detection diagnostics;
 - explicit Catalan vs Valencian choice;
 - human-readable fragment locations;
 - stored-language source diagnostics;
@@ -110,7 +112,7 @@ Effective proofing-language resolution order:
 
 Selected repair writes a direct `w:lang w:val` on the reviewed run.
 
-Word detection can use the normalized text of the containing paragraph when an individual run is too short or ambiguous. Paragraph context is used only when the paragraph detection is medium/high confidence, the paragraph contains multiple text runs, the current run contains linguistic text, and no reliably detected run in the paragraph contradicts the paragraph language. The UI labels these results as `paragraph context`; Smart Fix requires explicit review for them. Regression covers the real-world eight-run pattern observed in Word proofing markup (`Benvinguts a la sessió. Aquesta prova valida el document.`), with punctuation left undetected.
+Word detection can use the normalized text of the containing paragraph when an individual run is too short or ambiguous. Paragraph context is used only when the paragraph detection is medium/high confidence, the paragraph contains multiple text runs, the current run contains linguistic text, and no reliably detected run in the paragraph contradicts the paragraph language. Each Word fragment now carries a paragraph group identity and normalized paragraph text. The audit UI renders multi-run paragraphs as one collapsed readable unit, then exposes the underlying runs only when the user expands it; repair remains strictly run-level. Direct detections, paragraph-context detections, stored-language inheritance and rejected conflicting paragraph evidence are visible diagnostics. Contextual Smart Fix suggestions remain review-only. Regression covers the real-world eight-run pattern observed in Word proofing markup (`Benvinguts a la sessió. Aquesta prova valida el document.`), with punctuation left undetected, plus grouping isolation so distinct paragraphs/languages cannot be merged by audit ordering.
 
 DOCX manual validation confirmed Catalan, Galician and Basque repairs. DOCM, DOTX and DOTM passed structural/open validation in Word.
 
@@ -196,6 +198,7 @@ Each fragment can include:
 - stored language tag;
 - stored-language source;
 - detected language tag;
+- detection source (`direct` or `paragraph-context`);
 - confidence;
 - audit status;
 - selected repair target;
@@ -280,7 +283,8 @@ Current automated checks:
 - variant routing and macro-binary preservation;
 - Smart Fix safety policy;
 - fragment diagnostics labels;
-- CSV/JSON audit report serialization;
+- paragraph-aware audit grouping and paragraph/language isolation;
+- CSV/JSON audit report serialization, including detection source;
 - RTF scan + repair;
 - public UI identity, trust links, sample asset and logo;
 - TypeScript + Vite production build.

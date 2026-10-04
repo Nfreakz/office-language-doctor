@@ -32,6 +32,7 @@ const scan: ScanResult = {
       detectedIso3: 'cat',
       detectedTag: 'ca-ES',
       confidence: 'high',
+      detectionSource: 'direct',
       score: 0.8,
       margin: 0.3,
       mismatch: true,
@@ -46,6 +47,7 @@ const scan: ScanResult = {
       detectedIso3: 'eng',
       detectedTag: 'en-US',
       confidence: 'medium',
+      detectionSource: 'direct',
       score: 0.7,
       margin: 0.2,
       mismatch: false,
@@ -60,6 +62,7 @@ const scan: ScanResult = {
       detectedIso3: null,
       detectedTag: null,
       confidence: 'unknown',
+      detectionSource: 'direct',
       score: null,
       margin: null,
       mismatch: false,
@@ -74,6 +77,7 @@ assert.equal(report.schemaVersion, 1)
 assert.equal(report.document.fileName, 'Quarterly review.pptx')
 assert.equal(report.fragments[0].location, 'Slide 2')
 assert.equal(report.fragments[0].storedSource, 'Direct text')
+assert.equal(report.fragments[0].detectionSource, 'direct')
 assert.equal(report.fragments[0].status, 'mismatch')
 assert.equal(report.fragments[0].selectedFix, 'ca-ES')
 assert.equal(report.fragments[1].status, 'matches')
@@ -82,9 +86,19 @@ assert.equal(report.fragments[2].status, 'no_language')
 const json = auditReportToJson(report)
 assert.match(json, /"selectedFix": "ca-ES"/)
 assert.match(json, /"technicalPart": "ppt\/slides\/slide2.xml"/)
+assert.match(json, /"detectionSource": "direct"/)
 
-const csv = auditReportToCsv(report)
-assert.match(csv, /^"location","text","stored_language"/)
+const contextualReport = buildAuditReport({
+  ...scan,
+  fragments: scan.fragments.map((fragment, index) => index === 0
+    ? { ...fragment, detectionSource: 'paragraph-context' as const }
+    : fragment),
+})
+assert.equal(contextualReport.fragments[0].detectionSource, 'paragraph-context')
+
+const csv = auditReportToCsv(contextualReport)
+assert.match(csv, /^"location","text","stored_language","stored_source","detected_language","detection_source"/)
+assert.match(csv, /"paragraph-context"/)
 assert.match(csv, /"Slide 2","Benvinguts, equip","en-US"/)
 assert.match(csv, /"'=HYPERLINK\(""https:\/\/example\.invalid"",""test""\)"/)
 assert.equal(auditReportFileName('Quarterly review.pptx', 'csv'), 'Quarterly review-language-audit.csv')

@@ -32,6 +32,10 @@ export interface TextFragment {
   detectedTag: string | null
   confidence: DetectionConfidence
   detectionSource?: DetectionSource
+  paragraphGroupId?: string
+  paragraphIndex?: number
+  paragraphText?: string
+  paragraphContextConflict?: boolean
   score: number | null
   margin: number | null
   mismatch: boolean
