@@ -59,6 +59,7 @@ Version 0.5.0 is the initial public Community Edition baseline under MPL-2.0, wi
 - extension- and MIME-preserving repaired downloads;
 - byte-for-byte `vbaProject.bin` preservation checks for DOCM and PPTM;
 - calibrated detection across 29 language families, covering all 24 official EU languages plus Catalan/Valencian, Galician, Basque, Norwegian Bokmål and Turkish;
+- dedicated near-neighbor regression coverage for Iberian Romance, Czech/Slovak, Croatian/Slovenian, Nordic, Finnish/Estonian and Latvian/Lithuanian detection;
 - conservative Smart Fix selection;
 - context-aware Word paragraph detection for short or internally fragmented runs;
 - paragraph-aware Word audit UX that shows one readable paragraph summary and expands the underlying repairable runs only when needed;
@@ -148,6 +149,7 @@ The public visit counter is a simple external image request. It receives no docu
 npm install
 npm run check:xml
 npm run check:detector
+npm run check:language-duels
 npm run check:docx
 npm run check:odf
 npm run check:variants

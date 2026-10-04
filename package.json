@@ -18,7 +18,8 @@
     "check:paragraph-audit": "tsx scripts/check-paragraph-audit.mts",
     "check:report": "tsx scripts/check-audit-report.mts",
     "check:rtf": "tsx scripts/check-rtf.mts",
-    "check:public-ui": "tsx scripts/check-public-ui.mts"
+    "check:public-ui": "tsx scripts/check-public-ui.mts",
+    "check:language-duels": "tsx scripts/check-language-duels.mts"
   },
   "dependencies": {
     "franc-all": "7.2.0",

@@ -31,6 +31,7 @@
 
 ### Validation
 
+- dedicated neighboring-language duel regression now exercises 15 adversarial samples across Iberian Romance, Czech/Slovak, Croatian/Slovenian, Swedish/Danish/Norwegian, Finnish/Estonian and Latvian/Lithuanian groups;
 - detector calibration now covers 29 language families, including dedicated long-form samples and exact-label checks for Estonian, Irish, Latvian, Lithuanian and Maltese;
 - RTF regression validates LCID mapping and selected-repair round trips for `et-EE`, `ga-IE`, `lv-LV`, `lt-LT` and `mt-MT`;
 - detector calibration now covers 24 supported language families, with dedicated long-form samples for Greek, Turkish, Slovak, Slovenian, Croatian and Bulgarian;
