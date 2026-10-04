@@ -197,9 +197,11 @@ auditNext.addEventListener('click', () => {
 
 async function analyseFile(file: File): Promise<void> {
   if (appBusy) return
+  const hadCurrentSession = Boolean(currentFile && currentScan)
+
   setBusy(true)
   status.textContent = t('status.analyzing', { file: file.name })
-  results.classList.add('hidden')
+  if (!hadCurrentSession) results.classList.add('hidden')
 
   try {
     const scan = await scanDocument(file)
@@ -211,11 +213,8 @@ async function analyseFile(file: File): Promise<void> {
     status.textContent = t('status.analyzed', { file: file.name, format: formatLabel(scan.format) })
     results.classList.remove('hidden')
   } catch (error) {
-    currentFile = null
-    currentScan = null
-    fragmentFixState.clear()
-    expandedParagraphGroups.clear()
     status.textContent = documentErrorMessage(error, 'status.analyzeError')
+    if (hadCurrentSession) results.classList.remove('hidden')
   } finally {
     setBusy(false)
   }
