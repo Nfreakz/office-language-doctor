@@ -1,4 +1,5 @@
 import { detectTextLanguage, isLikelyMismatch } from '../language/detect'
+import { createCooperativeYield } from '../document/cooperative'
 import type {
   DetectedLanguageCount,
   LanguageCount,
@@ -17,6 +18,7 @@ interface MutableDetectedLanguageCount {
 export async function scanRtf(file: File): Promise<ScanResult> {
   const source = await loadRtf(file)
   const extracted = extractRtfTextFragments(source)
+  const maybeYield = createCooperativeYield()
   const storedCounts = new Map<string, number>()
   const detectedCounts = new Map<string, MutableDetectedLanguageCount>()
   const fragments: TextFragment[] = []
@@ -56,6 +58,9 @@ export async function scanRtf(file: File): Promise<ScanResult> {
       margin: detection.margin,
       mismatch: isLikelyMismatch(raw.storedTag, detection.tag, detection.confidence),
     })
+
+    const pause = maybeYield()
+    if (pause) await pause
   }
 
   const languages: LanguageCount[] = Array.from(storedCounts.entries())

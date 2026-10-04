@@ -1,4 +1,5 @@
 import { detectTextLanguage, isLikelyMismatch } from '../language/detect'
+import { createCooperativeYield } from '../document/cooperative'
 import { getOdfContentXml, getOdfStylesXml, loadOdf, odfFormatLabel } from './package'
 import { extractOdfTextFragments } from './xml'
 import type {
@@ -25,6 +26,7 @@ export async function scanOdf(file: File): Promise<ScanResult> {
   const contentXml = await getOdfContentXml(zip)
   const stylesXml = await getOdfStylesXml(zip)
   const extracted = extractOdfTextFragments(contentXml, stylesXml)
+  const maybeYield = createCooperativeYield()
   const storedCounts = new Map<string, MutableLanguageCount>()
   const detectedCounts = new Map<string, MutableDetectedLanguageCount>()
   const fragments: TextFragment[] = []
@@ -72,6 +74,9 @@ export async function scanOdf(file: File): Promise<ScanResult> {
       margin: detection.margin,
       mismatch: isLikelyMismatch(raw.storedTag, detection.tag, detection.confidence),
     })
+
+    const pause = maybeYield()
+    if (pause) await pause
   }
 
   const languages: LanguageCount[] = Array.from(storedCounts.values())

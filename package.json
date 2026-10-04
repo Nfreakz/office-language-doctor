@@ -16,6 +16,7 @@
     "check:diagnostics": "tsx scripts/check-fragment-diagnostics.mts",
     "check:i18n": "tsx scripts/check-i18n.mts",
     "check:user-errors": "tsx scripts/check-user-errors.mts",
+    "check:cooperative-scan": "tsx scripts/check-cooperative-scan.mts",
     "check:paragraph-audit": "tsx scripts/check-paragraph-audit.mts",
     "check:audit-session": "tsx scripts/check-audit-session.mts",
     "check:report": "tsx scripts/check-audit-report.mts",
