@@ -34,6 +34,12 @@ const expandedRtfMappings: Array<[number, string]> = [
   [1044, 'nb-NO'],
   [1035, 'fi-FI'],
   [1038, 'hu-HU'],
+  [1032, 'el-GR'],
+  [1055, 'tr-TR'],
+  [1051, 'sk-SK'],
+  [1060, 'sl-SI'],
+  [1050, 'hr-HR'],
+  [1026, 'bg-BG'],
 ]
 for (const [lcid, tag] of expandedRtfMappings) {
   assert.equal(rtfLcidToTag(lcid), tag)
@@ -95,11 +101,17 @@ const expandedSource = String.raw`{\rtf1\ansi\ansicpg1252\deff0\deflang1033
 \lang1033 Norsk bokmal:\par
 \lang1033 Suomi:\par
 \lang1033 Magyar:\par
+\lang1033 Greek:\par
+\lang1033 Turkish:\par
+\lang1033 Slovak:\par
+\lang1033 Slovenian:\par
+\lang1033 Croatian:\par
+\lang1033 Bulgarian:\par
 }`
 
 const expandedFile = new File([expandedSource], 'LanguageDoctor_EU_LANGUAGES.rtf', { type: 'application/rtf' })
 const expandedScan = await scanRtf(expandedFile)
-assert.equal(expandedScan.totalTextFragments, 9)
+assert.equal(expandedScan.totalTextFragments, 15)
 assert.deepEqual(expandedScan.fragments.map((fragment) => fragment.detectedTag), [
   'nl-NL',
   'pl-PL',
@@ -110,8 +122,14 @@ assert.deepEqual(expandedScan.fragments.map((fragment) => fragment.detectedTag),
   'nb-NO',
   'fi-FI',
   'hu-HU',
+  'el-GR',
+  'tr-TR',
+  'sk-SK',
+  'sl-SI',
+  'hr-HR',
+  'bg-BG',
 ])
-assert.equal(expandedScan.likelyMismatches, 9)
+assert.equal(expandedScan.likelyMismatches, 15)
 
 const expandedPatched = await patchRtfFragments(
   expandedFile,
@@ -139,6 +157,12 @@ assert.deepEqual(expandedRepaired.fragments.map((fragment) => fragment.storedTag
   'nb-NO',
   'fi-FI',
   'hu-HU',
+  'el-GR',
+  'tr-TR',
+  'sk-SK',
+  'sl-SI',
+  'hr-HR',
+  'bg-BG',
 ])
 
 const hexSource = String.raw`{\rtf1\ansi\ansicpg1252\deflang1036\lang1036 Fran\'e7ais\par}`

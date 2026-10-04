@@ -23,6 +23,12 @@ const reliableCases: Array<[string, string, string]> = [
   ['Norwegian Bokmål', 'Velkommen til arbeidsmøtet. Takk for deltakelsen og samarbeidet ditt i dette prosjektet.', 'nb-NO'],
   ['Finnish', 'Tervetuloa työskentelykokoukseen. Kiitos osallistumisestasi ja yhteistyöstäsi tässä hankkeessa.', 'fi-FI'],
   ['Hungarian', 'Üdvözöljük a munkamegbeszélésen. Köszönjük részvételét és együttműködését ebben a projektben.', 'hu-HU'],
+  ['Greek', 'Καλώς ήρθατε στη συνάντηση εργασίας. Σας ευχαριστούμε για τη συμμετοχή και τη συνεργασία σας σε αυτό το έργο.', 'el-GR'],
+  ['Turkish', 'Çalışma toplantısına hoş geldiniz. Bu projeye katılımınız ve iş birliğiniz için teşekkür ederiz.', 'tr-TR'],
+  ['Slovak', 'Vitajte na pracovnom stretnutí. Ďakujeme za vašu účasť a spoluprácu na tomto projekte.', 'sk-SK'],
+  ['Slovenian', 'Dobrodošli na delovnem srečanju. Hvala za vaše sodelovanje in udeležbo pri tem projektu.', 'sl-SI'],
+  ['Croatian', 'Dobrodošli na radni sastanak. Hvala vam na sudjelovanju i suradnji na ovom projektu.', 'hr-HR'],
+  ['Bulgarian', 'Добре дошли на работната среща. Благодарим ви за участието и сътрудничеството по този проект.', 'bg-BG'],
 ]
 
 for (const [name, text, expectedTag] of reliableCases) {
@@ -55,6 +61,12 @@ const exactLabels: Array<[string, string]> = [
   ['Norsk bokmål:', 'nb-NO'],
   ['Suomi:', 'fi-FI'],
   ['Magyar:', 'hu-HU'],
+  ['Ελληνικά:', 'el-GR'],
+  ['Türkçe:', 'tr-TR'],
+  ['Slovenčina:', 'sk-SK'],
+  ['Slovenščina:', 'sl-SI'],
+  ['Hrvatski:', 'hr-HR'],
+  ['Български:', 'bg-BG'],
 ]
 
 for (const [text, expectedTag] of exactLabels) {
@@ -80,6 +92,9 @@ assert.equal(isLikelyMismatch('nn-NO', 'nb-NO', 'high'), false)
 assert.equal(isLikelyMismatch('da-DK', 'nb-NO', 'high'), true)
 assert.equal(isLikelyMismatch('fi-FI', 'hu-HU', 'high'), true)
 assert.equal(isLikelyMismatch('pl-PL', 'cs-CZ', 'high'), true)
+assert.equal(isLikelyMismatch('sk-SK', 'cs-CZ', 'high'), true)
+assert.equal(isLikelyMismatch('sl-SI', 'hr-HR', 'high'), true)
+assert.equal(isLikelyMismatch('bg-BG', 'el-GR', 'high'), true)
 
 const fixtureEnglish = detectTextLanguage('Office Language Doctor · compatibility fixture')
 assert.notEqual(fixtureEnglish.confidence, 'high')
