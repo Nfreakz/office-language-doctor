@@ -1,4 +1,5 @@
 import { detectTextLanguage, isLikelyMismatch, languageFamily, type LanguageDetection } from '../language/detect'
+import { createCooperativeYield } from '../document/cooperative'
 import { getWordContentXmlParts, getWordStylesXml, loadWord } from './package'
 import { parseWordLanguageContext } from './styles'
 import { extractWordTextFragments } from './xml'
@@ -35,15 +36,19 @@ export async function scanWord(file: File): Promise<ScanResult> {
 
     const xml = await entry.async('string')
     const extracted = extractWordTextFragments(xml, context)
-    const directDetections = new Map(
-      extracted.map((raw) => [raw.runIndex, detectTextLanguage(raw.text)]),
-    )
+    const maybeYield = createCooperativeYield()
+    const directDetections = new Map<number, LanguageDetection>()
     const paragraphGroups = new Map<number, typeof extracted>()
 
     for (const raw of extracted) {
+      directDetections.set(raw.runIndex, detectTextLanguage(raw.text))
+
       const group = paragraphGroups.get(raw.paragraphIndex) ?? []
       group.push(raw)
       paragraphGroups.set(raw.paragraphIndex, group)
+
+      const pause = maybeYield()
+      if (pause) await pause
     }
 
     const paragraphContexts = new Map<number, {
@@ -72,6 +77,9 @@ export async function scanWord(file: File): Promise<ScanResult> {
         !conflict
 
       paragraphContexts.set(paragraphIndex, { detection, usable, conflict })
+
+      const pause = maybeYield()
+      if (pause) await pause
     }
 
     for (const raw of extracted) {
@@ -132,6 +140,9 @@ export async function scanWord(file: File): Promise<ScanResult> {
         margin: detection.margin,
         mismatch: isLikelyMismatch(raw.storedTag, detection.tag, detection.confidence),
       })
+
+      const pause = maybeYield()
+      if (pause) await pause
     }
   }
 

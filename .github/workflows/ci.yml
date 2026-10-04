@@ -86,6 +86,9 @@ jobs:
       - name: Check localized document errors
         run: npm run check:user-errors
 
+      - name: Check cooperative large-document scheduling
+        run: npm run check:cooperative-scan
+
       - name: Check paragraph-aware audit grouping
         run: npm run check:paragraph-audit
 

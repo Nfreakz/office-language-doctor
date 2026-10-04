@@ -1,4 +1,5 @@
 import { detectTextLanguage, isLikelyMismatch } from '../language/detect'
+import { createCooperativeYield } from '../document/cooperative'
 import { getPowerPointContentXmlParts, loadPowerPoint } from './package'
 import { extractTextFragments } from './xml'
 import type {
@@ -33,6 +34,7 @@ export async function scanPowerPoint(file: File): Promise<ScanResult> {
 
     const xml = await entry.async('string')
     const extracted = extractTextFragments(xml)
+    const maybeYield = createCooperativeYield()
 
     for (const raw of extracted) {
       if (raw.storedTag) {
@@ -76,6 +78,9 @@ export async function scanPowerPoint(file: File): Promise<ScanResult> {
         margin: detection.margin,
         mismatch: isLikelyMismatch(raw.storedTag, detection.tag, detection.confidence),
       })
+
+      const pause = maybeYield()
+      if (pause) await pause
     }
   }
 

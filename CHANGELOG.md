@@ -26,6 +26,7 @@
 
 ### Changed
 
+- language detection in Word, PowerPoint, OpenDocument and RTF scans now cooperatively yields after sustained CPU work, keeping the browser responsive on large documents without changing detection or repair results;
 - document analysis/repair is now exclusive at the UI boundary: drag-and-drop remains intercepted but is ignored safely while work is in progress, preventing overlapping scans, premature control re-enabling and browser default file handling;
 - recoverable document/package errors now use stable internal error codes and are localized at the UI boundary in Catalan, Spanish and English; unknown library exceptions fall back to localized generic messages instead of leaking raw technical English;
 - audit page sizes are bounded to 10 / 25 / 50 / 100 visible items; full CSV/JSON export remains available for the complete document, avoiding an accidental thousands-row DOM render;
@@ -38,6 +39,7 @@
 
 ### Validation
 
+- cooperative-scan scheduling regression verifies time-budgeted yielding, no unnecessary pauses under budget and slice reset after yielding;
 - localized-error regression covers every document error code in CA/ES/EN plus corrupt DOCX, PPTX, ODF and RTF inputs and confirms unknown exceptions do not leak their raw message;
 - audit-session scale regression exercises 12,000 Word-style fragments, paragraph grouping, bounded pagination, post-repair filter fallback and iterative repaired-file naming;
 - full-document Smart Fix regression now also serializes the repaired scan into the audit report, closing the analyse → review → repair → report loop;
