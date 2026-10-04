@@ -213,7 +213,10 @@ async function analyseFile(file: File): Promise<void> {
     status.textContent = t('status.analyzed', { file: file.name, format: formatLabel(scan.format) })
     results.classList.remove('hidden')
   } catch (error) {
-    status.textContent = documentErrorMessage(error, 'status.analyzeError')
+    const message = documentErrorMessage(error, 'status.analyzeError')
+    status.textContent = hadCurrentSession
+      ? `${message} ${t('status.previousSessionKept')}`
+      : message
     if (hadCurrentSession) results.classList.remove('hidden')
   } finally {
     setBusy(false)
