@@ -106,6 +106,9 @@ const fragmentedDocumentXml = `<?xml version="1.0" encoding="UTF-8" standalone="
       <w:r><w:rPr><w:lang w:val="en-GB"/></w:rPr><w:t xml:space="preserve"> valida</w:t></w:r>
       <w:r><w:rPr><w:lang w:val="en-GB"/></w:rPr><w:t xml:space="preserve"> el document.</w:t></w:r>
     </w:p>
+    <w:p>
+      <w:r><w:rPr><w:lang w:val="en-GB"/></w:rPr><w:t>2026</w:t></w:r>
+    </w:p>
     <w:sectPr/>
   </w:body>
 </w:document>`
@@ -129,19 +132,32 @@ const fragmentedBytes = await fragmentedZip.generateAsync({ type: 'uint8array' }
 const fragmentedFile = new File([fragmentedBytes], 'Word_fragmented_by_proofing.docx', { type: mime })
 const fragmented = await scanWord(fragmentedFile)
 
-assert.equal(fragmented.totalTextFragments, 8)
-assert.equal(new Set(fragmented.fragments.map((fragment) => fragment.paragraphGroupId)).size, 1)
-assert.ok(fragmented.fragments.every((fragment) => fragment.paragraphIndex === 0))
-assert.ok(fragmented.fragments.every(
+assert.equal(fragmented.totalTextFragments, 9)
+assert.equal(new Set(fragmented.fragments.map((fragment) => fragment.paragraphGroupId)).size, 2)
+
+const firstParagraph = fragmented.fragments.filter((fragment) => fragment.paragraphIndex === 0)
+assert.equal(firstParagraph.length, 8)
+assert.ok(firstParagraph.every(
   (fragment) => fragment.paragraphText === 'Benvinguts a la sessió. Aquesta prova valida el document.',
 ))
+
+const isolatedNumericParagraph = fragmented.fragments.find((fragment) => fragment.text === '2026')
+assert.ok(isolatedNumericParagraph)
+assert.equal(isolatedNumericParagraph.paragraphIndex, 1)
+assert.equal(isolatedNumericParagraph.paragraphText, '2026')
+assert.equal(isolatedNumericParagraph.detectedTag, null)
+assert.equal(isolatedNumericParagraph.detectionSource, 'direct')
+assert.equal(isolatedNumericParagraph.mismatch, false)
+
 const punctuation = fragmented.fragments.find((fragment) => fragment.text === '.')
 assert.ok(punctuation)
 assert.equal(punctuation.detectedTag, null)
 assert.equal(punctuation.detectionSource, 'direct')
 assert.equal(punctuation.mismatch, false)
 
-const contextualFragments = fragmented.fragments.filter((fragment) => fragment.text !== '.')
+const contextualFragments = fragmented.fragments.filter(
+  (fragment) => fragment.paragraphIndex === 0 && fragment.text !== '.',
+)
 assert.equal(contextualFragments.length, 7)
 for (const fragment of contextualFragments) {
   assert.equal(fragment.detectedTag, 'ca-ES', `Expected Catalan context for "${fragment.text}"`)
