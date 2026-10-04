@@ -62,6 +62,9 @@ jobs:
       - name: Check synthetic full-document corpus
         run: npm run check:document-corpus
 
+      - name: Check Smart Fix on full documents
+        run: npm run check:smart-document
+
       - name: Check Word scan and repair
         run: npm run check:docx
 

@@ -22,7 +22,8 @@
     "check:language-duels": "tsx scripts/check-language-duels.mts",
     "check:ambiguity": "tsx scripts/check-ambiguity.mts",
     "check:office-corpus": "tsx scripts/check-office-corpus.mts",
-    "check:document-corpus": "tsx scripts/check-document-corpus.mts"
+    "check:document-corpus": "tsx scripts/check-document-corpus.mts",
+    "check:smart-document": "tsx scripts/check-smart-document.mts"
   },
   "dependencies": {
     "franc-all": "7.2.0",

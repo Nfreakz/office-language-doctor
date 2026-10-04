@@ -63,6 +63,7 @@ Version 0.5.0 is the initial public Community Edition baseline under MPL-2.0, wi
 - explicit ambiguity safety for neutral codes/values, multilingual slash-separated labels and low-confidence language guesses, preferring unknown over a false mismatch;
 - real-world Office fragment corpus covering document chrome, headers, footers, table labels, project names, mixed labels and short prose controls, with conservative title/authorship metadata handling;
 - synthetic full-document DOCX/PPTX regression covering body/table/header/footer and slide/notes/chart/SmartArt locations, selective repair, final zero-mismatch repair and binary-sentinel preservation;
+- full-document Smart Fix regression proving that only high-confidence direct non-Catalan/Valencian mismatches are preselected while medium-confidence, contextual, Catalan/Valencian, matching and non-linguistic fragments remain untouched;
 - conservative Smart Fix selection;
 - context-aware Word paragraph detection for short or internally fragmented runs;
 - paragraph-aware Word audit UX that shows one readable paragraph summary and expands the underlying repairable runs only when needed;
@@ -156,6 +157,7 @@ npm run check:language-duels
 npm run check:ambiguity
 npm run check:office-corpus
 npm run check:document-corpus
+npm run check:smart-document
 npm run check:docx
 npm run check:odf
 npm run check:variants
