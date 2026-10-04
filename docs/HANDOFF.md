@@ -33,6 +33,8 @@ Version `0.5.0` is the first public Community Edition release in the rebuilt rep
 
 Changes after the release tag must accumulate under Unreleased without automatically changing the package version.
 
+Current Unreleased work includes paragraph-aware Word auditing and explicit paragraph review controls. The package version remains 0.5.0.
+
 ## Product scope
 
 Office Language Doctor is a privacy-first browser utility for auditing and repairing proofing-language metadata without uploading the document.
