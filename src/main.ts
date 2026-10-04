@@ -8,6 +8,13 @@ import {
 } from './lib/document/engine'
 import type { FragmentFix, ScanResult, TextFragment } from './lib/document/types'
 import { buildAuditEntries, type AuditEntry } from './lib/document/audit-groups'
+import {
+  DEFAULT_AUDIT_PAGE_SIZE,
+  parseAuditPageSize,
+  resolveAuditWindow,
+  resolvePostRepairAuditFilter,
+  type AuditFilter,
+} from './lib/document/audit-view'
 import { fragmentLocationLabel, storedLanguageSourceLabel } from './lib/document/labels'
 import {
   getParagraphReviewPlan,
@@ -27,10 +34,6 @@ import {
   t,
   type UiLocale,
 } from './i18n'
-
-const DEFAULT_AUDIT_PAGE_SIZE = 10
-
-type AuditFilter = 'issues' | 'all' | 'matches' | 'undetected'
 
 interface FragmentFixState {
   checked: boolean
@@ -81,7 +84,7 @@ let currentScan: ScanResult | null = null
 let globalFixAllowed = true
 let auditFilter: AuditFilter = 'issues'
 let auditPage = 0
-let auditPageSizeValue: number | 'all' = DEFAULT_AUDIT_PAGE_SIZE
+let auditPageSizeValue = DEFAULT_AUDIT_PAGE_SIZE
 const fragmentFixState = new Map<string, FragmentFixState>()
 const expandedParagraphGroups = new Set<string>()
 
@@ -165,10 +168,7 @@ filterMatches.addEventListener('click', () => setAuditFilter('matches'))
 filterUndetected.addEventListener('click', () => setAuditFilter('undetected'))
 
 auditPageSize.addEventListener('change', () => {
-  auditPageSizeValue = auditPageSize.value === 'all'
-    ? 'all'
-    : Number.parseInt(auditPageSize.value, 10)
-
+  auditPageSizeValue = parseAuditPageSize(auditPageSize.value)
   auditPage = 0
   renderAuditRows()
 })
@@ -182,9 +182,8 @@ auditPrevious.addEventListener('click', () => {
 auditNext.addEventListener('click', () => {
   const filtered = getFilteredAuditFragments()
   const total = buildAuditEntries(currentScan?.fragments ?? [], filtered).length
-  const pageSize = getAuditPageSize(total)
-  const pageCount = Math.max(1, Math.ceil(total / pageSize))
-  if (auditPage >= pageCount - 1) return
+  const window = resolveAuditWindow(total, auditPage, auditPageSizeValue)
+  if (auditPage >= window.pageCount - 1) return
   auditPage += 1
   renderAuditRows()
 })
@@ -356,14 +355,10 @@ function renderAuditRows(): void {
 
   const filtered = getFilteredAuditFragments()
   const entries = buildAuditEntries(currentScan?.fragments ?? [], filtered)
-  const pageSize = getAuditPageSize(entries.length)
-  const pageCount = Math.max(1, Math.ceil(entries.length / pageSize))
-  auditPage = Math.min(auditPage, pageCount - 1)
+  const window = resolveAuditWindow(entries.length, auditPage, auditPageSizeValue)
+  auditPage = window.page
 
-  const start = auditPageSizeValue === 'all' ? 0 : auditPage * pageSize
-  const end = auditPageSizeValue === 'all'
-    ? entries.length
-    : Math.min(start + pageSize, entries.length)
+  const { start, end, pageCount } = window
   const visible = entries.slice(start, end)
 
   for (const entry of visible) {
@@ -407,18 +402,10 @@ function renderAuditRows(): void {
   auditNext.disabled = auditPage >= pageCount - 1
   auditPagination.classList.toggle(
     'hidden',
-    auditPageSizeValue === 'all' || entries.length <= pageSize,
+    entries.length <= window.pageSize,
   )
 
   updateSmartFixes()
-}
-
-function getAuditPageSize(total: number): number {
-  if (auditPageSizeValue === 'all') {
-    return Math.max(1, total)
-  }
-
-  return Math.max(1, auditPageSizeValue)
 }
 
 function updateAuditFilterButtons(): void {
@@ -976,6 +963,31 @@ function updatePreparedChanges(): void {
       )
 }
 
+async function refreshRepairedSession(blob: Blob, fileName: string): Promise<ScanResult> {
+  const previousFilter = auditFilter
+  const previousPage = auditPage
+  const repairedFile = new File([blob], fileName, {
+    type: blob.type || currentFile?.type || '',
+    lastModified: Date.now(),
+  })
+  const scan = await scanDocument(repairedFile)
+
+  currentFile = repairedFile
+  currentScan = scan
+  fragmentFixState.clear()
+
+  renderScan(scan)
+  auditFilter = resolvePostRepairAuditFilter(previousFilter, scan.likelyMismatches)
+  auditPage = previousPage
+  renderAuditRows()
+
+  return scan
+}
+
+function repairedAuditStatus(scan: ScanResult): string {
+  return t('repair.rechecked', { mismatches: formatNumber(scan.likelyMismatches) })
+}
+
 async function repairWholeDocument(): Promise<void> {
   if (!currentFile) return
   const replacements = getPreparedReplacements()
@@ -985,12 +997,22 @@ async function repairWholeDocument(): Promise<void> {
   status.textContent = t('repair.globalWorking')
 
   try {
-    const result = await patchDocument(currentFile, replacements)
-    downloadBlob(result.blob, repairedFileName(currentFile, false))
-    status.textContent = t('repair.globalDone', {
+    const sourceFile = currentFile
+    const fileName = repairedFileName(sourceFile, false)
+    const result = await patchDocument(sourceFile, replacements)
+    const done = t('repair.globalDone', {
       fragments: formatNumber(result.changedFragments),
       parts: formatNumber(result.changedParts),
     })
+
+    downloadBlob(result.blob, fileName)
+
+    try {
+      const refreshed = await refreshRepairedSession(result.blob, fileName)
+      status.textContent = `${done} ${repairedAuditStatus(refreshed)}`
+    } catch {
+      status.textContent = `${done} ${t('repair.recheckError')}`
+    }
   } catch (error) {
     status.textContent = error instanceof Error ? error.message : t('repair.globalError')
   } finally {
@@ -1007,12 +1029,22 @@ async function repairSelectedFragments(): Promise<void> {
   status.textContent = t('repair.selectedWorking')
 
   try {
-    const result = await patchDocumentFragments(currentFile, fixes)
-    downloadBlob(result.blob, repairedFileName(currentFile, true))
-    status.textContent = t('repair.selectedDone', {
+    const sourceFile = currentFile
+    const fileName = repairedFileName(sourceFile, true)
+    const result = await patchDocumentFragments(sourceFile, fixes)
+    const done = t('repair.selectedDone', {
       fragments: formatNumber(result.changedFragments),
       parts: formatNumber(result.changedParts),
     })
+
+    downloadBlob(result.blob, fileName)
+
+    try {
+      const refreshed = await refreshRepairedSession(result.blob, fileName)
+      status.textContent = `${done} ${repairedAuditStatus(refreshed)}`
+    } catch {
+      status.textContent = `${done} ${t('repair.recheckError')}`
+    }
   } catch (error) {
     status.textContent = error instanceof Error ? error.message : t('repair.selectedError')
   } finally {
