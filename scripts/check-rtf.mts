@@ -157,6 +157,12 @@ assert.deepEqual(expandedRepaired.fragments.map((fragment) => fragment.storedTag
   'nb-NO',
   'fi-FI',
   'hu-HU',
+  'el-GR',
+  'tr-TR',
+  'sk-SK',
+  'sl-SI',
+  'hr-HR',
+  'bg-BG',
 ])
 
 const hexSource = String.raw`{\rtf1\ansi\ansicpg1252\deflang1036\lang1036 Fran\'e7ais\par}`
