@@ -81,6 +81,7 @@ const exportCsvButton = requiredElement<HTMLButtonElement>('export-audit-csv')
 const exportJsonButton = requiredElement<HTMLButtonElement>('export-audit-json')
 
 let currentFile: File | null = null
+let appBusy = false
 let currentScan: ScanResult | null = null
 let globalFixAllowed = true
 let auditFilter: AuditFilter = 'issues'
@@ -139,13 +140,15 @@ fileInput.addEventListener('change', () => {
 
 dropzone.addEventListener('dragover', (event) => {
   event.preventDefault()
-  dropzone.classList.add('is-dragging')
+  if (!appBusy) dropzone.classList.add('is-dragging')
 })
 
 dropzone.addEventListener('dragleave', () => dropzone.classList.remove('is-dragging'))
 dropzone.addEventListener('drop', (event) => {
   event.preventDefault()
   dropzone.classList.remove('is-dragging')
+  if (appBusy) return
+
   const file = event.dataTransfer?.files[0]
   if (file) void analyseFile(file)
 })
@@ -190,6 +193,7 @@ auditNext.addEventListener('click', () => {
 })
 
 async function analyseFile(file: File): Promise<void> {
+  if (appBusy) return
   setBusy(true)
   status.textContent = t('status.analyzing', { file: file.name })
   results.classList.add('hidden')
@@ -1088,7 +1092,10 @@ function exportAuditReport(format: 'csv' | 'json'): void {
 }
 
 function setBusy(busy: boolean): void {
+  appBusy = busy
   fileInput.disabled = busy
+  dropzone.classList.toggle('is-busy', busy)
+  dropzone.setAttribute('aria-disabled', String(busy))
   repairButton.disabled = busy || getPreparedReplacements().size === 0 || !currentFile
   smartRepairButton.disabled = busy || getSelectedFragmentFixes().length === 0 || !currentFile
   applyGlobal.disabled = busy || !globalFixAllowed

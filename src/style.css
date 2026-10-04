@@ -223,7 +223,16 @@ code { display: inline-block; padding: 3px 6px; border-radius: 5px; background: 
 .notes { margin-top: 22px; padding: 0 4px; color: #697486; font-size: .88rem; line-height: 1.65; }
 .notes p { margin: 8px 0; }
 .hidden { display: none; }
-.is-busy .dropzone, .is-busy button { pointer-events: none; }
+.is-busy button { pointer-events: none; }
+
+.dropzone.is-busy {
+  opacity: 0.68;
+  cursor: wait;
+}
+
+.dropzone.is-busy .dropzone-action {
+  opacity: 0.72;
+}
 
 @media (max-width: 760px) {
   .shell { width: min(100% - 22px, 1180px); padding-top: 38px; }

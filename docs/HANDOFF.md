@@ -71,6 +71,7 @@ XLSX is not a proofing-language repair target because SpreadsheetML does not exp
 - stored-language source diagnostics;
 - audit filters and bounded pagination at 10 / 25 / 50 / 100 visible items, while CSV/JSON export still covers the full document;
 - repaired copies are immediately rescanned in-browser so the active audit, Smart Fix state and exported report reflect the repaired file without a manual re-upload;
+- analysis and repair operations are exclusive in the browser UI; drag-and-drop remains intercepted while busy so a second file cannot start an overlapping scan or fall through to browser default file handling;
 - document/package failures use stable engine error codes and localized CA / ES / EN UI messages; unexpected library errors fall back to a localized generic message instead of exposing raw technical text;
 - selected-fragment repair;
 - safe global remapping when mixed-language content is not detected;
@@ -312,7 +313,7 @@ Current automated checks:
 - large-audit session regression covering 12,000 fragments, bounded pagination, post-repair filter fallback and iterative repaired-file naming;
 - CSV/JSON audit report serialization, including detection source;
 - RTF scan + repair;
-- public UI identity, trust links, sample asset and logo;
+- public UI identity, trust links, sample asset and logo, including exclusive busy-state/dropzone guards;
 - TypeScript + Vite production build.
 
 ## GitHub Pages deployment
