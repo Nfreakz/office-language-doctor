@@ -76,6 +76,7 @@ XLSX is not a proofing-language repair target because SpreadsheetML does not exp
 - the native file input is reset immediately after capturing the selected File so the same document can be selected again for a fresh audit without a page reload;
 - Word, PowerPoint, OpenDocument and RTF detection loops cooperatively yield after sustained CPU slices so large documents do not monopolize the browser event loop;
 - document/package failures use stable engine error codes and localized CA / ES / EN UI messages; unexpected library errors fall back to a localized generic message instead of exposing raw technical text;
+- replacement analysis is transactional at the UI boundary: a corrupt or unsupported new file cannot erase an already valid audit session or its review state;
 - selected-fragment repair;
 - safe global remapping when mixed-language content is not detected;
 - extension/MIME-preserving repaired downloads;
@@ -318,7 +319,7 @@ Current automated checks:
 - large-audit session regression covering 12,000 fragments, bounded pagination, post-repair filter fallback, iterative repaired-file naming and preservation of explicit Smart Fix review decisions across repair rescans;
 - CSV/JSON audit report serialization, including detection source;
 - RTF scan + repair;
-- public UI identity, trust links, sample asset and logo, including exclusive busy-state/dropzone guards;
+- public UI identity, trust links, sample asset and logo, including exclusive busy-state/dropzone guards and failed replacement-scan session preservation;
 - TypeScript + Vite production build.
 
 ## GitHub Pages deployment
