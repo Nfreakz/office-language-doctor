@@ -201,6 +201,10 @@ export function detectTextLanguage(text: string): LanguageDetection {
   const exactLabel = detectExactLanguageLabel(normalized)
   if (exactLabel) return exactLabel
 
+  if (looksLikeNonProseIdentifier(normalized) || looksLikeDelimitedLabel(normalized)) {
+    return unknownDetection()
+  }
+
   const letterCount = normalized.match(/\p{L}/gu)?.length ?? 0
 
   if (letterCount < 10) {
@@ -272,6 +276,16 @@ export function detectTextLanguage(text: string): LanguageDetection {
     confidence = 'medium'
   }
 
+  if (confidence === 'low') {
+    return {
+      iso3: null,
+      tag: null,
+      confidence: 'unknown',
+      score: best[1],
+      margin,
+    }
+  }
+
   return {
     iso3: best[0],
     tag: ISO3_TO_TAG[best[0]],
@@ -328,6 +342,30 @@ export function isLikelyMismatch(
   }
 
   return languageFamily(storedTag) !== languageFamily(detectedTag)
+}
+
+function looksLikeNonProseIdentifier(text: string): boolean {
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(text)) return true
+  if (/^[a-z][a-z0-9+.-]*:\/\/\S+$/iu.test(text)) return true
+  if (/^[^\s/]+\.[a-z]{2,}(?:\/\S*)?$/iu.test(text)) return true
+  return false
+}
+
+function looksLikeDelimitedLabel(text: string): boolean {
+  if (!/[\/·|]/u.test(text)) return false
+
+  const parts = text
+    .split(/[\/·|]/u)
+    .map((part) => part.trim())
+    .filter(Boolean)
+
+  if (parts.length < 2 || parts.length > 4) return false
+
+  return parts.every((part) => {
+    const words = part.match(/\p{L}+/gu) ?? []
+    const letters = part.match(/\p{L}/gu)?.length ?? 0
+    return words.length >= 1 && words.length <= 4 && letters <= 30
+  })
 }
 
 function detectExactLanguageLabel(text: string): LanguageDetection | null {

@@ -53,6 +53,9 @@ jobs:
       - name: Check neighboring-language duels
         run: npm run check:language-duels
 
+      - name: Check ambiguous fragment safety
+        run: npm run check:ambiguity
+
       - name: Check Word scan and repair
         run: npm run check:docx
 

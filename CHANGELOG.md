@@ -25,12 +25,14 @@
 
 ### Changed
 
+- low-confidence detector candidates are now normalized to unknown instead of exposing an unreliable language label; exact labels and medium/high detections are unchanged;
 - simplified the public header so GitHub and issue actions are no longer duplicated; both remain available in the footer;
 - moved Buy Me a Coffee from the prominent yellow hero action to a subdued footer link;
 - corrected the public interface language-coverage copy from 14 to 18 detected families after the second European coverage pack.
 
 ### Validation
 
+- ambiguous-fragment safety regression covers neutral codes/values, multilingual slash-separated labels and short reliable-language controls so uncertain fragments prefer unknown instead of a false mismatch;
 - dedicated neighboring-language duel regression now exercises 15 adversarial samples across Iberian Romance, Czech/Slovak, Croatian/Slovenian, Swedish/Danish/Norwegian, Finnish/Estonian and Latvian/Lithuanian groups;
 - detector calibration now covers 29 language families, including dedicated long-form samples and exact-label checks for Estonian, Irish, Latvian, Lithuanian and Maltese;
 - RTF regression validates LCID mapping and selected-repair round trips for `et-EE`, `ga-IE`, `lv-LV`, `lt-LT` and `mt-MT`;
