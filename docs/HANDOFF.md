@@ -75,6 +75,7 @@ XLSX is not a proofing-language repair target because SpreadsheetML does not exp
 - explicit Smart Fix review decisions are preserved across that repaired-file rescan for fragments that remain actionable, including deliberate deselection and Catalan / Valencian target choice;
 - analysis and repair operations are exclusive in the browser UI; drag-and-drop remains intercepted while busy so a second file cannot start an overlapping scan or fall through to browser default file handling;
 - repair CTA state calculations also honor the busy flag, so audit re-renders cannot accidentally re-enable global or Smart Fix actions; locale switching is disabled during active operations to prevent status/state rewrites;
+- the results panel becomes inert and `aria-busy` during active operations, preventing per-fragment/per-language review state from changing after a repair has already snapshotted its inputs;
 - the native file input is reset immediately after capturing the selected File so the same document can be selected again for a fresh audit without a page reload;
 - Word, PowerPoint, OpenDocument and RTF detection loops cooperatively yield after sustained CPU slices so large documents do not monopolize the browser event loop;
 - document/package failures use stable engine error codes and localized CA / ES / EN UI messages; unexpected library errors fall back to a localized generic message instead of exposing raw technical text;
@@ -325,7 +326,7 @@ Current automated checks:
 - large-audit session regression covering 12,000 fragments, bounded pagination, post-repair filter fallback, iterative repaired-file naming and preservation of explicit Smart Fix review decisions across repair rescans;
 - CSV/JSON audit report serialization, including detection source;
 - RTF scan + repair;
-- public UI identity, trust links, sample asset and logo, including exclusive busy-state/dropzone guards, failed replacement-scan session preservation and re-render-safe repair CTA locking;
+- public UI identity, trust links, sample asset and logo, including exclusive busy-state/dropzone guards, failed replacement-scan session preservation, re-render-safe repair CTA locking and inert audit review while busy;
 - TypeScript + Vite production build.
 
 ## GitHub Pages deployment
