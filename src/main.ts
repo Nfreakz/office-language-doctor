@@ -23,7 +23,7 @@ import {
 } from './lib/document/repair-session'
 import {
   getParagraphReviewPlan,
-  isReliableMismatch,
+  isReviewIssue,
   requiresVariantChoice,
   shouldPreselectSmartFix,
 } from './lib/language/smart-fix'
@@ -230,12 +230,13 @@ async function analyseFile(file: File): Promise<void> {
 function renderScan(scan: ScanResult): void {
   const reliableDetectedLanguages = scan.detectedLanguages.filter((language) => language.reliableCount > 0)
   const undetectedCount = scan.fragments.filter(isUndetectedFragment).length
+  const reviewIssueCount = countReviewIssues(scan)
 
   statFragments.textContent = formatNumber(scan.totalTextFragments)
   statLanguages.textContent = formatNumber(reliableDetectedLanguages.length)
-  statIssues.textContent = formatNumber(scan.likelyMismatches)
+  statIssues.textContent = formatNumber(reviewIssueCount)
   statUndetected.textContent = formatNumber(undetectedCount)
-  statIssues.parentElement?.classList.toggle('is-clean', scan.likelyMismatches === 0)
+  statIssues.parentElement?.classList.toggle('is-clean', reviewIssueCount === 0)
 
   summary.textContent = t(
     scan.languages.length === 1 ? 'summary.storedTags.one' : 'summary.storedTags.many',
@@ -288,6 +289,7 @@ function renderScan(scan: ScanResult): void {
 }
 
 function renderTextAudit(scan: ScanResult): void {
+  const reviewIssueCount = countReviewIssues(scan)
   const reliableDetected = scan.detectedLanguages.filter((language) => language.reliableCount > 0)
   const detectedNames = reliableDetected
     .map((language) => detectedLanguageLabel(language.tag))
@@ -305,21 +307,21 @@ function renderTextAudit(scan: ScanResult): void {
 
   initializeFragmentFixState(scan)
 
-  auditFilter = scan.likelyMismatches > 0 ? 'issues' : 'all'
+  auditFilter = reviewIssueCount > 0 ? 'issues' : 'all'
   auditPage = 0
 
-  filterIssuesCount.textContent = formatNumber(scan.fragments.filter((fragment) => fragment.mismatch).length)
+  filterIssuesCount.textContent = formatNumber(reviewIssueCount)
   filterAllCount.textContent = formatNumber(scan.fragments.length)
   filterMatchesCount.textContent = formatNumber(scan.fragments.filter(isMatchedFragment).length)
   filterUndetectedCount.textContent = formatNumber(scan.fragments.filter(isUndetectedFragment).length)
 
-  smartActions.classList.toggle('hidden', scan.likelyMismatches === 0)
+  smartActions.classList.toggle('hidden', reviewIssueCount === 0)
   renderAuditRows()
 }
 
 function initializeFragmentFixState(scan: ScanResult): void {
   for (const fragment of scan.fragments) {
-    if (!isReliableMismatch(fragment) || !fragment.detectedTag) continue
+    if (!isReviewIssue(fragment) || !fragment.detectedTag) continue
 
     const needsVariantChoice = requiresVariantChoice(fragment)
     if (!fragmentFixState.has(fragment.id)) {
@@ -341,6 +343,9 @@ function getOrderedFragments(): TextFragment[] {
   if (!currentScan) return []
 
   return [...currentScan.fragments].sort((a, b) => {
+    const aIssue = isReviewIssue(a)
+    const bIssue = isReviewIssue(b)
+    if (aIssue !== bIssue) return aIssue ? -1 : 1
     if (a.mismatch !== b.mismatch) return a.mismatch ? -1 : 1
     return confidenceRank(b.confidence) - confidenceRank(a.confidence)
   })
@@ -350,7 +355,7 @@ function getFilteredAuditFragments(): TextFragment[] {
   const ordered = getOrderedFragments()
 
   if (auditFilter === 'issues') {
-    return ordered.filter((fragment) => fragment.mismatch)
+    return ordered.filter(isReviewIssue)
   }
 
   if (auditFilter === 'matches') {
@@ -436,7 +441,7 @@ function updateAuditFilterButtons(): void {
     button.setAttribute('aria-pressed', String(active))
   }
 
-  filterIssues.disabled = !currentScan || currentScan.likelyMismatches === 0
+  filterIssues.disabled = !currentScan || countReviewIssues(currentScan) === 0
 }
 
 function emptyAuditMessage(): string {
@@ -460,7 +465,7 @@ function createParagraphAuditRows(entry: AuditEntry): DocumentFragment {
   summaryRow.className = 'paragraph-summary-row'
   summaryRow.dataset.paragraphGroupId = groupId
 
-  const issueCount = entry.allFragments.filter((fragment) => fragment.mismatch).length
+  const issueCount = entry.allFragments.filter(isReviewIssue).length
   if (issueCount > 0) summaryRow.classList.add('has-issue')
 
   const cell = document.createElement('td')
@@ -648,7 +653,7 @@ function createParagraphReviewControl(entry: AuditEntry): HTMLElement | null {
 function createFragmentRow(fragment: TextFragment, grouped = false): HTMLTableRowElement {
   const row = document.createElement('tr')
   row.dataset.fragmentId = fragment.id
-  if (fragment.mismatch) row.classList.add('has-issue')
+  if (isReviewIssue(fragment)) row.classList.add('has-issue')
 
   const textCell = document.createElement('td')
   const storedCell = document.createElement('td')
@@ -741,11 +746,7 @@ function createFragmentRow(fragment: TextFragment, grouped = false): HTMLTableRo
   }
   statusCell.append(badge)
 
-  if (
-    fragment.mismatch &&
-    fragment.detectedTag &&
-    (fragment.confidence === 'high' || fragment.confidence === 'medium')
-  ) {
+  if (isReviewIssue(fragment)) {
     fixCell.append(createFragmentFixControl(fragment))
   } else {
     const noSuggestion = document.createElement('span')
@@ -860,7 +861,7 @@ function updateSmartFixes(): void {
     return
   }
 
-  const actionable = currentScan.fragments.filter(isReliableMismatch)
+  const actionable = currentScan.fragments.filter(isReviewIssue)
   const pendingReview = actionable.filter((fragment) => {
     const state = fragmentFixState.get(fragment.id)
     return !state?.checked || !state.targetTag
@@ -881,6 +882,10 @@ function updateSmartFixes(): void {
         pending: formatNumber(pendingReview),
       })
     : t('smart.selectedDone', { selected: formatNumber(fixes.length) })
+}
+
+function countReviewIssues(scan: ScanResult): number {
+  return scan.fragments.filter(isReviewIssue).length
 }
 
 function isUndetectedFragment(fragment: TextFragment): boolean {
@@ -993,7 +998,7 @@ async function refreshRepairedSession(blob: Blob, fileName: string): Promise<Sca
 
   renderScan(scan)
   restoreReviewFixState(fragmentFixState, previousFixState)
-  auditFilter = resolvePostRepairAuditFilter(previousFilter, scan.likelyMismatches)
+  auditFilter = resolvePostRepairAuditFilter(previousFilter, countReviewIssues(scan))
   auditPage = previousPage
   renderAuditRows()
 
@@ -1001,7 +1006,7 @@ async function refreshRepairedSession(blob: Blob, fileName: string): Promise<Sca
 }
 
 function repairedAuditStatus(scan: ScanResult): string {
-  return t('repair.rechecked', { mismatches: formatNumber(scan.likelyMismatches) })
+  return t('repair.rechecked', { issues: formatNumber(countReviewIssues(scan)) })
 }
 
 async function repairWholeDocument(): Promise<void> {
