@@ -126,6 +126,12 @@ const ESTONIAN_ANCHORS = new Set([
   'koostöö',
   'selles',
   'projektis',
+  'sisaldab',
+  'teavet',
+  'mida',
+  'vaja',
+  'jätkamiseks',
+  'hindamiseks',
 ])
 
 const LATVIAN_ANCHORS = new Set([
