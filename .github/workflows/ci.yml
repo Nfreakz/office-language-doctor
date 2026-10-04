@@ -56,6 +56,9 @@ jobs:
       - name: Check ambiguous fragment safety
         run: npm run check:ambiguity
 
+      - name: Check real-world Office fragment corpus
+        run: npm run check:office-corpus
+
       - name: Check Word scan and repair
         run: npm run check:docx
 

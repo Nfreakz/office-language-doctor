@@ -25,6 +25,7 @@
 
 ### Changed
 
+- short title-case metadata and compact authorship lines are treated conservatively as non-prose; Spanish and Portuguese long-form rescues use multiple language-specific anchors to recover reliable Office headings without lowering global thresholds;
 - low-confidence detector candidates are now normalized to unknown instead of exposing an unreliable language label; exact labels and medium/high detections are unchanged;
 - simplified the public header so GitHub and issue actions are no longer duplicated; both remain available in the footer;
 - moved Buy Me a Coffee from the prominent yellow hero action to a subdued footer link;
@@ -32,6 +33,7 @@
 
 ### Validation
 
+- real-world Office fragment corpus now checks document chrome, contact blocks, table values/headings, project names, mixed labels, short titles, headings and footers using unknown/safe/reliable expectations;
 - ambiguous-fragment safety regression covers neutral codes/values, multilingual slash-separated labels and short reliable-language controls so uncertain fragments prefer unknown instead of a false mismatch;
 - dedicated neighboring-language duel regression now exercises 15 adversarial samples across Iberian Romance, Czech/Slovak, Croatian/Slovenian, Swedish/Danish/Norwegian, Finnish/Estonian and Latvian/Lithuanian groups;
 - detector calibration now covers 29 language families, including dedicated long-form samples and exact-label checks for Estonian, Irish, Latvian, Lithuanian and Maltese;
