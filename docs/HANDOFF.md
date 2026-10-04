@@ -19,13 +19,15 @@ This application is independent from every other NeoRS application. Do not reuse
 - Branch: `main`
 - Clean public root: `65dac5d41f44f3b34fc85d6f4e4247b7dd7a4c79`
 - Version: `0.6.0`
-- Release state: **0.6.0 publication candidate**
+- Release state: **published Community Edition**
 - Public licensing: **MPL-2.0**
 - Baseline annotated tag: `v0.5.0` pins the validated clean release baseline
 - Baseline GitHub Release: **Office Language Doctor 0.5.0 Community Edition**
 - Baseline release published: **2026-09-30**
-- Target release: **Office Language Doctor 0.6.0 Community Edition**
-- Target publication: after final `main` CI and Pages validation
+- Release: **Office Language Doctor 0.6.0 Community Edition**
+- Annotated tag: `v0.6.0`
+- Release commit: `95d48d089a6bf726d90213c0031b8a71efc25262`
+- Release published: **2026-10-04**
 - Public deployment source: `gh-pages / (root)`
 - Public branches: `main` and `gh-pages`
 - Clean local reconstruction snapshot: verified on the approved local runner before rebuilding this repository
@@ -35,7 +37,7 @@ Version `0.5.0` is the first public Community Edition release in the rebuilt rep
 
 Version `0.6.0` consolidates the accumulated Unreleased work: paragraph-aware Word auditing, explicit paragraph review controls, full EU official-language coverage, dedicated near-neighbor detector regressions, ambiguous-fragment safety, real-world and synthetic Office corpora, missing proofing-tag repair, reliable repeated-repair sessions, localized user-facing errors, exclusive document operations and cooperative large-document scanning.
 
-No additional product work should be added to the 0.6.0 publication candidate. New changes after release must accumulate under Unreleased until the next deliberate version.
+Version 0.6.0 is published. New changes after this release must accumulate under Unreleased until the next deliberate version.
 
 ## Product scope
 
@@ -353,7 +355,7 @@ The rebuilt v0.5.0 public baseline passed the local Windows CI suite and the Pag
 
 Current package version is `0.6.0`.
 
-Version 0.5.0 remains the first public Community Edition baseline in the rebuilt repository and its annotated tag must remain untouched. Version 0.6.0 is the deliberate next Community Edition release candidate. Create the v0.6.0 tag and GitHub Release only after the release commit passes `main` CI and the Pages deployment succeeds. Future changes after publication should accumulate under Unreleased until the next deliberate release.
+Version 0.5.0 remains the first public Community Edition baseline in the rebuilt repository and its annotated tag must remain untouched. Version 0.6.0 is the current published Community Edition release. The annotated `v0.6.0` tag pins release commit `95d48d089a6bf726d90213c0031b8a71efc25262`; the GitHub Release was published on 2026-10-04 after final `main` CI and Pages deployment succeeded. Future changes must accumulate under Unreleased until the next deliberate release.
 
 ## Remaining validation / next steps
 
