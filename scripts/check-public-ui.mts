@@ -87,8 +87,8 @@ assert.ok(mainTs.includes('let appBusy = false'), 'Exclusive operation state mis
 assert.ok(mainTs.includes("if (appBusy) return"), 'Busy document-operation guard missing')
 assert.ok(mainTs.includes("dropzone.setAttribute('aria-disabled', String(busy))"), 'Dropzone aria-disabled state must follow busy state')
 assert.ok(mainTs.includes("fileInput.value = ''"), 'File picker must reset after capturing a File so the same document can be selected again')
-const analyseFileSource = mainTs.match(/async function analyseFile[\s\S]*?\n}\n\nfunction renderScan/)?.[0] ?? ''
-const analyseCatch = analyseFileSource.match(/catch \(error\) \{([\s\S]*?)\n  } finally/)?.[1] ?? ''
+const analyseFileSource = mainTs.match(/async function analyseFile[\s\S]*?\r?\n}\r?\n\r?\nfunction renderScan/)?.[0] ?? ''
+const analyseCatch = analyseFileSource.match(/catch \(error\) \{([\s\S]*?)\r?\n  } finally/)?.[1] ?? ''
 assert.ok(analyseFileSource.includes('const hadCurrentSession = Boolean(currentFile && currentScan)'), 'Analysis must snapshot whether a valid session already exists')
 assert.ok(analyseFileSource.includes("if (!hadCurrentSession) results.classList.add('hidden')"), 'A replacement scan must not hide an existing valid audit')
 assert.ok(analyseCatch.includes("if (hadCurrentSession) results.classList.remove('hidden')"), 'Failed replacement scans must reveal the previous valid audit')
