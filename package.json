@@ -20,7 +20,8 @@
     "check:rtf": "tsx scripts/check-rtf.mts",
     "check:public-ui": "tsx scripts/check-public-ui.mts",
     "check:language-duels": "tsx scripts/check-language-duels.mts",
-    "check:ambiguity": "tsx scripts/check-ambiguity.mts"
+    "check:ambiguity": "tsx scripts/check-ambiguity.mts",
+    "check:office-corpus": "tsx scripts/check-office-corpus.mts"
   },
   "dependencies": {
     "franc-all": "7.2.0",
