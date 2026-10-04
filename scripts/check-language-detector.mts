@@ -19,6 +19,10 @@ const reliableCases: Array<[string, string, string]> = [
   ['Romanian', 'Bine ați venit la această sesiune de lucru. Vă mulțumim pentru participare și colaborare.', 'ro-RO'],
   ['Czech', 'Vítejte na pracovním setkání. Děkujeme za vaši účast a spolupráci na tomto projektu.', 'cs-CZ'],
   ['Swedish', 'Välkommen till arbetsmötet. Tack för ditt deltagande och ditt samarbete i projektet.', 'sv-SE'],
+  ['Danish', 'Velkommen til arbejdsmødet. Tak for din deltagelse og dit samarbejde om dette projekt.', 'da-DK'],
+  ['Norwegian Bokmål', 'Velkommen til arbeidsmøtet. Takk for deltakelsen og samarbeidet ditt i dette prosjektet.', 'nb-NO'],
+  ['Finnish', 'Tervetuloa työskentelykokoukseen. Kiitos osallistumisestasi ja yhteistyöstäsi tässä hankkeessa.', 'fi-FI'],
+  ['Hungarian', 'Üdvözöljük a munkamegbeszélésen. Köszönjük részvételét és együttműködését ebben a projektben.', 'hu-HU'],
 ]
 
 for (const [name, text, expectedTag] of reliableCases) {
@@ -47,6 +51,10 @@ const exactLabels: Array<[string, string]> = [
   ['Română:', 'ro-RO'],
   ['Čeština:', 'cs-CZ'],
   ['Svenska:', 'sv-SE'],
+  ['Dansk:', 'da-DK'],
+  ['Norsk bokmål:', 'nb-NO'],
+  ['Suomi:', 'fi-FI'],
+  ['Magyar:', 'hu-HU'],
 ]
 
 for (const [text, expectedTag] of exactLabels) {
@@ -67,6 +75,10 @@ assert.equal(isLikelyMismatch('pt-BR', 'pt-PT', 'high'), false)
 assert.equal(isLikelyMismatch('nl-BE', 'nl-NL', 'high'), false)
 assert.equal(isLikelyMismatch('ro-MD', 'ro-RO', 'high'), false)
 assert.equal(isLikelyMismatch('sv-FI', 'sv-SE', 'high'), false)
+assert.equal(isLikelyMismatch('no-NO', 'nb-NO', 'high'), false)
+assert.equal(isLikelyMismatch('nn-NO', 'nb-NO', 'high'), false)
+assert.equal(isLikelyMismatch('da-DK', 'nb-NO', 'high'), true)
+assert.equal(isLikelyMismatch('fi-FI', 'hu-HU', 'high'), true)
 assert.equal(isLikelyMismatch('pl-PL', 'cs-CZ', 'high'), true)
 
 const fixtureEnglish = detectTextLanguage('Office Language Doctor · compatibility fixture')

@@ -3,7 +3,7 @@ import type { DetectionConfidence } from '../document/types'
 
 const DETECTION_CODES = [
   'cat', 'glg', 'eus', 'spa', 'eng', 'fra', 'por', 'deu', 'ita',
-  'nld', 'pol', 'ron', 'ces', 'swe',
+  'nld', 'pol', 'ron', 'ces', 'swe', 'dan', 'nob', 'fin', 'hun',
 ]
 
 const ISO3_TO_TAG: Record<string, string> = {
@@ -21,6 +21,10 @@ const ISO3_TO_TAG: Record<string, string> = {
   ron: 'ro-RO',
   ces: 'cs-CZ',
   swe: 'sv-SE',
+  dan: 'da-DK',
+  nob: 'nb-NO',
+  fin: 'fi-FI',
+  hun: 'hu-HU',
 }
 
 const EXACT_LANGUAGE_LABELS: Record<string, string> = {
@@ -59,6 +63,17 @@ const EXACT_LANGUAGE_LABELS: Record<string, string> = {
   'czech': 'ces',
   'svenska': 'swe',
   'swedish': 'swe',
+  'dansk': 'dan',
+  'danish': 'dan',
+  'norsk bokmål': 'nob',
+  'norsk bokmaal': 'nob',
+  'bokmål': 'nob',
+  'bokmaal': 'nob',
+  'norwegian': 'nob',
+  'suomi': 'fin',
+  'finnish': 'fin',
+  'magyar': 'hun',
+  'hungarian': 'hun',
 }
 
 const GALICIAN_ANCHORS = new Set([
@@ -149,6 +164,10 @@ export function languageFamily(tag: string | null): string | null {
   if (normalized.startsWith('ro-')) return 'ro'
   if (normalized.startsWith('cs-')) return 'cs'
   if (normalized.startsWith('sv-')) return 'sv'
+  if (normalized.startsWith('da-')) return 'da'
+  if (normalized.startsWith('nb-') || normalized.startsWith('no-') || normalized.startsWith('nn-')) return 'no'
+  if (normalized.startsWith('fi-')) return 'fi'
+  if (normalized.startsWith('hu-')) return 'hu'
 
   return normalized
 }

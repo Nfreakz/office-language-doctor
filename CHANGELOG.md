@@ -4,6 +4,7 @@
 
 ### Added
 
+- second European language coverage pack with Danish, Norwegian Bokmål, Finnish and Hungarian detection/repair targets, including RTF LCID support and detector regressions;
 - expanded language detection from 9 to 14 language families by adding Dutch, Polish, Romanian, Czech and Swedish;
 - RTF LCID support for `en-GB`, `pt-BR`, `nl-NL`, `pl-PL`, `ro-RO`, `cs-CZ` and `sv-SE`;
 - Catalan, Spanish and English interface localization with a visible CA / ES / EN selector, browser-language initialization and local preference persistence;
@@ -21,6 +22,8 @@
 
 ### Validation
 
+- detector calibration now covers 18 supported language families and explicitly checks Nordic-family separation plus Norwegian regional-family matching;
+- RTF regression now validates Danish, Norwegian Bokmål, Finnish and Hungarian LCID round-trip mapping and selected repair;
 - detector regression now exercises reliable long-form samples for all 14 supported language families plus exact language-name labels;
 - RTF regression verifies the new LCID mappings and end-to-end selected repair for Dutch, Polish, Romanian, Czech and Swedish;
 - interface localization regression covers translation-key parity, browser-language resolution, interpolation and human-readable location localization;
