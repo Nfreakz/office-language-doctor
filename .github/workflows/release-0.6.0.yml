@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - '.github/releases/0.6.0.md'
+      - '.github/workflows/release-0.6.0.yml'
   workflow_dispatch:
 
 permissions:
@@ -103,7 +104,8 @@ jobs:
           }
 
           if (-not $releaseExists) {
-            $notes = Get-Content '.github/releases/0.6.0.md' -Raw
+            $notesPath = (Resolve-Path '.github/releases/0.6.0.md').Path
+            $notes = [System.IO.File]::ReadAllText($notesPath)
             $payload = @{
               tag_name = $tag
               target_commitish = $target
