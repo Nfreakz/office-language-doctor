@@ -61,7 +61,7 @@ Version 0.5.0 is the initial public Community Edition baseline under MPL-2.0, wi
 - calibrated detection across 29 language families, covering all 24 official EU languages plus Catalan/Valencian, Galician, Basque, Norwegian Bokmål and Turkish;
 - dedicated near-neighbor regression coverage for Iberian Romance, Czech/Slovak, Croatian/Slovenian, Nordic, Finnish/Estonian and Latvian/Lithuanian detection;
 - explicit ambiguity safety for neutral codes/values, multilingual slash-separated labels and low-confidence language guesses, preferring unknown over a false mismatch;
-- real-world Office fragment corpus covering document chrome, headers, footers, table labels, project names, mixed labels and short prose controls;
+- real-world Office fragment corpus covering document chrome, headers, footers, table labels, project names, mixed labels and short prose controls, with conservative title/authorship metadata handling;
 - conservative Smart Fix selection;
 - context-aware Word paragraph detection for short or internally fragmented runs;
 - paragraph-aware Word audit UX that shows one readable paragraph summary and expands the underlying repairable runs only when needed;

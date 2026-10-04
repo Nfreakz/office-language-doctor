@@ -293,7 +293,7 @@ Current automated checks:
 - PowerPoint XML regression;
 - language detector calibration across all 29 supported families, including all 24 official EU languages, Nordic-language separation and conservative Estonian/Latvian rescue calibration;
 - neighboring-language duel regression across Iberian Romance, Czech/Slovak, Croatian/Slovenian, Swedish/Danish/Norwegian, Finnish/Estonian and Latvian/Lithuanian samples;
-- ambiguous-fragment safety covering neutral codes/values, multilingual labels and short reliable-language controls;
+- ambiguous-fragment safety covering neutral codes/values, multilingual labels, short title-case/project metadata, compact authorship lines and short reliable-language controls;
 - real-world Office fragment corpus covering document chrome, contact blocks, table content, project names, short titles, headings and footers;
 - DOCX scan + repair, including context-aware recovery for Word paragraphs split into short proofing runs;
 - ODF scan + repair, including exact ODS cell/range coordinates across repeated and merged geometry;

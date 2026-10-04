@@ -152,6 +152,24 @@ const LATVIAN_ANCHORS = new Set([
   'izvērtēšanai',
 ])
 
+const SPANISH_ANCHORS = new Set([
+  'resumen',
+  'presupuesto',
+  'costes',
+  'elegibles',
+  'proyecto',
+  'estado',
+  'datos',
+])
+
+const PORTUGUESE_ANCHORS = new Set([
+  'projeto',
+  'calendário',
+  'atividades',
+  'orçamento',
+  'colaboração',
+])
+
 const SWEDISH_ANCHORS = new Set([
   'innehåller',
   'uppgifter',
@@ -201,7 +219,12 @@ export function detectTextLanguage(text: string): LanguageDetection {
   const exactLabel = detectExactLanguageLabel(normalized)
   if (exactLabel) return exactLabel
 
-  if (looksLikeNonProseIdentifier(normalized) || looksLikeDelimitedLabel(normalized)) {
+  if (
+    looksLikeNonProseIdentifier(normalized) ||
+    looksLikeDelimitedLabel(normalized) ||
+    looksLikeShortTitleCaseMetadata(normalized) ||
+    looksLikeAuthorshipMetadata(normalized)
+  ) {
     return unknownDetection()
   }
 
@@ -209,6 +232,28 @@ export function detectTextLanguage(text: string): LanguageDetection {
 
   if (letterCount < 10) {
     return unknownDetection()
+  }
+
+  const spanishAnchorCount = countAnchors(normalized, SPANISH_ANCHORS)
+  if (spanishAnchorCount >= 3) {
+    return {
+      iso3: 'spa',
+      tag: 'es-ES',
+      confidence: 'medium',
+      score: null,
+      margin: null,
+    }
+  }
+
+  const portugueseAnchorCount = countAnchors(normalized, PORTUGUESE_ANCHORS)
+  if (portugueseAnchorCount >= 2) {
+    return {
+      iso3: 'por',
+      tag: 'pt-PT',
+      confidence: 'medium',
+      score: null,
+      margin: null,
+    }
   }
 
   const swedishAnchorCount = countAnchors(normalized, SWEDISH_ANCHORS)
@@ -366,6 +411,25 @@ function looksLikeDelimitedLabel(text: string): boolean {
     const letters = part.match(/\p{L}/gu)?.length ?? 0
     return words.length >= 1 && words.length <= 4 && letters <= 30
   })
+}
+
+function looksLikeShortTitleCaseMetadata(text: string): boolean {
+  if (/[.!?;:]$/u.test(text)) return false
+
+  const words = text.match(/\p{L}+(?:-\p{L}+)?/gu) ?? []
+  if (words.length < 2 || words.length > 5) return false
+
+  const letters = text.match(/\p{L}/gu)?.length ?? 0
+  if (letters > 40) return false
+
+  const capitalized = words.filter((word) => /^\p{Lu}/u.test(word)).length
+  return capitalized >= Math.ceil(words.length * 0.6)
+}
+
+function looksLikeAuthorshipMetadata(text: string): boolean {
+  if (text.length > 60) return false
+
+  return /^(?:prepared\s+by|preparado\s+por|preparada\s+por|preparat\s+per|preparada\s+per)\s+[\p{L}\p{N}][\p{L}\p{N} .&_-]*$/iu.test(text)
 }
 
 function detectExactLanguageLabel(text: string): LanguageDetection | null {
