@@ -49,7 +49,7 @@ export function getParagraphReviewPlan(
 ): ParagraphReviewPlan | null {
   if (fragments.some((fragment) => fragment.paragraphContextConflict)) return null
 
-  const candidates = fragments.filter(isReliableMismatch)
+  const candidates = fragments.filter(isReviewIssue)
   if (candidates.length < 2) return null
   if (!candidates.some((fragment) => fragment.detectionSource === 'paragraph-context')) return null
 

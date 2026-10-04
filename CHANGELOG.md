@@ -27,6 +27,7 @@
 
 ### Changed
 
+- Word paragraph review actions now treat compatible reliable missing proofing-language tags as review issues alongside mismatches, preserving explicit-only selection, contextual-evidence requirements and Catalan / Valencian choice;
 - the audit `Issues` view and issue counters now cover both reliable language mismatches and reliable missing proofing-language tags while the detector's `likelyMismatches` metric remains unchanged;
 - CSV/JSON audit reports now emit `detection_source: none` when no language was detected instead of incorrectly labelling undetected fragments as direct detections;
 - busy-state exclusivity is now enforced by the button-state calculators themselves, preventing filter/re-render interactions from re-enabling repair actions during an active scan or repair; CA / ES / EN switching is also locked until the operation completes;
@@ -46,7 +47,7 @@
 
 ### Validation
 
-- new cross-format missing-tag regression proves scan → manual review eligibility → selected repair → re-scan for DOCX, PPTX, ODT and RTF, including text preservation and no automatic preselection;
+- cross-format missing-tag regression proves scan → manual review eligibility → selected repair → re-scan for DOCX, PPTX, ODT, ODP, ODS and RTF, including text preservation and no automatic preselection;
 - audit-session regression now proves reviewed Smart Fix selections, explicit deselections and Catalan/Valencian target choices survive a repair rescan while resolved fragments disappear and genuinely new issues keep their fresh defaults;
 - cooperative-scan scheduling regression verifies time-budgeted yielding, no unnecessary pauses under budget and slice reset after yielding;
 - localized-error regression covers every document error code in CA/ES/EN plus corrupt DOCX, PPTX, ODF and RTF inputs and confirms unknown exceptions do not leak their raw message;
