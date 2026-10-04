@@ -33,6 +33,7 @@
 
 ### Validation
 
+- synthetic full-document corpus now builds DOCX and PPTX packages in memory, validates Word body/table/header/footer and PowerPoint slide/notes/chart/SmartArt locations, proves selective repair leaves unselected mismatches untouched, completes a second pass to zero mismatches, preserves all text and checks an unrelated binary sentinel byte-for-byte;
 - real-world Office fragment corpus now checks document chrome, contact blocks, table values/headings, project names, mixed labels, short titles, headings and footers using unknown/safe/reliable expectations;
 - ambiguous-fragment safety regression covers neutral codes/values, multilingual slash-separated labels and short reliable-language controls so uncertain fragments prefer unknown instead of a false mismatch;
 - dedicated neighboring-language duel regression now exercises 15 adversarial samples across Iberian Romance, Czech/Slovak, Croatian/Slovenian, Swedish/Danish/Norwegian, Finnish/Estonian and Latvian/Lithuanian groups;

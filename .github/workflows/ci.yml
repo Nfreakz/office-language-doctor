@@ -59,6 +59,9 @@ jobs:
       - name: Check real-world Office fragment corpus
         run: npm run check:office-corpus
 
+      - name: Check synthetic full-document corpus
+        run: npm run check:document-corpus
+
       - name: Check Word scan and repair
         run: npm run check:docx
 
