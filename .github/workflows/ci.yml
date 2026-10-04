@@ -50,6 +50,9 @@ jobs:
       - name: Check language detector
         run: npm run check:detector
 
+      - name: Check neighboring-language duels
+        run: npm run check:language-duels
+
       - name: Check Word scan and repair
         run: npm run check:docx
 
