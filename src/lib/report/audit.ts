@@ -17,6 +17,7 @@ export interface AuditReportFragment {
   storedTag: string | null
   storedSource: string
   detectedTag: string | null
+  detectionSource: NonNullable<TextFragment['detectionSource']>
   confidence: TextFragment['confidence']
   status: AuditReportStatus
   mismatch: boolean
@@ -57,6 +58,7 @@ export function buildAuditReport(
       storedTag: fragment.storedTag,
       storedSource: storedLanguageSourceLabel(fragment.storedSource),
       detectedTag: fragment.detectedTag,
+      detectionSource: fragment.detectionSource ?? 'direct',
       confidence: fragment.confidence,
       status: reportStatus(fragment),
       mismatch: fragment.mismatch,
@@ -77,6 +79,7 @@ export function auditReportToCsv(report: AuditReport): string {
       'stored_language',
       'stored_source',
       'detected_language',
+      'detection_source',
       'confidence',
       'status',
       'selected_fix',
@@ -89,6 +92,7 @@ export function auditReportToCsv(report: AuditReport): string {
       fragment.storedTag ?? '',
       fragment.storedSource,
       fragment.detectedTag ?? '',
+      fragment.detectionSource,
       fragment.confidence,
       fragment.status,
       fragment.selectedFix ?? '',
