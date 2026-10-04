@@ -3,7 +3,7 @@ import type { DetectionConfidence } from '../document/types'
 
 const DETECTION_CODES = [
   'cat', 'glg', 'eus', 'spa', 'eng', 'fra', 'por', 'deu', 'ita',
-  'nld', 'pol', 'ron', 'ces', 'swe',
+  'nld', 'pol', 'ron', 'ces', 'swe', 'dan', 'nob', 'fin', 'hun',
 ]
 
 const ISO3_TO_TAG: Record<string, string> = {
@@ -21,6 +21,10 @@ const ISO3_TO_TAG: Record<string, string> = {
   ron: 'ro-RO',
   ces: 'cs-CZ',
   swe: 'sv-SE',
+  dan: 'da-DK',
+  nob: 'nb-NO',
+  fin: 'fi-FI',
+  hun: 'hu-HU',
 }
 
 const EXACT_LANGUAGE_LABELS: Record<string, string> = {
@@ -59,7 +63,32 @@ const EXACT_LANGUAGE_LABELS: Record<string, string> = {
   'czech': 'ces',
   'svenska': 'swe',
   'swedish': 'swe',
+  'dansk': 'dan',
+  'danish': 'dan',
+  'norsk bokmål': 'nob',
+  'norsk bokmaal': 'nob',
+  'norsk bokmal': 'nob',
+  'bokmål': 'nob',
+  'bokmaal': 'nob',
+  'bokmal': 'nob',
+  'norwegian': 'nob',
+  'suomi': 'fin',
+  'finnish': 'fin',
+  'magyar': 'hun',
+  'hungarian': 'hun',
 }
+
+const DANISH_ANCHORS = new Set([
+  'arbejdsmøde',
+  'arbejdsmødet',
+  'deltagelse',
+  'deltagelsen',
+  'samarbejde',
+  'samarbejdet',
+  'dette',
+  'tak',
+  'velkommen',
+])
 
 const GALICIAN_ANCHORS = new Set([
   'galego',
@@ -117,7 +146,13 @@ export function detectTextLanguage(text: string): LanguageDetection {
   } else if (
     best[0] === 'glg' &&
     letterCount >= 16 &&
-    countGalicianAnchors(normalized) >= 2
+    countAnchors(normalized, GALICIAN_ANCHORS) >= 2
+  ) {
+    confidence = 'medium'
+  } else if (
+    best[0] === 'dan' &&
+    letterCount >= 16 &&
+    countAnchors(normalized, DANISH_ANCHORS) >= 2
   ) {
     confidence = 'medium'
   }
@@ -149,6 +184,10 @@ export function languageFamily(tag: string | null): string | null {
   if (normalized.startsWith('ro-')) return 'ro'
   if (normalized.startsWith('cs-')) return 'cs'
   if (normalized.startsWith('sv-')) return 'sv'
+  if (normalized.startsWith('da-')) return 'da'
+  if (normalized.startsWith('nb-') || normalized.startsWith('no-') || normalized.startsWith('nn-')) return 'no'
+  if (normalized.startsWith('fi-')) return 'fi'
+  if (normalized.startsWith('hu-')) return 'hu'
 
   return normalized
 }
@@ -183,7 +222,7 @@ function detectExactLanguageLabel(text: string): LanguageDetection | null {
   }
 }
 
-function countGalicianAnchors(text: string): number {
+function countAnchors(text: string, anchors: ReadonlySet<string>): number {
   const tokens = text
     .normalize('NFC')
     .toLocaleLowerCase()
@@ -193,7 +232,7 @@ function countGalicianAnchors(text: string): number {
   const seen = new Set<string>()
 
   for (const token of tokens) {
-    if (GALICIAN_ANCHORS.has(token) && !seen.has(token)) {
+    if (anchors.has(token) && !seen.has(token)) {
       seen.add(token)
       count += 1
     }

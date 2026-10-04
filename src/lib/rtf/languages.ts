@@ -17,6 +17,10 @@ const LCID_TO_TAG: Record<number, string> = {
   1048: 'ro-RO',
   1029: 'cs-CZ',
   1053: 'sv-SE',
+  1030: 'da-DK',
+  1044: 'nb-NO',
+  1035: 'fi-FI',
+  1038: 'hu-HU',
 }
 
 const TAG_TO_LCID: Record<string, number> = {
@@ -37,6 +41,11 @@ const TAG_TO_LCID: Record<string, number> = {
   'ro-ro': 1048,
   'cs-cz': 1029,
   'sv-se': 1053,
+  'da-dk': 1030,
+  'nb-no': 1044,
+  'no-no': 1044,
+  'fi-fi': 1035,
+  'hu-hu': 1038,
 }
 
 export function rtfLcidToTag(lcid: number | null): string | null {
