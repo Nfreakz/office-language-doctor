@@ -399,12 +399,20 @@ function createParagraphAuditRows(entry: AuditEntry): DocumentFragment {
   const contextualCount = entry.allFragments.filter(
     (fragment) => fragment.detectionSource === 'paragraph-context',
   ).length
+  const directDetectedCount = entry.allFragments.filter(
+    (fragment) => fragment.detectedTag && fragment.detectionSource !== 'paragraph-context',
+  ).length
   const hasConflict = entry.allFragments.some((fragment) => fragment.paragraphContextConflict)
+  const detectionSummary = contextualCount > 0
+    ? `${contextualCount} from paragraph context`
+    : directDetectedCount > 0
+      ? `${directDetectedCount} detected directly`
+      : 'No reliable detection'
 
   for (const text of [
     `${entry.allFragments.length} run${entry.allFragments.length === 1 ? '' : 's'}`,
     issueCount > 0 ? `${issueCount} issue${issueCount === 1 ? '' : 's'}` : 'No issues',
-    contextualCount > 0 ? `${contextualCount} from paragraph context` : 'Direct detection only',
+    detectionSummary,
     hasConflict ? 'Conflicting paragraph evidence' : '',
   ].filter(Boolean)) {
     const chip = document.createElement('span')
@@ -516,15 +524,13 @@ function createFragmentRow(fragment: TextFragment, grouped = false): HTMLTableRo
   } else {
     const undetected = document.createElement('span')
     undetected.className = 'muted'
-    undetected.textContent = fragment.paragraphContextConflict
-      ? 'Conflicting paragraph evidence'
-      : 'Too short / non-linguistic'
+    undetected.textContent = 'Too short / non-linguistic'
     detectedCell.append(undetected)
 
     if (fragment.paragraphContextConflict) {
       const conflictHint = document.createElement('small')
       conflictHint.className = 'detection-conflict'
-      conflictHint.textContent = 'Paragraph context was not used'
+      conflictHint.textContent = 'Paragraph context rejected: conflicting evidence'
       detectedCell.append(conflictHint)
     }
   }
