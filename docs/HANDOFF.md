@@ -71,6 +71,7 @@ XLSX is not a proofing-language repair target because SpreadsheetML does not exp
 - stored-language source diagnostics;
 - audit filters and bounded pagination at 10 / 25 / 50 / 100 visible items, while CSV/JSON export still covers the full document;
 - repaired copies are immediately rescanned in-browser so the active audit, Smart Fix state and exported report reflect the repaired file without a manual re-upload;
+- explicit Smart Fix review decisions are preserved across that repaired-file rescan for fragments that remain actionable, including deliberate deselection and Catalan / Valencian target choice;
 - analysis and repair operations are exclusive in the browser UI; drag-and-drop remains intercepted while busy so a second file cannot start an overlapping scan or fall through to browser default file handling;
 - the native file input is reset immediately after capturing the selected File so the same document can be selected again for a fresh audit without a page reload;
 - Word, PowerPoint, OpenDocument and RTF detection loops cooperatively yield after sustained CPU slices so large documents do not monopolize the browser event loop;
@@ -314,7 +315,7 @@ Current automated checks:
 - localized document error regression, including corrupt package inputs and raw-error leak prevention;
 - cooperative scan scheduler regression covering budget thresholds, avoided unnecessary yields and slice reset behavior;
 - paragraph-aware audit grouping and paragraph/language isolation;
-- large-audit session regression covering 12,000 fragments, bounded pagination, post-repair filter fallback and iterative repaired-file naming;
+- large-audit session regression covering 12,000 fragments, bounded pagination, post-repair filter fallback, iterative repaired-file naming and preservation of explicit Smart Fix review decisions across repair rescans;
 - CSV/JSON audit report serialization, including detection source;
 - RTF scan + repair;
 - public UI identity, trust links, sample asset and logo, including exclusive busy-state/dropzone guards;
