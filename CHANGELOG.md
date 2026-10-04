@@ -31,6 +31,7 @@
 
 ### Validation
 
+- ambiguous-fragment safety regression covers neutral codes/values, multilingual slash-separated labels and short reliable-language controls so uncertain fragments prefer unknown instead of a false mismatch;
 - dedicated neighboring-language duel regression now exercises 15 adversarial samples across Iberian Romance, Czech/Slovak, Croatian/Slovenian, Swedish/Danish/Norwegian, Finnish/Estonian and Latvian/Lithuanian groups;
 - detector calibration now covers 29 language families, including dedicated long-form samples and exact-label checks for Estonian, Irish, Latvian, Lithuanian and Maltese;
 - RTF regression validates LCID mapping and selected-repair round trips for `et-EE`, `ga-IE`, `lv-LV`, `lt-LT` and `mt-MT`;
