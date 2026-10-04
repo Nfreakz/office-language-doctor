@@ -92,6 +92,7 @@ const analyseCatch = analyseFileSource.match(/catch \(error\) \{([\s\S]*?)\n  } 
 assert.ok(analyseFileSource.includes('const hadCurrentSession = Boolean(currentFile && currentScan)'), 'Analysis must snapshot whether a valid session already exists')
 assert.ok(analyseFileSource.includes("if (!hadCurrentSession) results.classList.add('hidden')"), 'A replacement scan must not hide an existing valid audit')
 assert.ok(analyseCatch.includes("if (hadCurrentSession) results.classList.remove('hidden')"), 'Failed replacement scans must reveal the previous valid audit')
+assert.ok(analyseCatch.includes("t('status.previousSessionKept')"), 'Failed replacement scans must explain that the previous document remains active')
 assert.ok(!analyseCatch.includes('currentFile = null'), 'Failed replacement scans must not discard the previous file')
 assert.ok(!analyseCatch.includes('currentScan = null'), 'Failed replacement scans must not discard the previous scan')
 assert.ok(!analyseCatch.includes('fragmentFixState.clear()'), 'Failed replacement scans must preserve Smart Fix review state')
