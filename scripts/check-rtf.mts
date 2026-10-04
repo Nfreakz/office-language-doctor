@@ -79,7 +79,7 @@ assert.equal(repaired.fragments[1].storedTag, 'gl-ES')
 assert.equal(repaired.fragments[2].storedTag, 'eu-ES')
 assert.equal(repaired.fragments[3].storedTag, 'en-US')
 
-const expandedSource = String.raw\`{\rtf1\ansi\ansicpg1252\deff0\deflang1033
+const expandedSource = String.raw`{\rtf1\ansi\ansicpg1252\deff0\deflang1033
 {\fonttbl{\f0 Arial;}}
 \viewkind4\uc1
 \pard\lang1033 Nederlands:\par
@@ -87,7 +87,7 @@ const expandedSource = String.raw\`{\rtf1\ansi\ansicpg1252\deff0\deflang1033
 \lang1033 Romana:\par
 \lang1033 Cestina:\par
 \lang1033 Svenska:\par
-}\`
+}`
 
 const expandedFile = new File([expandedSource], 'LanguageDoctor_EU_LANGUAGES.rtf', { type: 'application/rtf' })
 const expandedScan = await scanRtf(expandedFile)
