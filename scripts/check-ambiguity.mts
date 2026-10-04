@@ -24,11 +24,14 @@ const neutralFragments = [
   'Figure 4',
 ]
 
+const failures: string[] = []
+
 for (const text of neutralFragments) {
   const result = detectTextLanguage(text)
   console.log(`[neutral] ${text}: ${result.tag} / ${result.confidence}`)
-  assert.equal(result.tag, null, `${text} should remain undetected`)
-  assert.equal(result.confidence, 'unknown', `${text} should remain unknown`)
+  if (result.tag !== null || result.confidence !== 'unknown') {
+    failures.push(`neutral "${text}" expected unknown, got ${result.tag ?? 'null'} / ${result.confidence}`)
+  }
   assert.equal(isLikelyMismatch('en-US', result.tag, result.confidence), false)
 }
 
@@ -47,8 +50,9 @@ const mixedLanguageLabels = [
 for (const text of mixedLanguageLabels) {
   const result = detectTextLanguage(text)
   console.log(`[mixed] ${text}: ${result.tag} / ${result.confidence} / margin=${result.margin}`)
-  assert.equal(result.tag, null, `${text} should not be assigned one language`)
-  assert.equal(result.confidence, 'unknown', `${text} should remain ambiguous`)
+  if (result.tag !== null || result.confidence !== 'unknown') {
+    failures.push(`mixed "${text}" expected unknown, got ${result.tag ?? 'null'} / ${result.confidence}`)
+  }
   assert.equal(isLikelyMismatch('en-US', result.tag, result.confidence), false)
 }
 
@@ -63,12 +67,18 @@ const shortReliableControls: Array<[string, string]> = [
 for (const [text, expectedTag] of shortReliableControls) {
   const result = detectTextLanguage(text)
   console.log(`[control] ${text}: ${result.tag} / ${result.confidence}`)
-  assert.equal(result.tag, expectedTag, `${text} should still be detected`)
-  assert.ok(
-    result.confidence === 'high' || result.confidence === 'medium',
-    `${text} should remain a reliable control`,
-  )
+  if (result.tag !== expectedTag) {
+    failures.push(`control "${text}" expected ${expectedTag}, got ${result.tag ?? 'null'}`)
+  } else if (result.confidence !== 'high' && result.confidence !== 'medium') {
+    failures.push(`control "${text}" should remain reliable, got ${result.confidence}`)
+  }
 }
+
+assert.equal(
+  failures.length,
+  0,
+  `Ambiguous fragment regressions failed:\n${failures.join('\n')}`,
+)
 
 console.log(
   `Ambiguous fragment safety: OK (${neutralFragments.length} neutral, ${mixedLanguageLabels.length} mixed, ${shortReliableControls.length} controls)`,
