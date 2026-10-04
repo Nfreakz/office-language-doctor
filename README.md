@@ -61,8 +61,10 @@ Version 0.5.0 is the initial public Community Edition baseline under MPL-2.0, wi
 - calibrated Catalan, Valencian, Galician and Basque detection;
 - conservative Smart Fix selection;
 - context-aware Word paragraph detection for short or internally fragmented runs;
+- paragraph-aware Word audit UX that shows one readable paragraph summary and expands the underlying repairable runs only when needed;
+- explicit direct-vs-paragraph-context diagnostics, including conflict and stored-language inheritance hints;
 - human-readable fragment locations, including numbered ODP slides and exact ODS sheet + cell/range coordinates, plus stored-language source diagnostics;
-- local CSV and JSON audit exports;
+- local CSV and JSON audit exports with explicit detection source;
 - initial RTF audit and repair support using `\\langN` and `\\deflangN`;
 - the NeoRS public identity, document-check logo, favicon, source/issue/license links and local-processing guidance.
 
@@ -85,8 +87,9 @@ Smart Fix preselects only high-confidence non-Catalan/Valencian mismatches. Medi
 - keeps Catalan and Valencian as an explicit user choice;
 - shows a human-readable location for each fragment;
 - shows whether stored language comes from direct text, paragraph defaults, styles or document defaults;
+- groups Word runs from the same paragraph into a collapsible audit unit while keeping each run independently repairable;
 - downloads a repaired copy in the original format;
-- exports the complete audit locally as CSV or JSON.
+- exports the complete audit locally as CSV or JSON, including whether detection was direct or inferred from paragraph context.
 
 CSV export neutralizes leading spreadsheet-formula prefixes before download.
 
@@ -96,7 +99,7 @@ CSV export neutralizes leading spreadsheet-formula prefixes before download.
 
 The audit covers the main document, headers, footers, footnotes, endnotes and comments.
 
-Effective language is resolved from direct run metadata, character styles, paragraph properties/styles and document defaults. Language detection remains run-level for repair, but Word can now use a reliable same-paragraph detection as advisory context when an individual run is too short or ambiguous. Context is rejected if a reliable run in that paragraph contradicts it, punctuation/numeric-only runs are not promoted, and contextual Smart Fix suggestions are never preselected. Fragment repair still writes a direct `w:lang w:val` only on the reviewed run.
+Effective language is resolved from direct run metadata, character styles, paragraph properties/styles and document defaults. Language detection remains run-level for repair, but Word can use a reliable same-paragraph detection as advisory context when an individual run is too short or ambiguous. Context is rejected if a reliable run in that paragraph contradicts it, punctuation/numeric-only runs are not promoted, and contextual Smart Fix suggestions are never preselected. In the audit UI, runs belonging to the same Word paragraph are collapsed into one readable paragraph summary and expanded only for run-level review or repair. Fragment repair still writes a direct `w:lang w:val` only on the reviewed run.
 
 DOCX has been validated in Microsoft Word with Catalan, Galician and Basque content. DOCM, DOTX and DOTM have also passed manual open/repair checks.
 
@@ -143,6 +146,7 @@ npm run check:odf
 npm run check:variants
 npm run check:smart-fix
 npm run check:diagnostics
+npm run check:paragraph-audit
 npm run check:report
 npm run check:rtf
 npm run check:public-ui
