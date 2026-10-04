@@ -4,6 +4,7 @@
 
 ### Added
 
+- repaired downloads are immediately rescanned in-browser so counters, filters, Smart Fix state and CSV/JSON reports follow the repaired copy without a manual re-upload;
 - complete EU official-language coverage by adding Estonian, Irish, Latvian, Lithuanian and Maltese detection/repair targets, bringing the detector to 29 language families;
 - public CA / ES / EN copy now highlights support for all 24 official EU languages instead of listing every detected family inline;
 - third European language coverage pack with Greek, Turkish, Slovak, Slovenian, Croatian and Bulgarian detection/repair targets, including RTF LCID mappings and public CA/ES/EN coverage copy;
@@ -25,6 +26,8 @@
 
 ### Changed
 
+- audit page sizes are bounded to 10 / 25 / 50 / 100 visible items; full CSV/JSON export remains available for the complete document, avoiding an accidental thousands-row DOM render;
+- iterative repair filenames no longer stack repeated `-language-fixed` / `-language-smart-fixed` suffixes;
 - short title-case metadata and compact authorship lines are treated conservatively as non-prose; Spanish and Portuguese long-form rescues use multiple language-specific anchors to recover reliable Office headings without lowering global thresholds;
 - low-confidence detector candidates are now normalized to unknown instead of exposing an unreliable language label; exact labels and medium/high detections are unchanged;
 - simplified the public header so GitHub and issue actions are no longer duplicated; both remain available in the footer;
@@ -33,6 +36,8 @@
 
 ### Validation
 
+- audit-session scale regression exercises 12,000 Word-style fragments, paragraph grouping, bounded pagination, post-repair filter fallback and iterative repaired-file naming;
+- full-document Smart Fix regression now also serializes the repaired scan into the audit report, closing the analyse → review → repair → report loop;
 - full-document Smart Fix regression now scans synthetic DOCX/PPTX packages and proves that only high-confidence direct non-Catalan/Valencian mismatches are automatically selected; medium-confidence Portuguese, Catalan/Valencian choices, Word paragraph-context suggestions, correct-language text and non-linguistic values remain untouched after the Smart Fix pass;
 - synthetic full-document corpus now builds DOCX and PPTX packages in memory, validates Word body/table/header/footer and PowerPoint slide/notes/chart/SmartArt locations, proves selective repair leaves unselected mismatches untouched, completes a second pass to zero mismatches, preserves all text and checks an unrelated binary sentinel byte-for-byte;
 - real-world Office fragment corpus now checks document chrome, contact blocks, table values/headings, project names, mixed labels, short titles, headings and footers using unknown/safe/reliable expectations;
