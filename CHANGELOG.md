@@ -26,6 +26,7 @@
 
 ### Changed
 
+- document analysis/repair is now exclusive at the UI boundary: drag-and-drop remains intercepted but is ignored safely while work is in progress, preventing overlapping scans, premature control re-enabling and browser default file handling;
 - recoverable document/package errors now use stable internal error codes and are localized at the UI boundary in Catalan, Spanish and English; unknown library exceptions fall back to localized generic messages instead of leaking raw technical English;
 - audit page sizes are bounded to 10 / 25 / 50 / 100 visible items; full CSV/JSON export remains available for the complete document, avoiding an accidental thousands-row DOM render;
 - iterative repair filenames no longer stack repeated `-language-fixed` / `-language-smart-fixed` suffixes;

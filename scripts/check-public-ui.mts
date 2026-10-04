@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 
 const html = readFileSync('index.html', 'utf8')
+const mainTs = readFileSync('src/main.ts', 'utf8')
+const styleCss = readFileSync('src/style.css', 'utf8')
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string; license?: string }
 const visibleVersion = `v${packageJson.version}`
 
@@ -80,6 +82,12 @@ for (const locale of ['ca', 'es', 'en']) {
 assert.ok(html.includes('data-i18n="hero.title"'), 'Hero title must participate in UI localization')
 assert.ok(html.includes('data-i18n="audit.title"'), 'Audit UI must participate in localization')
 assert.ok(html.includes('data-i18n-aria-label="locale.aria"'), 'Locale switcher accessible label missing')
+assert.ok(html.includes('id="dropzone" class="dropzone" for="file-input" aria-disabled="false"'), 'Dropzone busy accessibility state missing')
+assert.ok(mainTs.includes('let appBusy = false'), 'Exclusive operation state missing')
+assert.ok(mainTs.includes("if (appBusy) return"), 'Busy document-operation guard missing')
+assert.ok(mainTs.includes("dropzone.setAttribute('aria-disabled', String(busy))"), 'Dropzone aria-disabled state must follow busy state')
+assert.ok(styleCss.includes('.dropzone.is-busy {'), 'Busy dropzone visual state missing')
+assert.ok(!styleCss.includes('.is-busy .dropzone, .is-busy button { pointer-events: none; }'), 'Busy dropzone must keep receiving drag/drop events so it can prevent browser default handling')
 assert.ok(html.includes('<option value="100">100</option>'), 'Safe 100-item audit page size missing')
 assert.ok(!html.includes('<option value="all"'), 'Unbounded audit page rendering must stay disabled')
 const headerStart = html.indexOf('<header class="hero">')
