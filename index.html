@@ -241,8 +241,9 @@
                 <span class="experimental">Experimental</span>
               </div>
               <p class="section-copy">
-                Review reliable mismatches individually. Short or non-linguistic fragments are left
-                unchanged. Catalan and Valencian require an explicit variant choice.
+                Review reliable mismatches individually. Word runs from the same paragraph are grouped
+                for readability and can be expanded only when needed. Contextual detections and Catalan
+                / Valencian choices always require explicit review.
               </p>
             </div>
             <span id="detection-summary" class="summary"></span>
@@ -269,7 +270,7 @@
                 <button id="export-audit-json" class="secondary compact-button" type="button" disabled>Export JSON</button>
               </div>
               <label class="audit-page-size-label" for="audit-page-size">
-                Rows
+                Items
                 <select id="audit-page-size" class="audit-page-size">
                   <option value="10" selected>10</option>
                   <option value="25">25</option>
@@ -284,7 +285,7 @@
           <div id="smart-actions" class="smart-actions hidden">
             <div>
               <strong id="smart-fix-summary">No fragment fixes selected.</strong>
-              <span>High-confidence fixes are preselected. Medium-confidence and Catalan/Valencian suggestions require review.</span>
+              <span>High-confidence direct fixes are preselected. Medium-confidence, paragraph-context and Catalan/Valencian suggestions require review.</span>
             </div>
             <button id="smart-repair-button" class="primary" type="button" disabled>
               Repair selected fixes
