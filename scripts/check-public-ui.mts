@@ -18,7 +18,7 @@ for (const expected of [
   'What does it change?',
   'Created and maintained by NeoRS.',
   '17 supported formats',
-  '14 detected language families',
+  '18 detected language families',
 ]) {
   assert.ok(html.includes(expected), `Missing public UI content: ${expected}`)
 }
@@ -79,8 +79,20 @@ for (const locale of ['ca', 'es', 'en']) {
 assert.ok(html.includes('data-i18n="hero.title"'), 'Hero title must participate in UI localization')
 assert.ok(html.includes('data-i18n="audit.title"'), 'Audit UI must participate in localization')
 assert.ok(html.includes('data-i18n-aria-label="locale.aria"'), 'Locale switcher accessible label missing')
-assert.ok(html.includes('class="support-link"'), 'Hero Buy Me a Coffee action missing')
-assert.ok(html.includes('>☕ Buy me a coffee</a>'), 'Hero support label missing')
+const headerStart = html.indexOf('<header class="hero">')
+const headerEnd = html.indexOf('</header>', headerStart)
+const footerStart = html.indexOf('<footer class="site-footer">')
+const footerEnd = html.indexOf('</footer>', footerStart)
+const headerHtml = html.slice(headerStart, headerEnd)
+const footerHtml = html.slice(footerStart, footerEnd)
+
+assert.ok(!headerHtml.includes('>GitHub</a>'), 'GitHub action should not be duplicated in the header')
+assert.ok(!headerHtml.includes('/issues'), 'Issue action should not be duplicated in the header')
+assert.ok(!headerHtml.includes('buymeacoffee.com/neors'), 'Support action should not be prominent in the header')
+assert.ok(footerHtml.includes('>GitHub</a>'), 'Footer GitHub link missing')
+assert.ok(footerHtml.includes('/issues'), 'Footer issue link missing')
+assert.ok(footerHtml.includes('class="footer-support"'), 'Subtle footer Buy Me a Coffee link missing')
+assert.ok(footerHtml.includes('buymeacoffee.com/neors'), 'Footer support URL missing')
 assert.ok(html.includes(`Office Language Doctor · ${visibleVersion}`), 'Header version must match package.json')
 assert.ok(html.includes(`<span>${visibleVersion}</span>`), 'Footer version must match package.json')
 assert.equal(packageJson.license, 'MPL-2.0', 'package.json must declare the Community Edition license')

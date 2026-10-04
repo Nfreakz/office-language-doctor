@@ -20,6 +20,12 @@
 - repeatable Windows/Office live-VBA validation harness for DOCM and PPTM, kept manual via `workflow_dispatch` so normal CI does not require desktop Office;
 - exact ODS fragment coordinates in audit locations, including column names beyond Z, repeated rows/columns and merged ranges; the same sheet + cell/range labels flow into local CSV/JSON exports.
 
+### Changed
+
+- simplified the public header so GitHub and issue actions are no longer duplicated; both remain available in the footer;
+- moved Buy Me a Coffee from the prominent yellow hero action to a subdued footer link;
+- corrected the public interface language-coverage copy from 14 to 18 detected families after the second European coverage pack.
+
 ### Validation
 
 - detector calibration now covers 18 supported language families and explicitly checks Nordic-family separation plus Norwegian regional-family matching;

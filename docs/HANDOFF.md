@@ -240,7 +240,8 @@ Current landing page state:
 - the downloadable sample is `public/samples/LanguageDoctor_SAMPLE.rtf`;
 - visit counter remains a secondary footer element;
 - hero copy uses the full available content width instead of leaving an unused right column;
-- the hero includes a visible Buy Me a Coffee support action using the approved NeoRS URL `https://buymeacoffee.com/neors`;
+- GitHub and issue actions are consolidated in the footer instead of being duplicated in the header;
+- Buy Me a Coffee uses the approved NeoRS URL `https://buymeacoffee.com/neors` as a subdued footer link rather than a prominent hero CTA;
 - support is voluntary, unlocks no features and does not alter the MPL-2.0 Community Edition license.
 
 ## Privacy
