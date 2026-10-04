@@ -56,9 +56,23 @@ for (const text of mixedLanguageLabels) {
   assert.equal(isLikelyMismatch('en-US', result.tag, result.confidence), false)
 }
 
+const ambiguousShortText = [
+  'Gracias por vuestra colaboración.',
+  'Office Language Doctor · compatibility fixture',
+]
+
+for (const text of ambiguousShortText) {
+  const result = detectTextLanguage(text)
+  console.log(`[ambiguous short] ${text}: ${result.tag} / ${result.confidence} / margin=${result.margin}`)
+  if (result.tag !== null || result.confidence !== 'unknown') {
+    failures.push(`ambiguous short "${text}" expected unknown, got ${result.tag ?? 'null'} / ${result.confidence}`)
+  }
+  assert.equal(isLikelyMismatch('en-US', result.tag, result.confidence), false)
+}
+
 const shortReliableControls: Array<[string, string]> = [
   ['Benvinguts a la sessió.', 'ca-ES'],
-  ['Gracias por vuestra colaboración.', 'es-ES'],
+  ['Eskerrik asko zuen laguntzagatik.', 'eu-ES'],
   ['Välkommen till arbetsmötet.', 'sv-SE'],
   ['Tere tulemast töökoosolekule.', 'et-EE'],
   ['Laipni lūdzam darba sanāksmē.', 'lv-LV'],
@@ -81,5 +95,5 @@ assert.equal(
 )
 
 console.log(
-  `Ambiguous fragment safety: OK (${neutralFragments.length} neutral, ${mixedLanguageLabels.length} mixed, ${shortReliableControls.length} controls)`,
+  `Ambiguous fragment safety: OK (${neutralFragments.length} neutral, ${mixedLanguageLabels.length} mixed, ${ambiguousShortText.length} ambiguous short, ${shortReliableControls.length} controls)`,
 )

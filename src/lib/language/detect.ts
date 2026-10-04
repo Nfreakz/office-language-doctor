@@ -276,6 +276,16 @@ export function detectTextLanguage(text: string): LanguageDetection {
     confidence = 'medium'
   }
 
+  if (confidence === 'low') {
+    return {
+      iso3: null,
+      tag: null,
+      confidence: 'unknown',
+      score: best[1],
+      margin,
+    }
+  }
+
   return {
     iso3: best[0],
     tag: ISO3_TO_TAG[best[0]],

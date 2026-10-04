@@ -87,7 +87,7 @@ Smart Fix must remain conservative:
 - high-confidence non-Catalan/Valencian mismatches may be preselected;
 - medium-confidence mismatches are suggestions only;
 - Catalan/Valencian detections always require explicit variant choice;
-- low-confidence, matching and undetected fragments are not preselected;
+- low-confidence detector candidates are normalized to unknown and therefore cannot become mismatches or Smart Fix selections; matching and undetected fragments are not preselected;
 - short/non-linguistic values such as `2026` remain unchanged;
 - detections inferred from Word paragraph context are suggestions only and are never preselected automatically;
 - a paragraph review action may select multiple compatible reliable mismatches only after an explicit user click; conflicting evidence, mixed detected tags or paragraphs without contextual evidence do not receive a grouped action;

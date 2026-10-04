@@ -25,6 +25,7 @@
 
 ### Changed
 
+- low-confidence detector candidates are now normalized to unknown instead of exposing an unreliable language label; exact labels and medium/high detections are unchanged;
 - simplified the public header so GitHub and issue actions are no longer duplicated; both remain available in the footer;
 - moved Buy Me a Coffee from the prominent yellow hero action to a subdued footer link;
 - corrected the public interface language-coverage copy from 14 to 18 detected families after the second European coverage pack.
