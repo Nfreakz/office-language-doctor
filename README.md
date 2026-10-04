@@ -51,9 +51,9 @@ A separate text-language audit may be considered later, but it would not be equi
 
 ## Current status
 
-Current version: **0.5.0 Community Edition**.
+Current version: **0.6.0 Community Edition**.
 
-Version 0.5.0 is the initial public Community Edition baseline under MPL-2.0, with the complete browser-first feature set:
+Version 0.6.0 builds on the initial 0.5.0 Community Edition baseline under MPL-2.0 and consolidates the current browser-first feature set:
 
 - expanded Word, PowerPoint and OpenDocument format variants;
 - extension- and MIME-preserving repaired downloads;
