@@ -18,7 +18,7 @@
   <a href="https://github.com/Nfreakz/office-language-doctor/issues">Issues</a>
 </p>
 
-Office Language Doctor audits stored proofing-language metadata in Microsoft Office, OpenDocument and RTF files, compares it with the likely written language, and can repair selected mismatches.
+Office Language Doctor audits stored proofing-language metadata in Microsoft Office, OpenDocument and RTF files, compares it with the likely written language, and can repair selected mismatches or add reliable missing proofing-language tags after explicit review.
 
 Files are processed locally in the browser. There is no document upload, backend or account system.
 
@@ -63,8 +63,9 @@ Version 0.5.0 is the initial public Community Edition baseline under MPL-2.0, wi
 - explicit ambiguity safety for neutral codes/values, multilingual slash-separated labels and low-confidence language guesses, preferring unknown over a false mismatch;
 - real-world Office fragment corpus covering document chrome, headers, footers, table labels, project names, mixed labels and short prose controls, with conservative title/authorship metadata handling;
 - synthetic full-document DOCX/PPTX regression covering body/table/header/footer and slide/notes/chart/SmartArt locations, selective repair, final zero-mismatch repair and binary-sentinel preservation;
-- full-document Smart Fix regression proving that only high-confidence direct non-Catalan/Valencian mismatches are preselected while medium-confidence, contextual, Catalan/Valencian, matching and non-linguistic fragments remain untouched;
+- full-document Smart Fix regression proving that only high-confidence direct non-Catalan/Valencian mismatches are preselected while medium-confidence, contextual, Catalan/Valencian, missing-tag, matching and non-linguistic fragments remain untouched;
 - conservative Smart Fix selection;
+- reliable missing proofing-language tags can be added after explicit run-level review without automatic selection;
 - context-aware Word paragraph detection for short or internally fragmented runs;
 - paragraph-aware Word audit UX that shows one readable paragraph summary and expands the underlying repairable runs only when needed;
 - explicit paragraph review actions that can select multiple compatible run-level fixes only after a user decision; Catalan / Valencian still requires a single explicit variant choice for the paragraph;
@@ -81,13 +82,13 @@ Live VBA execution has been validated end-to-end with real DOCM and PPTM files t
 
 Office Language Doctor changes only proofing-language metadata selected for repair. It does not rewrite the document text.
 
-Smart Fix preselects only high-confidence non-Catalan/Valencian mismatches. Medium-confidence suggestions, Catalan/Valencian choices and detections inferred from Word paragraph context require explicit review.
+Smart Fix preselects only high-confidence non-Catalan/Valencian mismatches. Medium-confidence suggestions, missing proofing-language tags, Catalan/Valencian choices and detections inferred from Word paragraph context require explicit review. Missing tags are never auto-preselected.
 
 ## Capabilities
 
 - reads stored proofing-language metadata;
 - detects the likely written language locally;
-- flags reliable mismatches;
+- flags reliable mismatches and reliable missing proofing-language tags as review issues;
 - leaves short or ambiguous fragments unchanged unless a reliable, non-conflicting Word paragraph context can classify them;
 - repairs selected fragments without changing their text;
 - supports global remapping when mixed-language content is not detected;
@@ -98,7 +99,7 @@ Smart Fix preselects only high-confidence non-Catalan/Valencian mismatches. Medi
 - groups Word runs from the same paragraph into a collapsible audit unit while keeping each run independently repairable;
 - can prepare compatible paragraph fixes in one explicit review action without autoapplying or auto-preselecting contextual suggestions;
 - downloads a repaired copy in the original format;
-- exports the complete audit locally as CSV or JSON, including whether detection was direct or inferred from paragraph context;
+- exports the complete audit locally as CSV or JSON, including whether detection was direct, inferred from paragraph context, or absent;
 - localizes the full browser UI to Catalan, Spanish or English without changing document contents or sending language preferences to a backend.
 
 CSV export neutralizes leading spreadsheet-formula prefixes before download.
