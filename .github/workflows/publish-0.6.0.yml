@@ -1,0 +1,106 @@
+name: Publish · Office Language Doctor 0.6.0
+
+on:
+  push:
+    branches:
+      - 'feat/release-0.6.0'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: office-language-doctor-release-0.6.0
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish v0.6.0 on DESKTOP-0NEP6ON
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        shell: powershell
+
+    steps:
+      - name: Verify approved local runner
+        run: |
+          Write-Host "Runner: $env:RUNNER_NAME / Host: $env:COMPUTERNAME"
+          if ($env:RUNNER_NAME -ne 'DESKTOP-0NEP6ON') {
+            throw "Unexpected runner: $env:RUNNER_NAME"
+          }
+          if ($env:COMPUTERNAME -ne 'DESKTOP-0NEP6ON') {
+            throw "Unexpected host: $env:COMPUTERNAME"
+          }
+
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Verify release target
+        env:
+          RELEASE_SHA: 95d48d089a6bf726d90213c0031b8a71efc25262
+        run: |
+          $main = git ls-remote origin refs/heads/main | ForEach-Object { ($_ -split "\t")[0] }
+          if ($main -ne $env:RELEASE_SHA) {
+            throw "main moved: expected $env:RELEASE_SHA, got $main"
+          }
+          $existing = git ls-remote origin refs/tags/v0.6.0
+          if ($existing) {
+            throw "v0.6.0 already exists; refusing to overwrite it"
+          }
+
+      - name: Create annotated tag
+        env:
+          RELEASE_SHA: 95d48d089a6bf726d90213c0031b8a71efc25262
+        run: |
+          git config user.name "NeoRS"
+          git config user.email "dahemo@gmail.com"
+          git tag -a v0.6.0 $env:RELEASE_SHA -m "Office Language Doctor 0.6.0 Community Edition"
+          git push origin refs/tags/v0.6.0
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          @'
+          Office Language Doctor 0.6.0 Community Edition consolidates the major improvements developed after the initial 0.5.0 public baseline.
+
+          Highlights:
+          - Full detection and repair coverage for all 24 official EU languages, with 29 detected language families in total.
+          - Complete Catalan, Spanish and English interface localization.
+          - Paragraph-aware Word auditing and explicit paragraph review actions.
+          - Reliable missing proofing-language tags can now be reviewed and repaired across supported formats.
+          - Repaired documents are immediately rescanned so counters, filters, Smart Fix state and exports reflect the repaired copy.
+          - Manual Smart Fix review decisions survive repeated repair passes where they remain applicable.
+          - Localized user-facing document errors.
+          - Cooperative processing for large-document responsiveness.
+          - Bounded audit pagination with full CSV/JSON export.
+          - Stronger session and busy-state protection across repeated scans and repairs.
+          - CI coalescing for the approved self-hosted Windows runner.
+
+          Validation:
+          - 17 repairable Word, PowerPoint, OpenDocument and RTF formats.
+          - Full-document DOCX/PPTX synthetic regression.
+          - Cross-format missing proofing-tag regression for DOCX, PPTX, ODT, ODP, ODS and RTF.
+          - 12,000-fragment audit-session regression.
+          - Real DOCM and PPTM VBA execution validated before and after repair.
+          - Automated DOCM/PPTM regression preserves vbaProject.bin byte-for-byte.
+          - OTT, OTP and OTS validated through a real LibreOffice 25.2.3.2 engine round-trip.
+          - ODT, ODP and ODS have representative LibreOffice validation.
+          - RTF has representative Microsoft Word validation.
+          - Final Windows self-hosted CI and GitHub Pages deployment passed for the 0.6.0 release commit.
+
+          Scope:
+          Office Language Doctor remains privacy-first and browser-only. Documents are processed locally and are not uploaded to a backend.
+
+          XLSX remains outside proofing-language metadata repair scope, and legacy .doc, .ppt and .xls formats remain unsupported.
+
+          Licensed under MPL-2.0 Community Edition.
+
+          Release commit: 95d48d089a6bf726d90213c0031b8a71efc25262
+          Public site: https://language-doctor.cecolab.cat/
+          '@ | Set-Content release-notes.md -Encoding UTF8
+
+          gh release create v0.6.0 --repo "${{ github.repository }}" --title "Office Language Doctor 0.6.0 Community Edition" --notes-file release-notes.md --verify-tag
