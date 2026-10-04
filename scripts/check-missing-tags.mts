@@ -56,6 +56,38 @@ async function buildOdt(): Promise<File> {
   return new File([bytes], 'missing-tag.odt', { type: mime })
 }
 
+async function buildOdp(): Promise<File> {
+  const mime = 'application/vnd.oasis.opendocument.presentation'
+  const zip = new JSZip()
+  zip.file('mimetype', mime, { compression: 'STORE' })
+  zip.file('content.xml', `<?xml version="1.0" encoding="UTF-8"?>
+<office:document-content
+  xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+  xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"
+  xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0"
+  office:version="1.3">
+  <office:body><office:presentation><draw:page draw:name="page1"><draw:frame><draw:text-box><text:p>${TEXT}</text:p></draw:text-box></draw:frame></draw:page></office:presentation></office:body>
+</office:document-content>`)
+  const bytes = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' })
+  return new File([bytes], 'missing-tag.odp', { type: mime })
+}
+
+async function buildOds(): Promise<File> {
+  const mime = 'application/vnd.oasis.opendocument.spreadsheet'
+  const zip = new JSZip()
+  zip.file('mimetype', mime, { compression: 'STORE' })
+  zip.file('content.xml', `<?xml version="1.0" encoding="UTF-8"?>
+<office:document-content
+  xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+  xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"
+  xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0"
+  office:version="1.3">
+  <office:body><office:spreadsheet><table:table table:name="Sheet1"><table:table-row><table:table-cell office:value-type="string"><text:p>${TEXT}</text:p></table:table-cell></table:table-row></table:table></office:spreadsheet></office:body>
+</office:document-content>`)
+  const bytes = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' })
+  return new File([bytes], 'missing-tag.ods', { type: mime })
+}
+
 function buildRtf(): File {
   return new File(
     [String.raw`{\rtf1\ansi\ansicpg1252 \pard ${TEXT}\par}`],
@@ -68,6 +100,8 @@ const cases: Array<() => Promise<File> | File> = [
   buildDocx,
   buildPptx,
   buildOdt,
+  buildOdp,
+  buildOds,
   buildRtf,
 ]
 
@@ -110,4 +144,4 @@ for (const build of cases) {
   assert.equal(isReviewIssue(after.fragments[0]), false, `${sourceFile.name}: repaired fragment should be clean`)
 }
 
-console.log('Missing proofing-tag review + selected repair across DOCX/PPTX/ODT/RTF: OK')
+console.log('Missing proofing-tag review + selected repair across DOCX/PPTX/ODT/ODP/ODS/RTF: OK')

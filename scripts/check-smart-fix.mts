@@ -149,6 +149,46 @@ assert.ok(germanParagraphPlan)
 assert.equal(germanParagraphPlan.targetTag, 'de-DE')
 assert.equal(germanParagraphPlan.requiresVariantChoice, false)
 
+const missingContextualA = fragment({
+  id: 'word/document.xml#40',
+  storedTag: null,
+  storedSource: 'none',
+  detectedIso3: 'eus',
+  detectedTag: 'eu-ES',
+  confidence: 'high',
+  mismatch: false,
+  detectionSource: 'paragraph-context',
+  paragraphGroupId: 'word/document.xml#paragraph-2',
+})
+const missingContextualB = fragment({
+  id: 'word/document.xml#41',
+  storedTag: null,
+  storedSource: 'none',
+  detectedIso3: 'eus',
+  detectedTag: 'eu-ES',
+  confidence: 'medium',
+  mismatch: false,
+  detectionSource: 'paragraph-context',
+  paragraphGroupId: 'word/document.xml#paragraph-2',
+})
+const missingParagraphPlan = getParagraphReviewPlan([
+  missingContextualA,
+  missingContextualB,
+])
+assert.ok(missingParagraphPlan)
+assert.deepEqual(missingParagraphPlan.fragmentIds, [
+  'word/document.xml#40',
+  'word/document.xml#41',
+])
+assert.equal(missingParagraphPlan.targetTag, 'eu-ES')
+assert.equal(missingParagraphPlan.requiresVariantChoice, false)
+assert.equal(shouldPreselectSmartFix(missingContextualA), false)
+
+assert.equal(getParagraphReviewPlan([
+  { ...missingContextualA, detectionSource: 'direct' },
+  { ...missingContextualB, detectionSource: 'direct' },
+]), null)
+
 assert.equal(getParagraphReviewPlan([
   contextualCatalanA,
   { ...contextualCatalanB, paragraphContextConflict: true },
