@@ -140,6 +140,14 @@ const LATVIAN_ANCHORS = new Set([
   'projektā',
 ])
 
+const SWEDISH_ANCHORS = new Set([
+  'innehåller',
+  'uppgifter',
+  'behövs',
+  'fortsatt',
+  'utvärdering',
+])
+
 const DANISH_ANCHORS = new Set([
   'arbejdsmøde',
   'arbejdsmødet',
@@ -185,6 +193,17 @@ export function detectTextLanguage(text: string): LanguageDetection {
 
   if (letterCount < 10) {
     return unknownDetection()
+  }
+
+  const swedishAnchorCount = countAnchors(normalized, SWEDISH_ANCHORS)
+  if (swedishAnchorCount >= 3) {
+    return {
+      iso3: 'swe',
+      tag: 'sv-SE',
+      confidence: 'medium',
+      score: null,
+      margin: null,
+    }
   }
 
   const estonianAnchorCount = countAnchors(normalized, ESTONIAN_ANCHORS)
