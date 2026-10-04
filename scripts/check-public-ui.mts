@@ -87,6 +87,15 @@ assert.ok(mainTs.includes('let appBusy = false'), 'Exclusive operation state mis
 assert.ok(mainTs.includes("if (appBusy) return"), 'Busy document-operation guard missing')
 assert.ok(mainTs.includes("dropzone.setAttribute('aria-disabled', String(busy))"), 'Dropzone aria-disabled state must follow busy state')
 assert.ok(mainTs.includes("fileInput.value = ''"), 'File picker must reset after capturing a File so the same document can be selected again')
+const analyseFileSource = mainTs.match(/async function analyseFile[\s\S]*?\n}\n\nfunction renderScan/)?.[0] ?? ''
+const analyseCatch = analyseFileSource.match(/catch \(error\) \{([\s\S]*?)\n  } finally/)?.[1] ?? ''
+assert.ok(analyseFileSource.includes('const hadCurrentSession = Boolean(currentFile && currentScan)'), 'Analysis must snapshot whether a valid session already exists')
+assert.ok(analyseFileSource.includes("if (!hadCurrentSession) results.classList.add('hidden')"), 'A replacement scan must not hide an existing valid audit')
+assert.ok(analyseCatch.includes("if (hadCurrentSession) results.classList.remove('hidden')"), 'Failed replacement scans must reveal the previous valid audit')
+assert.ok(!analyseCatch.includes('currentFile = null'), 'Failed replacement scans must not discard the previous file')
+assert.ok(!analyseCatch.includes('currentScan = null'), 'Failed replacement scans must not discard the previous scan')
+assert.ok(!analyseCatch.includes('fragmentFixState.clear()'), 'Failed replacement scans must preserve Smart Fix review state')
+assert.ok(!analyseCatch.includes('expandedParagraphGroups.clear()'), 'Failed replacement scans must preserve paragraph expansion state')
 assert.ok(styleCss.includes('.dropzone.is-busy {'), 'Busy dropzone visual state missing')
 assert.ok(!styleCss.includes('.is-busy .dropzone, .is-busy button { pointer-events: none; }'), 'Busy dropzone must keep receiving drag/drop events so it can prevent browser default handling')
 assert.ok(html.includes('<option value="100">100</option>'), 'Safe 100-item audit page size missing')
