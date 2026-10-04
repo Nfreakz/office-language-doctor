@@ -3,6 +3,8 @@ import type { TextFragment } from '../src/lib/document/types.ts'
 import {
   getParagraphReviewPlan,
   isReliableMismatch,
+  isReliableMissingTag,
+  isReviewIssue,
   requiresVariantChoice,
   shouldPreselectSmartFix,
 } from '../src/lib/language/smart-fix.ts'
@@ -56,6 +58,38 @@ assert.equal(shouldPreselectSmartFix(contextualHigh), false)
 const matching = fragment({ mismatch: false })
 assert.equal(isReliableMismatch(matching), false)
 assert.equal(shouldPreselectSmartFix(matching), false)
+
+const missingTagHigh = fragment({
+  storedTag: null,
+  storedSource: 'none',
+  mismatch: false,
+})
+assert.equal(isReliableMissingTag(missingTagHigh), true)
+assert.equal(isReviewIssue(missingTagHigh), true)
+assert.equal(requiresVariantChoice(missingTagHigh), false)
+assert.equal(shouldPreselectSmartFix(missingTagHigh), false)
+
+const missingCatalanHigh = fragment({
+  storedTag: null,
+  storedSource: 'none',
+  detectedIso3: 'cat',
+  detectedTag: 'ca-ES',
+  confidence: 'high',
+  mismatch: false,
+})
+assert.equal(isReliableMissingTag(missingCatalanHigh), true)
+assert.equal(isReviewIssue(missingCatalanHigh), true)
+assert.equal(requiresVariantChoice(missingCatalanHigh), true)
+assert.equal(shouldPreselectSmartFix(missingCatalanHigh), false)
+
+const missingTagLow = fragment({
+  storedTag: null,
+  storedSource: 'none',
+  confidence: 'low',
+  mismatch: false,
+})
+assert.equal(isReliableMissingTag(missingTagLow), false)
+assert.equal(isReviewIssue(missingTagLow), false)
 
 const contextualCatalanA = fragment({
   id: 'word/document.xml#1',
