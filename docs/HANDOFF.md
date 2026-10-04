@@ -293,6 +293,8 @@ Approved runner:
 - host: `DESKTOP-0NEP6ON`
 - labels: `self-hosted`, `Windows`, `X64`
 
+CI push runs are coalesced per branch with GitHub Actions `concurrency`; when a newer commit arrives on the same branch, stale in-progress/queued validation is cancelled so the self-hosted runner validates the latest branch state instead of draining obsolete commits.
+
 The workflow verifies both `RUNNER_NAME` and `COMPUTERNAME`.
 
 The public repository does not execute CI on untrusted `pull_request` events.
