@@ -26,6 +26,7 @@
 
 ### Changed
 
+- the file picker now clears its native selection after capturing the chosen File, allowing the exact same document to be selected again for a fresh audit without reloading the page;
 - language detection in Word, PowerPoint, OpenDocument and RTF scans now cooperatively yields after sustained CPU work, keeping the browser responsive on large documents without changing detection or repair results;
 - document analysis/repair is now exclusive at the UI boundary: drag-and-drop remains intercepted but is ignored safely while work is in progress, preventing overlapping scans, premature control re-enabling and browser default file handling;
 - recoverable document/package errors now use stable internal error codes and are localized at the UI boundary in Catalan, Spanish and English; unknown library exceptions fall back to localized generic messages instead of leaking raw technical English;

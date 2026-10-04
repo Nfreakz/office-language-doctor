@@ -86,6 +86,7 @@ assert.ok(html.includes('id="dropzone" class="dropzone" for="file-input" aria-di
 assert.ok(mainTs.includes('let appBusy = false'), 'Exclusive operation state missing')
 assert.ok(mainTs.includes("if (appBusy) return"), 'Busy document-operation guard missing')
 assert.ok(mainTs.includes("dropzone.setAttribute('aria-disabled', String(busy))"), 'Dropzone aria-disabled state must follow busy state')
+assert.ok(mainTs.includes("fileInput.value = ''"), 'File picker must reset after capturing a File so the same document can be selected again')
 assert.ok(styleCss.includes('.dropzone.is-busy {'), 'Busy dropzone visual state missing')
 assert.ok(!styleCss.includes('.is-busy .dropzone, .is-busy button { pointer-events: none; }'), 'Busy dropzone must keep receiving drag/drop events so it can prevent browser default handling')
 assert.ok(html.includes('<option value="100">100</option>'), 'Safe 100-item audit page size missing')
