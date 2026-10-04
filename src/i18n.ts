@@ -571,9 +571,15 @@ export function resolveLocale(preferred: readonly string[]): UiLocale {
 }
 
 export function initLocale(): UiLocale {
-  const stored = typeof window !== 'undefined'
-    ? window.localStorage.getItem(STORAGE_KEY)
-    : null
+  let stored: string | null = null
+
+  if (typeof window !== 'undefined') {
+    try {
+      stored = window.localStorage.getItem(STORAGE_KEY)
+    } catch {
+      stored = null
+    }
+  }
 
   currentLocale = stored === 'ca' || stored === 'es' || stored === 'en'
     ? stored
@@ -591,7 +597,11 @@ export function setLocale(locale: UiLocale): void {
   currentLocale = locale
 
   if (typeof window !== 'undefined') {
-    window.localStorage.setItem(STORAGE_KEY, locale)
+    try {
+      window.localStorage.setItem(STORAGE_KEY, locale)
+    } catch {
+      // The interface still changes even when browser storage is unavailable.
+    }
   }
 
   for (const listener of listeners) listener(locale)

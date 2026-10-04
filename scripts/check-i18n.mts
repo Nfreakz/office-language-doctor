@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import {
   MESSAGES,
   formatLabel,
@@ -17,6 +18,16 @@ assert.equal(resolveLocale(['de-DE']), 'en')
 const englishKeys = Object.keys(MESSAGES.en).sort()
 assert.deepEqual(Object.keys(MESSAGES.es).sort(), englishKeys)
 assert.deepEqual(Object.keys(MESSAGES.ca).sort(), englishKeys)
+
+const html = readFileSync('index.html', 'utf8')
+const referencedKeys = [
+  ...html.matchAll(/data-i18n(?:-aria-label|-title)?="([^"]+)"/g),
+].map((match) => match[1])
+
+assert.ok(referencedKeys.length > 30, 'Expected localized UI markers in index.html')
+for (const key of referencedKeys) {
+  assert.ok(key in MESSAGES.en, `Unknown index.html translation key: ${key}`)
+}
 
 for (const locale of ['en', 'es', 'ca'] as const) {
   for (const [key, value] of Object.entries(MESSAGES[locale])) {
