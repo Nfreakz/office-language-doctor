@@ -8,9 +8,21 @@ export function isReliableMismatch(fragment: TextFragment): boolean {
   )
 }
 
+export function isReliableMissingTag(fragment: TextFragment): boolean {
+  return Boolean(
+    !fragment.storedTag &&
+    fragment.detectedTag &&
+    (fragment.confidence === 'high' || fragment.confidence === 'medium'),
+  )
+}
+
+export function isReviewIssue(fragment: TextFragment): boolean {
+  return isReliableMismatch(fragment) || isReliableMissingTag(fragment)
+}
+
 export function requiresVariantChoice(fragment: TextFragment): boolean {
   return Boolean(
-    isReliableMismatch(fragment) &&
+    isReviewIssue(fragment) &&
     fragment.detectedTag?.toLowerCase() === 'ca-es',
   )
 }
