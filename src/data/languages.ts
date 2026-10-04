@@ -25,6 +25,12 @@ export const LANGUAGE_OPTIONS: LanguageOption[] = [
   { tag: 'nb-NO', label: 'Norsk bokmål' },
   { tag: 'fi-FI', label: 'Suomi' },
   { tag: 'hu-HU', label: 'Magyar' },
+  { tag: 'el-GR', label: 'Ελληνικά' },
+  { tag: 'tr-TR', label: 'Türkçe' },
+  { tag: 'sk-SK', label: 'Slovenčina' },
+  { tag: 'sl-SI', label: 'Slovenščina' },
+  { tag: 'hr-HR', label: 'Hrvatski' },
+  { tag: 'bg-BG', label: 'Български' },
 ]
 
 export function languageLabel(tag: string): string {

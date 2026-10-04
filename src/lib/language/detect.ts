@@ -4,6 +4,7 @@ import type { DetectionConfidence } from '../document/types'
 const DETECTION_CODES = [
   'cat', 'glg', 'eus', 'spa', 'eng', 'fra', 'por', 'deu', 'ita',
   'nld', 'pol', 'ron', 'ces', 'swe', 'dan', 'nob', 'fin', 'hun',
+  'ell', 'tur', 'slk', 'slv', 'hrv', 'bul',
 ]
 
 const ISO3_TO_TAG: Record<string, string> = {
@@ -25,6 +26,12 @@ const ISO3_TO_TAG: Record<string, string> = {
   nob: 'nb-NO',
   fin: 'fi-FI',
   hun: 'hu-HU',
+  ell: 'el-GR',
+  tur: 'tr-TR',
+  slk: 'sk-SK',
+  slv: 'sl-SI',
+  hrv: 'hr-HR',
+  bul: 'bg-BG',
 }
 
 const EXACT_LANGUAGE_LABELS: Record<string, string> = {
@@ -76,6 +83,21 @@ const EXACT_LANGUAGE_LABELS: Record<string, string> = {
   'finnish': 'fin',
   'magyar': 'hun',
   'hungarian': 'hun',
+  'ελληνικά': 'ell',
+  'greek': 'ell',
+  'türkçe': 'tur',
+  'turkce': 'tur',
+  'turkish': 'tur',
+  'slovenčina': 'slk',
+  'slovencina': 'slk',
+  'slovak': 'slk',
+  'slovenščina': 'slv',
+  'slovenscina': 'slv',
+  'slovenian': 'slv',
+  'hrvatski': 'hrv',
+  'croatian': 'hrv',
+  'български': 'bul',
+  'bulgarian': 'bul',
 }
 
 const DANISH_ANCHORS = new Set([
@@ -188,6 +210,12 @@ export function languageFamily(tag: string | null): string | null {
   if (normalized.startsWith('nb-') || normalized.startsWith('no-') || normalized.startsWith('nn-')) return 'no'
   if (normalized.startsWith('fi-')) return 'fi'
   if (normalized.startsWith('hu-')) return 'hu'
+  if (normalized.startsWith('el-')) return 'el'
+  if (normalized.startsWith('tr-')) return 'tr'
+  if (normalized.startsWith('sk-')) return 'sk'
+  if (normalized.startsWith('sl-')) return 'sl'
+  if (normalized.startsWith('hr-')) return 'hr'
+  if (normalized.startsWith('bg-')) return 'bg'
 
   return normalized
 }
