@@ -117,6 +117,17 @@ const EXACT_LANGUAGE_LABELS: Record<string, string> = {
   'maltese': 'mlt',
 }
 
+const ESTONIAN_ANCHORS = new Set([
+  'tere',
+  'tulemast',
+  'töökoosolekule',
+  'täname',
+  'osalemise',
+  'koostöö',
+  'selles',
+  'projektis',
+])
+
 const DANISH_ANCHORS = new Set([
   'arbejdsmøde',
   'arbejdsmødet',
@@ -162,6 +173,17 @@ export function detectTextLanguage(text: string): LanguageDetection {
 
   if (letterCount < 10) {
     return unknownDetection()
+  }
+
+  const estonianAnchorCount = countAnchors(normalized, ESTONIAN_ANCHORS)
+  if (estonianAnchorCount >= 3) {
+    return {
+      iso3: 'est',
+      tag: 'et-EE',
+      confidence: 'medium',
+      score: null,
+      margin: null,
+    }
   }
 
   const ranked = francAll(normalized, {
