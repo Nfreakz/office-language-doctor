@@ -563,37 +563,6 @@ code { display: inline-block; padding: 3px 6px; border-radius: 5px; background: 
   box-shadow: 0 1px 4px rgba(28, 39, 57, .10);
 }
 
-.hero-nav a {
-  color: #526275;
-  text-decoration: none;
-}
-
-.hero-nav a:hover {
-  color: #263d58;
-}
-
-.hero-nav .support-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 38px;
-  padding: 0 14px;
-  border: 1px solid #d9b300;
-  border-radius: 9px;
-  background: #ffdd00;
-  color: #342b00;
-  font-weight: 850;
-  box-shadow: 0 5px 14px rgba(126, 101, 0, .10);
-  transition: background .15s ease, border-color .15s ease, transform .15s ease;
-}
-
-.hero-nav .support-link:hover {
-  border-color: #c9a500;
-  background: #f3ce00;
-  color: #241e00;
-  transform: translateY(-1px);
-}
-
 .hero h1 {
   width: 100%;
   max-width: none;
@@ -782,6 +751,15 @@ code { display: inline-block; padding: 3px 6px; border-radius: 5px; background: 
   text-decoration: none;
 }
 
+.footer-links .footer-support {
+  color: #766d63;
+  font-weight: 650;
+}
+
+.footer-links .footer-support:hover {
+  color: #4f4942;
+}
+
 .site-footer .visit-counter {
   height: 18px;
   opacity: .82;
@@ -810,11 +788,6 @@ code { display: inline-block; padding: 3px 6px; border-radius: 5px; background: 
 
   .locale-switcher button {
     width: auto;
-  }
-
-  .hero-nav .support-link {
-    min-height: 36px;
-    padding: 0 12px;
   }
 
   .hero h1 {
