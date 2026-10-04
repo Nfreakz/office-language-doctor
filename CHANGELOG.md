@@ -26,6 +26,7 @@
 
 ### Changed
 
+- busy-state exclusivity is now enforced by the button-state calculators themselves, preventing filter/re-render interactions from re-enabling repair actions during an active scan or repair; CA / ES / EN switching is also locked until the operation completes;
 - explicit Smart Fix review decisions now survive post-repair rescans for fragments that remain actionable, so a high-confidence suggestion the user deliberately unchecked is not silently preselected again on the next pass;
 - the file picker now clears its native selection after capturing the chosen File, allowing the exact same document to be selected again for a fresh audit without reloading the page;
 - language detection in Word, PowerPoint, OpenDocument and RTF scans now cooperatively yields after sustained CPU work, keeping the browser responsive on large documents without changing detection or repair results;
