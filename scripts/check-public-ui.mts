@@ -86,6 +86,8 @@ assert.ok(html.includes('id="dropzone" class="dropzone" for="file-input" aria-di
 assert.ok(mainTs.includes('let appBusy = false'), 'Exclusive operation state missing')
 assert.ok(mainTs.includes("if (appBusy) return"), 'Busy document-operation guard missing')
 assert.ok(mainTs.includes("dropzone.setAttribute('aria-disabled', String(busy))"), 'Dropzone aria-disabled state must follow busy state')
+assert.ok(mainTs.includes('results.inert = busy'), 'Audit review controls must be inert while a document operation is active')
+assert.ok(mainTs.includes("results.setAttribute('aria-busy', String(busy))"), 'Audit results must expose busy state to assistive technology')
 assert.ok(mainTs.includes("const localeButtons = Array.from("), 'Locale controls must be tracked for busy-state locking')
 assert.ok(mainTs.includes("for (const button of localeButtons) button.disabled = busy"), 'Locale controls must stay disabled while a document operation is active')
 assert.ok(mainTs.includes("smartRepairButton.disabled = appBusy || fixes.length === 0 || !currentFile"), 'Smart Fix CTA must not be re-enabled by a busy-state re-render')

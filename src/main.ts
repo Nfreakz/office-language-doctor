@@ -1113,6 +1113,8 @@ function setBusy(busy: boolean): void {
   for (const button of localeButtons) button.disabled = busy
   dropzone.classList.toggle('is-busy', busy)
   dropzone.setAttribute('aria-disabled', String(busy))
+  results.inert = busy
+  results.setAttribute('aria-busy', String(busy))
   repairButton.disabled = busy || getPreparedReplacements().size === 0 || !currentFile
   smartRepairButton.disabled = busy || getSelectedFragmentFixes().length === 0 || !currentFile
   applyGlobal.disabled = busy || !globalFixAllowed
