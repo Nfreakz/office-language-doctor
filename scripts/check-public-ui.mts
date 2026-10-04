@@ -71,6 +71,13 @@ assert.ok(
   'Header must use the document-check logo',
 )
 assert.ok(!html.includes('>LD</span>'), 'Legacy LD placeholder must not remain in the header')
+assert.ok(html.includes('class="locale-switcher"'), 'CA / ES / EN locale switcher missing')
+for (const locale of ['ca', 'es', 'en']) {
+  assert.ok(html.includes(`data-ui-locale="${locale}"`), `Missing UI locale button: ${locale}`)
+}
+assert.ok(html.includes('data-i18n="hero.title"'), 'Hero title must participate in UI localization')
+assert.ok(html.includes('data-i18n="audit.title"'), 'Audit UI must participate in localization')
+assert.ok(html.includes('data-i18n-aria-label="locale.aria"'), 'Locale switcher accessible label missing')
 assert.ok(html.includes('class="support-link"'), 'Hero Buy Me a Coffee action missing')
 assert.ok(html.includes('>☕ Buy me a coffee</a>'), 'Hero support label missing')
 assert.ok(html.includes(`Office Language Doctor · ${visibleVersion}`), 'Header version must match package.json')

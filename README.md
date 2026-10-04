@@ -67,7 +67,8 @@ Version 0.5.0 is the initial public Community Edition baseline under MPL-2.0, wi
 - human-readable fragment locations, including numbered ODP slides and exact ODS sheet + cell/range coordinates, plus stored-language source diagnostics;
 - local CSV and JSON audit exports with explicit detection source;
 - initial RTF audit and repair support using `\\langN` and `\\deflangN`;
-- the NeoRS public identity, document-check logo, favicon, source/issue/license links and local-processing guidance.
+- the NeoRS public identity, document-check logo, favicon, source/issue/license links and local-processing guidance;
+- a browser-localized interface in Catalan, Spanish and English, with browser-language initialization and a persisted manual selector.
 
 Live VBA execution has been validated end-to-end with real DOCM and PPTM files through the public web app. In both Word and PowerPoint, the macro executed before repair, the document was repaired by Language Doctor, and the same macro executed successfully again afterward. Automated regression also preserves `vbaProject.bin` byte-for-byte. OTT, OTP and OTS have passed a real LibreOffice 25.2.3.2 headless engine round-trip; RTF has passed representative Microsoft Word open/repair validation.
 
@@ -91,7 +92,8 @@ Smart Fix preselects only high-confidence non-Catalan/Valencian mismatches. Medi
 - groups Word runs from the same paragraph into a collapsible audit unit while keeping each run independently repairable;
 - can prepare compatible paragraph fixes in one explicit review action without autoapplying or auto-preselecting contextual suggestions;
 - downloads a repaired copy in the original format;
-- exports the complete audit locally as CSV or JSON, including whether detection was direct or inferred from paragraph context.
+- exports the complete audit locally as CSV or JSON, including whether detection was direct or inferred from paragraph context;
+- localizes the full browser UI to Catalan, Spanish or English without changing document contents or sending language preferences to a backend.
 
 CSV export neutralizes leading spreadsheet-formula prefixes before download.
 
@@ -148,6 +150,7 @@ npm run check:odf
 npm run check:variants
 npm run check:smart-fix
 npm run check:diagnostics
+npm run check:i18n
 npm run check:paragraph-audit
 npm run check:report
 npm run check:rtf
