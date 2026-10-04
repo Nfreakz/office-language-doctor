@@ -14,6 +14,7 @@
     "check:variants": "tsx scripts/check-format-variants.mts",
     "check:smart-fix": "tsx scripts/check-smart-fix.mts",
     "check:diagnostics": "tsx scripts/check-fragment-diagnostics.mts",
+    "check:paragraph-audit": "tsx scripts/check-paragraph-audit.mts",
     "check:report": "tsx scripts/check-audit-report.mts",
     "check:rtf": "tsx scripts/check-rtf.mts",
     "check:public-ui": "tsx scripts/check-public-ui.mts"
