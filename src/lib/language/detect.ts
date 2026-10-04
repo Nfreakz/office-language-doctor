@@ -76,6 +76,18 @@ const EXACT_LANGUAGE_LABELS: Record<string, string> = {
   'hungarian': 'hun',
 }
 
+const DANISH_ANCHORS = new Set([
+  'arbejdsmøde',
+  'arbejdsmødet',
+  'deltagelse',
+  'deltagelsen',
+  'samarbejde',
+  'samarbejdet',
+  'dette',
+  'tak',
+  'velkommen',
+])
+
 const GALICIAN_ANCHORS = new Set([
   'galego',
   'galega',
@@ -132,7 +144,13 @@ export function detectTextLanguage(text: string): LanguageDetection {
   } else if (
     best[0] === 'glg' &&
     letterCount >= 16 &&
-    countGalicianAnchors(normalized) >= 2
+    countAnchors(normalized, GALICIAN_ANCHORS) >= 2
+  ) {
+    confidence = 'medium'
+  } else if (
+    best[0] === 'dan' &&
+    letterCount >= 16 &&
+    countAnchors(normalized, DANISH_ANCHORS) >= 2
   ) {
     confidence = 'medium'
   }
@@ -202,7 +220,7 @@ function detectExactLanguageLabel(text: string): LanguageDetection | null {
   }
 }
 
-function countGalicianAnchors(text: string): number {
+function countAnchors(text: string, anchors: ReadonlySet<string>): number {
   const tokens = text
     .normalize('NFC')
     .toLocaleLowerCase()
@@ -212,7 +230,7 @@ function countGalicianAnchors(text: string): number {
   const seen = new Set<string>()
 
   for (const token of tokens) {
-    if (GALICIAN_ANCHORS.has(token) && !seen.has(token)) {
+    if (anchors.has(token) && !seen.has(token)) {
       seen.add(token)
       count += 1
     }
