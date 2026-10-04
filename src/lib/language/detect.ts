@@ -144,6 +144,12 @@ const LATVIAN_ANCHORS = new Set([
   'sadarbību',
   'šajā',
   'projektā',
+  'dokumentā',
+  'informācija',
+  'nepieciešama',
+  'turpmākai',
+  'sadarbībai',
+  'izvērtēšanai',
 ])
 
 const SWEDISH_ANCHORS = new Set([
