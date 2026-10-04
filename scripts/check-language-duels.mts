@@ -101,21 +101,26 @@ const duelCases: DuelCase[] = [
   },
 ]
 
+const failures: string[] = []
+
 for (const testCase of duelCases) {
   const result = detectTextLanguage(testCase.text)
   console.log(
     `[${testCase.group}] ${testCase.name}: ${result.tag} / ${result.confidence} / margin=${result.margin}`,
   )
 
-  assert.equal(
-    result.tag,
-    testCase.expectedTag,
-    `${testCase.group}: ${testCase.name} was confused with a neighboring language`,
-  )
-  assert.ok(
-    result.confidence === 'high' || result.confidence === 'medium',
-    `${testCase.group}: ${testCase.name} must remain a reliable detection, got ${result.confidence}`,
-  )
+  if (result.tag !== testCase.expectedTag) {
+    failures.push(
+      `${testCase.group}: ${testCase.name} expected ${testCase.expectedTag}, got ${result.tag ?? 'unknown'}`,
+    )
+    continue
+  }
+
+  if (result.confidence !== 'high' && result.confidence !== 'medium') {
+    failures.push(
+      `${testCase.group}: ${testCase.name} expected reliable confidence, got ${result.confidence}`,
+    )
+  }
 }
 
 const expectedByGroup = new Map<string, Set<string>>()
@@ -128,5 +133,11 @@ for (const testCase of duelCases) {
 for (const [group, tags] of expectedByGroup) {
   assert.ok(tags.size >= 2, `${group} should compare at least two neighboring languages`)
 }
+
+assert.equal(
+  failures.length,
+  0,
+  `Neighboring-language regressions failed:\n${failures.join('\n')}`,
+)
 
 console.log(`Language duel regressions: OK (${duelCases.length} adversarial samples)`)
