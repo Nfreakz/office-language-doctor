@@ -28,8 +28,8 @@ This application is independent from every other NeoRS application. Do not reuse
 - Annotated tag: `v0.6.0`
 - Release commit: `95d48d089a6bf726d90213c0031b8a71efc25262`
 - Release published: **2026-10-04**
-- Public deployment source: `gh-pages / (root)`
-- Public branches: `main` and `gh-pages`
+- Public deployment source: **GitHub Actions custom workflow**, built and deployed on `DESKTOP-0NEP6ON`
+- Public branches: `main`; legacy `gh-pages` may remain for history but is not the deployment source
 - Clean local reconstruction snapshot: verified on the approved local runner before rebuilding this repository
 - Repository reconstruction: completed on 2026-09-30 with no pre-0.5.0 history carried into the new repository
 
@@ -303,6 +303,8 @@ Approved runner:
 - labels: `self-hosted`, `Windows`, `X64`
 
 CI push runs are coalesced per branch with GitHub Actions `concurrency`; when a newer commit arrives on the same branch, stale in-progress/queued validation is cancelled so the self-hosted runner validates the latest branch state instead of draining obsolete commits.
+
+GitHub Pages must use **Settings → Pages → Source: GitHub Actions**, never **Deploy from a branch**. Branch-source Pages creates GitHub-managed `ubuntu-latest` build/deploy jobs even though the repository build itself is self-hosted. The custom Pages workflow builds, uploads and deploys the site from `DESKTOP-0NEP6ON`; `public/CNAME` remains the canonical custom-domain source included in `dist`.
 
 The workflow verifies both `RUNNER_NAME` and `COMPUTERNAME`.
 
