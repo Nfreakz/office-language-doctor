@@ -1,4 +1,4 @@
-name: Deploy · GitHub Pages branch
+name: Deploy · GitHub Pages self-hosted
 
 on:
   push:
@@ -7,7 +7,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: office-language-doctor-pages
@@ -15,9 +17,12 @@ concurrency:
 
 jobs:
   deploy:
-    name: Build and publish on DESKTOP-0NEP6ON
+    name: Build and deploy on DESKTOP-0NEP6ON
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     defaults:
       run:
@@ -36,8 +41,9 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
+
+      - name: Enforce local runners
+        run: ./scripts/check-local-runners.ps1
 
       - name: Set up Node
         uses: actions/setup-node@v5
@@ -52,36 +58,27 @@ jobs:
       - name: Build site
         run: npm run build
 
-      - name: Verify build output
+      - name: Verify build output and custom domain
         run: |
           if (-not (Test-Path "dist\index.html")) {
             throw "dist/index.html was not generated"
           }
-
-      - name: Publish gh-pages branch
-        run: |
-          $publish = Join-Path $env:RUNNER_TEMP "office-language-doctor-pages"
-
-          if (Test-Path $publish) {
-            Remove-Item -Recurse -Force $publish
+          if (-not (Test-Path "dist\CNAME")) {
+            throw "dist/CNAME was not generated"
+          }
+          $cname = (Get-Content "dist\CNAME" -Raw).Trim()
+          if ($cname -ne 'language-doctor.cecolab.cat') {
+            throw "Unexpected CNAME: $cname"
           }
 
-          New-Item -ItemType Directory -Path $publish | Out-Null
-          Copy-Item -Path "dist\*" -Destination $publish -Recurse -Force
-          New-Item -ItemType File -Path (Join-Path $publish ".nojekyll") -Force | Out-Null
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./dist
 
-          $deployBranch = "gh-pages-build-$env:GITHUB_RUN_ID"
-          git checkout --orphan $deployBranch
-
-          git rm -rf .
-          git clean -fdx
-
-          Copy-Item -Path "$publish\*" -Destination "." -Recurse -Force
-          Copy-Item -Path (Join-Path $publish ".nojekyll") -Destination ".\.nojekyll" -Force
-
-          git add -A
-          git commit -m "Deploy $env:GITHUB_SHA"
-          git push origin HEAD:gh-pages --force
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
