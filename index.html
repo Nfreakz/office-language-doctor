@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Find and repair wrong proofing-language metadata in Word, PowerPoint, OpenDocument and RTF files locally in your browser. No document upload."
+    />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://language-doctor.cecolab.cat/" />
+    <meta name="author" content="NeoRS" />
+    <meta name="theme-color" content="#263d58" />
+    <meta property="og:title" content="Fix Wrong Proofing Language | Office Language Doctor" />
+    <meta
+      property="og:description"
+      content="Find and repair wrong proofing-language metadata in Word, PowerPoint, OpenDocument and RTF files locally in your browser."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Office Language Doctor" />
+    <meta property="og:url" content="https://language-doctor.cecolab.cat/" />
+    <meta
+      property="og:image"
+      content="https://language-doctor.cecolab.cat/social-preview.jpg"
+    />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="600" />
+    <meta property="og:image:height" content="315" />
+    <meta
+      property="og:image:alt"
+      content="Office Language Doctor · NeoRS open-source project"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Fix Wrong Proofing Language | Office Language Doctor" />
+    <meta
+      name="twitter:description"
+      content="Find and repair wrong proofing-language metadata in Word, PowerPoint, OpenDocument and RTF files locally in your browser."
+    />
+    <meta
+      name="twitter:image"
+      content="https://language-doctor.cecolab.cat/social-preview.jpg"
+    />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Office Language Doctor",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Web browser",
+        "softwareVersion": "0.6.0",
+        "isAccessibleForFree": true,
+        "browserRequirements": "Requires a modern browser with JavaScript and local file access.",
+        "description": "Browser tool for finding and repairing wrong proofing-language metadata in Word, PowerPoint, OpenDocument and RTF files while keeping documents on the user's device.",
+        "featureList": "Proofing-language audit, Smart Fix, local repair, CSV/JSON audit export, 17 supported formats",
+        "url": "https://language-doctor.cecolab.cat/",
+        "image": "https://language-doctor.cecolab.cat/social-preview.jpg",
+        "author": { "@type": "Organization", "name": "NeoRS" },
+        "sameAs": [
+          "https://github.com/Nfreakz/office-language-doctor",
+          "https://cecolab.cat/software/office-language-doctor/"
+        ]
+      }
+    </script>
+    <title>Fix Wrong Proofing Language | Office Language Doctor</title>
+    <script type="module" crossorigin src="./assets/index-EOiPQiUl.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CZfp8SQd.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div class="brand-row">
+          <div class="brand-lockup">
+            <img class="app-mark" src="./favicon.svg" alt="" aria-hidden="true" />
+            <div>
+              <p class="eyebrow">Office Language Doctor · v0.6.0</p>
+              <p class="byline" data-i18n="hero.byline">Community Edition · A NeoRS open-source project</p>
+            </div>
+          </div>
+          <div class="hero-nav">
+            <div class="locale-switcher" role="group" aria-label="Interface language" data-i18n-aria-label="locale.aria">
+              <button type="button" data-ui-locale="ca" aria-pressed="false">CA</button>
+              <button type="button" data-ui-locale="es" aria-pressed="false">ES</button>
+              <button type="button" data-ui-locale="en" aria-pressed="true">EN</button>
+            </div>
+          </div>
+        </div>
+
+        <h1 data-i18n="hero.title">Find and fix the wrong proofing language in Office documents.</h1>
+        <p class="lead">
+          <span data-i18n="hero.leadBefore">Inspect stored proofing languages, review language issues and download a repaired copy. Documents stay in your browser, and the</span>
+          <a href="https://github.com/Nfreakz/office-language-doctor" target="_blank" rel="noopener noreferrer" data-i18n="hero.source">source code is public</a><span data-i18n="hero.leadAfter">.</span>
+        </p>
+
+        <p class="hero-flow" aria-label="Workflow" data-i18n-aria-label="workflow.aria">
+          <span data-i18n="workflow.select">Select document</span><span aria-hidden="true">→</span>
+          <span data-i18n="workflow.review">Review issues</span><span aria-hidden="true">→</span>
+          <span data-i18n="workflow.download">Download repaired copy</span>
+        </p>
+      </header>
+
+      <section class="panel upload-panel" aria-labelledby="upload-title">
+        <div class="panel-heading upload-heading">
+          <div>
+            <p class="step">01</p>
+            <h2 id="upload-title" data-i18n="upload.title">Choose a supported document</h2>
+          </div>
+          <span class="privacy-badge" data-i18n="upload.privacyBadge">Local processing · no upload</span>
+        </div>
+
+        <label id="dropzone" class="dropzone" for="file-input" aria-disabled="false">
+          <input
+            id="file-input"
+            type="file"
+            accept=".docx,.docm,.dotx,.dotm,.pptx,.pptm,.potx,.potm,.ppsx,.ppsm,.odt,.ott,.odp,.otp,.ods,.ots,.rtf"
+          />
+          <span class="dropzone-icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" role="img">
+              <path d="M14 6h14l8 8v28H14z"></path>
+              <path d="M28 6v9h8"></path>
+              <path d="M20 24h10M20 30h10"></path>
+            </svg>
+          </span>
+          <strong data-i18n="upload.choose">Choose a file or drop it here</strong>
+          <span class="dropzone-copy" data-i18n="upload.formats">Word, PowerPoint, OpenDocument and RTF · 17 supported formats · 29 detected language families</span>
+          <span class="dropzone-action" aria-hidden="true" data-i18n="upload.action">Choose file</span>
+        </label>
+
+        <div class="upload-meta">
+          <p id="status" class="status" role="status" aria-live="polite" data-i18n="upload.none">No file selected.</p>
+          <span class="local-note" data-i18n="upload.localNote">Processed locally · Nothing uploaded</span>
+        </div>
+
+        <div class="start-actions">
+          <a class="sample-link" href="./samples/LanguageDoctor_SAMPLE.rtf" download data-i18n="sample.try">Try a sample file</a>
+          <span data-i18n="sample.or">or inspect your own document above</span>
+        </div>
+
+        <div class="info-grid">
+          <section id="formats" class="info-card" aria-labelledby="formats-title">
+            <h3 id="formats-title" data-i18n="info.formats">Supported formats</h3>
+            <p><strong>Word:</strong> DOCX, DOCM, DOTX, DOTM</p>
+            <p><strong>PowerPoint:</strong> PPTX, PPTM, POTX, POTM, PPSX, PPSM</p>
+            <p><strong>OpenDocument:</strong> ODT, OTT, ODP, OTP, ODS, OTS</p>
+            <p><strong data-i18n="info.richText">Rich Text</strong>: RTF</p>
+            <p><strong data-i18n="info.detectionLabel">Detection</strong>: <span data-i18n="info.detectionLanguages">29 families, including all 24 official EU languages, plus Catalan/Valencian, Galician, Basque, Norwegian Bokmål and Turkish.</span></p>
+          </section>
+
+          <section id="changes" class="info-card" aria-labelledby="changes-title">
+            <h3 id="changes-title" data-i18n="info.changes">What does it change?</h3>
+            <p>
+              <span data-i18n="info.changesText">Only the proofing-language metadata you explicitly repair. Language Doctor does not rewrite your document text. Smart Fix preselects only high-confidence safe suggestions.</span>
+            </p>
+          </section>
+
+          <section id="privacy" class="info-card" aria-labelledby="privacy-title">
+            <h3 id="privacy-title" data-i18n="info.privacy">Privacy</h3>
+            <p>
+              <span data-i18n="info.privacyText">Document contents, filenames and file bytes stay on your device. There is no upload endpoint, account system or server-side document processing.</span>
+            </p>
+          </section>
+        </div>
+      </section>
+
+      <section id="results" class="panel hidden" aria-labelledby="results-title">
+        <div class="panel-heading">
+          <div>
+            <p class="step">02</p>
+            <h2 id="results-title" data-i18n="results.title">Stored proofing languages</h2>
+            <p class="section-copy">
+              <span data-i18n="results.copy">These are the proofing-language tags stored in the document for actual text fragments. They are not the detected language of the text.</span>
+            </p>
+          </div>
+          <span id="summary" class="summary"></span>
+        </div>
+
+        <div class="document-stats" aria-label="Document audit summary">
+          <div class="document-stat">
+            <strong id="stat-fragments">0</strong>
+            <span data-i18n="stats.fragments">Text fragments</span>
+          </div>
+          <div class="document-stat">
+            <strong id="stat-languages">0</strong>
+            <span data-i18n="stats.languages">Reliable languages</span>
+          </div>
+          <div class="document-stat document-stat-issues">
+            <strong id="stat-issues">0</strong>
+            <span data-i18n="stats.issues">Review issues</span>
+          </div>
+          <div class="document-stat">
+            <strong id="stat-undetected">0</strong>
+            <span data-i18n="stats.noLanguage">No language</span>
+          </div>
+        </div>
+
+        <div id="mixed-warning" class="warning hidden">
+          <strong data-i18n="mixed.title">Mixed-language text detected.</strong>
+          <span data-i18n="mixed.copy">Global remapping is disabled because it could overwrite valid language differences.</span>
+        </div>
+
+        <div class="global-fix">
+          <label for="global-language" data-i18n="global.label">Set all stored language tags to</label>
+          <div class="global-actions">
+            <select id="global-language"></select>
+            <button id="apply-global" class="secondary" type="button" data-i18n="global.prepare">Prepare global fix</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col" data-i18n="table.storedLanguage">Stored language</th>
+                <th scope="col" data-i18n="table.tag">Tag</th>
+                <th scope="col" data-i18n="table.fragments">Text fragments</th>
+                <th scope="col" data-i18n="table.changeTo">Change to</th>
+              </tr>
+            </thead>
+            <tbody id="language-rows"></tbody>
+          </table>
+        </div>
+
+        <div class="footer-actions">
+          <p id="change-summary" data-i18n="change.none">No changes prepared.</p>
+          <button id="repair-button" class="primary" type="button" disabled>
+            <span data-i18n="repair.globalButton">Repair stored tags and download</span>
+          </button>
+        </div>
+
+        <div class="audit">
+          <div class="audit-heading">
+            <div>
+              <p class="step">03</p>
+              <div class="title-line">
+                <h2 data-i18n="audit.title">Text language audit</h2>
+                <span class="experimental" data-i18n="audit.experimental">Experimental</span>
+              </div>
+              <p class="section-copy">
+                <span data-i18n="audit.copy">Review reliable mismatches and missing proofing-language tags individually. Word runs from the same paragraph are grouped for readability and can be expanded only when needed. Missing tags, contextual detections and Catalan / Valencian choices always require explicit review.</span>
+              </p>
+            </div>
+            <span id="detection-summary" class="summary"></span>
+          </div>
+
+          <div class="audit-toolbar">
+            <div class="audit-filters" aria-label="Filter audit results" data-i18n-aria-label="audit.filtersAria">
+              <button id="filter-issues" class="audit-filter" type="button" aria-pressed="false">
+                <span data-i18n="audit.issues">Issues</span> <span id="filter-issues-count">0</span>
+              </button>
+              <button id="filter-all" class="audit-filter" type="button" aria-pressed="false">
+                <span data-i18n="audit.allText">All text</span> <span id="filter-all-count">0</span>
+              </button>
+              <button id="filter-matches" class="audit-filter" type="button" aria-pressed="false">
+                <span data-i18n="audit.matches">Matches</span> <span id="filter-matches-count">0</span>
+              </button>
+              <button id="filter-undetected" class="audit-filter" type="button" aria-pressed="false">
+                <span data-i18n="audit.noLanguage">No language</span> <span id="filter-undetected-count">0</span>
+              </button>
+            </div>
+            <div class="audit-view-options">
+              <div class="audit-export-actions" aria-label="Export audit report" data-i18n-aria-label="audit.exportAria">
+                <button id="export-audit-csv" class="secondary compact-button" type="button" disabled data-i18n="audit.exportCsv">Export CSV</button>
+                <button id="export-audit-json" class="secondary compact-button" type="button" disabled data-i18n="audit.exportJson">Export JSON</button>
+              </div>
+              <label class="audit-page-size-label" for="audit-page-size">
+                <span data-i18n="audit.items">Items</span>
+                <select id="audit-page-size" class="audit-page-size">
+                  <option value="10" selected>10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </label>
+              <span id="audit-range" class="audit-range" data-i18n="audit.noResults">0 results</span>
+            </div>
+          </div>
+
+          <div id="smart-actions" class="smart-actions hidden">
+            <div>
+              <strong id="smart-fix-summary" data-i18n="smart.none">No fragment fixes selected.</strong>
+              <span data-i18n="smart.help">High-confidence direct fixes are preselected. Medium-confidence, paragraph-context and Catalan/Valencian suggestions require review.</span>
+            </div>
+            <button id="smart-repair-button" class="primary" type="button" disabled>
+              <span data-i18n="smart.repair">Repair selected fixes</span>
+            </button>
+          </div>
+
+          <div class="table-wrap">
+            <table class="audit-table">
+              <thead>
+                <tr>
+                  <th scope="col" data-i18n="audit.text">Text</th>
+                  <th scope="col" data-i18n="audit.stored">Stored</th>
+                  <th scope="col" data-i18n="audit.detected">Detected</th>
+                  <th scope="col" data-i18n="audit.status">Status</th>
+                  <th scope="col" data-i18n="audit.fix">Fix</th>
+                </tr>
+              </thead>
+              <tbody id="fragment-rows"></tbody>
+            </table>
+          </div>
+          <nav id="audit-pagination" class="audit-pagination hidden" aria-label="Audit pages" data-i18n-aria-label="pagination.aria">
+            <button id="audit-previous" class="secondary compact-button" type="button" data-i18n="pagination.previous">Previous</button>
+            <span id="audit-page-label">Page 1 of 1</span>
+            <button id="audit-next" class="secondary compact-button" type="button" data-i18n="pagination.next">Next</button>
+          </nav>
+        </div>
+      </section>
+
+      <footer class="site-footer">
+        <div class="footer-brand">
+          <strong>Office Language Doctor</strong>
+          <span data-i18n="footer.maintained">Created and maintained by NeoRS.</span>
+        </div>
+
+        <nav class="footer-links" aria-label="Project information" data-i18n-aria-label="footer.infoAria">
+          <a href="https://github.com/Nfreakz/office-language-doctor" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://github.com/Nfreakz/office-language-doctor/issues" target="_blank" rel="noopener noreferrer" data-i18n="footer.issue">Report an issue</a>
+          <a
+            class="footer-support"
+            href="https://buymeacoffee.com/neors"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Support NeoRS on Buy Me a Coffee"
+            data-i18n-aria-label="footer.supportAria"
+            data-i18n="footer.support"
+          >☕ Buy me a coffee</a>
+          <a href="https://github.com/Nfreakz/office-language-doctor/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MPL-2.0</a>
+          <a href="#privacy" data-i18n="footer.privacy">Privacy</a>
+          <span>v0.6.0</span>
+        </nav>
+
+        <img
+          class="visit-counter"
+          src="https://hitscounter.dev/api/hit?url=https%3A%2F%2Flanguage-doctor.cecolab.cat%2F&amp;label=Visits&amp;icon=eye&amp;color=%2348617f&amp;message=&amp;style=flat&amp;tz=Europe%2FMadrid"
+          alt="Office Language Doctor visit count"
+          referrerpolicy="no-referrer"
+        />
+      </footer>
+    </main>
+  </body>
+</html>
