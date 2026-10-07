@@ -33,6 +33,7 @@ Office Language Doctor 0.6.0 expands the Community Edition with full EU official
 
 ### Changed
 
+- GitHub Pages deployment now uses a custom self-hosted workflow end-to-end instead of pushing a `gh-pages` branch that triggers GitHub-managed `ubuntu-latest` Pages jobs; the custom domain is verified from `dist/CNAME` before deployment.
 - the active audit panel is now inert while a scan or repair is running, so per-language mappings, Smart Fix checkboxes, paragraph review actions, filters and pagination cannot mutate review state after the operation has already captured its inputs;
 - Word paragraph review actions now treat compatible reliable missing proofing-language tags as review issues alongside mismatches, preserving explicit-only selection, contextual-evidence requirements and Catalan / Valencian choice;
 - the audit `Issues` view and issue counters now cover both reliable language mismatches and reliable missing proofing-language tags while the detector's `likelyMismatches` metric remains unchanged;
