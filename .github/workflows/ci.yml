@@ -38,6 +38,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Enforce local runners
+        shell: powershell
+        run: ./scripts/check-local-runners.ps1
+
       - name: Set up Node
         uses: actions/setup-node@v5
         with:
