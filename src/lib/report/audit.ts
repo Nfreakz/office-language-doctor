@@ -103,7 +103,8 @@ export function auditReportToCsv(report: AuditReport): string {
     ]),
   ]
 
-  return rows.map((row) => row.map(csvCell).join(',')).join('\r\n') + '\r\n'
+  // The UTF-8 byte order mark lets Excel on Windows read accents correctly.
+  return '\uFEFF' + rows.map((row) => row.map(csvCell).join(',')).join('\r\n') + '\r\n'
 }
 
 export function auditReportFileName(
@@ -122,6 +123,9 @@ function reportStatus(fragment: TextFragment): AuditReportStatus {
   return 'matches'
 }
 
+// Cells starting with = + - @ (after leading whitespace) get a ' prefix so
+// spreadsheets never evaluate them as formulas. This deliberately also marks
+// harmless text such as "- item" or "-5%"; JSON exports keep the exact text.
 function csvCell(value: string): string {
   const safe = /^[=+\-@]/.test(value.trimStart()) ? `'${value}` : value
   return `"${safe.replace(/"/g, '""')}"`

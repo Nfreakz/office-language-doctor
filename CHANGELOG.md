@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Fixed
+
+- OpenDocument repairs always write `mimetype` as the first, uncompressed archive entry, as the ODF packaging rules require, even when the input had it elsewhere;
+- OpenDocument repairs no longer create a second `office:automatic-styles` element when the document had a self-closing one;
+- Word, PowerPoint and OpenDocument packages with an excessive number of parts or declared uncompressed size are rejected with a localized message before unpacking, so a crafted archive cannot exhaust browser memory;
+- CSV audit exports start with a UTF-8 byte order mark so Excel on Windows shows accented text correctly.
+
+### Changed
+
+- whole-document and selected-fragment repair share one UI flow in `main.ts`; the CSV formula guard is documented (JSON keeps the exact text).
+
 ### Changed
 
 - dependency installs are now reproducible: a committed `package-lock.json` pins the full dependency tree, and the CI, Pages deployment and live-VBA validation workflows use `npm ci` with the lockfile as npm cache key instead of resolving transitive versions on every run. No product behavior change.

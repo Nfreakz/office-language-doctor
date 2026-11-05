@@ -1,4 +1,5 @@
 import JSZip from 'jszip'
+import { loadZipPackage } from '../document/zip'
 import { DocumentError } from '../document/errors'
 
 const POWERPOINT_MIME_BY_EXTENSION: Record<string, string> = {
@@ -32,12 +33,7 @@ export function powerPointMimeForFile(file: File): string {
 export async function loadPowerPoint(file: File): Promise<JSZip> {
   powerPointExtension(file)
 
-  let zip: JSZip
-  try {
-    zip = await JSZip.loadAsync(file)
-  } catch {
-    throw new DocumentError('invalid-powerpoint-package')
-  }
+  const zip = await loadZipPackage(file, 'invalid-powerpoint-package')
 
   if (!zip.file('[Content_Types].xml') || !zip.file('ppt/presentation.xml')) {
     throw new DocumentError('invalid-powerpoint-package')

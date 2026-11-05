@@ -286,7 +286,12 @@ export function replaceOdfFragmentLanguages(
 
   if (newStyles.length > 0) {
     const insertion = newStyles.join('')
-    if (/<\/office:automatic-styles>/i.test(patched)) {
+    if (/<office:automatic-styles\b[^>]*\/>/i.test(patched)) {
+      patched = patched.replace(
+        /<office:automatic-styles\b([^>]*?)\s*\/>/i,
+        `<office:automatic-styles$1>${insertion}</office:automatic-styles>`,
+      )
+    } else if (/<\/office:automatic-styles>/i.test(patched)) {
       patched = patched.replace(/<\/office:automatic-styles>/i, `${insertion}</office:automatic-styles>`)
     } else if (/<office:body\b/i.test(patched)) {
       patched = patched.replace(

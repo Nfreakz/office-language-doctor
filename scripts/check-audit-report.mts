@@ -98,7 +98,8 @@ const contextualReport = buildAuditReport({
 assert.equal(contextualReport.fragments[0].detectionSource, 'paragraph-context')
 
 const csv = auditReportToCsv(contextualReport)
-assert.match(csv, /^"location","text","stored_language","stored_source","detected_language","detection_source"/)
+assert.equal(csv.charCodeAt(0), 0xfeff, 'CSV starts with a UTF-8 BOM for Excel')
+assert.match(csv, /^\uFEFF"location","text","stored_language","stored_source","detected_language","detection_source"/)
 assert.match(csv, /"paragraph-context"/)
 assert.match(csv, /"none"/)
 assert.match(csv, /"Slide 2","Benvinguts, equip","en-US"/)
