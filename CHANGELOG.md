@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- RTF repair now preserves the file byte-for-byte outside the inserted `{\langN …}` wrappers: raw 8-bit characters (e.g. `é` in the font table or body) are no longer re-encoded as UTF-8, and bytes such as 0x81/0x8D are kept. Text for language detection is decoded via the document `\ansicpg`. `\binN` payloads are skipped and never patched, and `\uN` fallback skipping stops at group braces.
+
 ### Changed
 
 - dependency installs are now reproducible: a committed `package-lock.json` pins the full dependency tree, and the CI, Pages deployment and live-VBA validation workflows use `npm ci` with the lockfile as npm cache key instead of resolving transitive versions on every run. No product behavior change.
