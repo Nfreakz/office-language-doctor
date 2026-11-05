@@ -151,7 +151,7 @@ The public visit counter is a simple external image request. It receives no docu
 ## Development
 
 ```bash
-npm install
+npm ci
 npm run check:xml
 npm run check:detector
 npm run check:language-duels

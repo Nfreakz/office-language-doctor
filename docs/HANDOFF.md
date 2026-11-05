@@ -312,6 +312,8 @@ GitHub Pages must use **Settings → Pages → Source: GitHub Actions**, never *
 
 The workflow verifies both `RUNNER_NAME` and `COMPUTERNAME`.
 
+Dependency installs are locked: `package-lock.json` is committed and every workflow (`ci.yml`, `deploy-pages.yml`, `live-vba-validation.yml`) runs `npm ci` with `cache-dependency-path: package-lock.json`. Any dependency change must update the lockfile in the same branch; `npm ci` fails if `package.json` and the lockfile disagree.
+
 The public repository does not execute CI on untrusted `pull_request` events.
 
 Current automated checks:
@@ -349,7 +351,7 @@ Current deployment path:
 
 1. Push to `main` (or approved manual workflow dispatch).
 2. Job `Build and deploy on DESKTOP-0NEP6ON` with `runs-on: [self-hosted, Windows, X64]` verifies runner name and computer name and runs `scripts/check-local-runners.ps1`.
-3. Builds with Node 22 and Vite; checks `dist/index.html` and requires `dist/CNAME` to be exactly `language-doctor.cecolab.cat` (source: `public/CNAME`).
+3. Installs with `npm ci` from `package-lock.json`, builds with Node 22 and Vite; checks `dist/index.html` and requires `dist/CNAME` to be exactly `language-doctor.cecolab.cat` (source: `public/CNAME`).
 4. Runs `actions/configure-pages@v5`; adds existing Git for Windows Bash to `GITHUB_PATH`; uploads `./dist` with `actions/upload-pages-artifact@v4`.
 5. Runs `actions/deploy-pages@v4` in the same Windows self-hosted job using `contents: read`, `pages: write`, `id-token: write` and the `github-pages` environment.
 
