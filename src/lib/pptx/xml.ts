@@ -74,7 +74,7 @@ export function replaceLanguageTags(
       }
 
       changes += 1
-      return `${prefix}${replacement}${suffix}`
+      return `${prefix}${escapeXmlAttribute(replacement)}${suffix}`
     }),
   )
 

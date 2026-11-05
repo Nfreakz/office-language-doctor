@@ -1,4 +1,4 @@
-import { generateWord, getWordXmlParts, loadWord, wordMimeForFile } from './package'
+import { generateWord, getWordContentXmlParts, loadWord, wordMimeForFile } from './package'
 import { replaceWordLanguageTags, replaceWordRunLanguages } from './xml'
 import type { FragmentFix, PatchResult } from '../document/types'
 
@@ -12,7 +12,7 @@ export async function patchWord(
   }
 
   const zip = await loadWord(file)
-  const parts = getWordXmlParts(zip)
+  const parts = getWordContentXmlParts(zip)
   let changedFragments = 0
   let changedParts = 0
 

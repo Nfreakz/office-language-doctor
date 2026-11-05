@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import JSZip from 'jszip'
-import { patchWordFragments } from '../src/lib/docx/patch.ts'
+import { patchWord, patchWordFragments } from '../src/lib/docx/patch.ts'
 import { scanWord } from '../src/lib/docx/scan.ts'
 
 const mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -169,5 +169,58 @@ for (const fragment of contextualFragments) {
   assert.equal(fragment.mismatch, true)
 }
 assert.equal(fragmented.likelyMismatches, 7)
+
+// Regression: nested textbox paragraphs must not desynchronise scan and patch run indexes.
+async function buildDocx(name: string, body: string, extra: Record<string, string> = {}): Promise<File> {
+  const nestedZip = new JSZip()
+  nestedZip.file('[Content_Types].xml', '<Types/>')
+  nestedZip.file(
+    'word/document.xml',
+    `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">${body}</w:document>`,
+  )
+  nestedZip.file('word/styles.xml', stylesXml)
+  for (const [path, xml] of Object.entries(extra)) nestedZip.file(path, xml)
+  return new File([await nestedZip.generateAsync({ type: 'uint8array' })], name, { type: mime })
+}
+
+const nestedBody = '<w:body><w:p><w:r><w:pict><w:txbxContent><w:p><w:r><w:t>inner</w:t></w:r></w:p></w:txbxContent></w:pict></w:r><w:r><w:t>after</w:t></w:r></w:p><w:p><w:r><w:t>target</w:t></w:r></w:p></w:body>'
+const nestedFile = await buildDocx('nested.docx', nestedBody)
+const nested = await scanWord(nestedFile)
+assert.deepEqual(nested.fragments.map((fragment) => fragment.text), ['inner', 'after', 'target'])
+const nestedTarget = nested.fragments.find((fragment) => fragment.text === 'target')!
+const nestedInner = nested.fragments.find((fragment) => fragment.text === 'inner')!
+const nestedAfter = nested.fragments.find((fragment) => fragment.text === 'after')!
+assert.equal(nestedAfter.paragraphText, 'after')
+assert.notEqual(nestedInner.paragraphIndex, nestedAfter.paragraphIndex)
+assert.notEqual(nestedAfter.paragraphIndex, nestedTarget.paragraphIndex)
+
+const nestedFixed = await patchWordFragments(nestedFile, [
+  { fragmentId: nestedTarget.id, part: nestedTarget.part, runIndex: nestedTarget.runIndex, targetTag: 'ca-ES' },
+])
+assert.equal(nestedFixed.changedFragments, 1)
+const nestedFixedXml = await (await JSZip.loadAsync(nestedFixed.blob)).file('word/document.xml')!.async('string')
+assert.ok(nestedFixedXml.includes('<w:r><w:rPr><w:lang w:val="ca-ES"/></w:rPr><w:t>target</w:t></w:r>'))
+assert.ok(nestedFixedXml.includes('<w:r><w:t>after</w:t></w:r>'))
+assert.ok(nestedFixedXml.includes('<w:r><w:t>inner</w:t></w:r>'))
+
+const innerFixed = await patchWordFragments(nestedFile, [
+  { fragmentId: nestedInner.id, part: nestedInner.part, runIndex: nestedInner.runIndex, targetTag: 'gl-ES' },
+])
+const innerScan = await scanWord(new File([innerFixed.blob], 'inner.docx', { type: mime }))
+assert.deepEqual(innerScan.fragments.map((fragment) => fragment.storedTag), ['gl-ES', 'en-US', 'en-US'])
+
+// Regression: whole-document repair only touches the content parts the audit scans.
+const masterStyles = stylesXml
+const globalFile = await buildDocx(
+  'global.docx',
+  '<w:body><w:p><w:r><w:rPr><w:lang w:val="en-US"/></w:rPr><w:t>Hola</w:t></w:r></w:p></w:body>',
+  { 'word/settings.xml': '<w:settings xmlns:w="w"><w:lang w:val="en-US"/></w:settings>' },
+)
+const globalFixed = await patchWord(globalFile, new Map([['en-US', 'es-ES']]))
+assert.equal(globalFixed.changedParts, 1)
+const globalZip = await JSZip.loadAsync(globalFixed.blob)
+assert.ok((await globalZip.file('word/document.xml')!.async('string')).includes('w:val="es-ES"'))
+assert.equal(await globalZip.file('word/styles.xml')!.async('string'), masterStyles)
+assert.ok((await globalZip.file('word/settings.xml')!.async('string')).includes('w:val="en-US"'))
 
 console.log('DOCX scan + fragment repair + paragraph context: OK')

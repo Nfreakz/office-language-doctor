@@ -87,43 +87,67 @@ export function extractOdfTextFragments(
     runIndex += 1
   }
 
-  const consumeParagraph = (paragraphXml: string): void => {
-    const spans = Array.from(paragraphXml.matchAll(SPAN))
-    if (spans.length > 0) {
-      for (const spanMatch of spans) {
-        if (normalizeOdfText(spanMatch[0])) runIndex += 1
-      }
-      return
+  for (const paragraph of collectOdfParagraphs(contentXml)) {
+    if (paragraph.consumeOnly) {
+      runIndex += countOdfParagraphRuns(paragraph.xml)
+      continue
     }
-
-    if (normalizeOdfText(paragraphXml)) runIndex += 1
+    const cellResolved = paragraph.cellStyle !== undefined
+      ? resolveOdfStyleLanguage(paragraph.cellStyle, 'table-cell', context)
+      : { tag: null }
+    const cellSource: StoredLanguageSource = cellResolved.tag ? 'style' : 'none'
+    processParagraph(paragraph.xml, cellResolved.tag, cellSource, paragraph.location)
   }
 
-  const processSpreadsheetCells = (xmlChunk: string, sheetLabel: string): void => {
+  return fragments
+}
+
+interface OdfParagraphSite {
+  /** Absolute offset of the paragraph in content.xml. */
+  start: number
+  xml: string
+  location: string
+  /** Spreadsheet cell style name (null when unstyled), undefined outside spreadsheet cells. */
+  cellStyle?: string | null
+  /** Covered cells: indexes are reserved but text is neither reported nor patched. */
+  consumeOnly?: boolean
+}
+
+/**
+ * The single traversal shared by extractOdfTextFragments and replaceOdfFragmentLanguages,
+ * so run indexes always refer to the same text in scan and patch.
+ */
+function collectOdfParagraphs(contentXml: string): OdfParagraphSite[] {
+  const sites: OdfParagraphSite[] = []
+
+  const addParagraphs = (chunk: string, offset: number, site: Omit<OdfParagraphSite, 'start' | 'xml'>): void => {
+    for (const paragraphMatch of chunk.matchAll(PARAGRAPH)) {
+      sites.push({ ...site, start: offset + (paragraphMatch.index ?? 0), xml: paragraphMatch[0] })
+    }
+  }
+
+  const collectSpreadsheetCells = (xmlChunk: string, offset: number, sheetLabel: string): void => {
     let rowIndex = 1
 
     for (const rowMatch of xmlChunk.matchAll(ROW)) {
       const rowXml = rowMatch[0]
+      const rowOffset = offset + (rowMatch.index ?? 0)
       const rowOpening = rowXml.match(/^<table:table-row\b[^>]*>/)?.[0] ?? ''
       const rowRepeat = readPositiveIntegerAttribute(rowOpening, 'table:number-rows-repeated')
       let columnIndex = 1
 
       for (const cellMatch of rowXml.matchAll(SPREADSHEET_CELL)) {
         const cellXml = cellMatch[0]
+        const cellOffset = rowOffset + (cellMatch.index ?? 0)
         const cellOpening = cellXml.match(/^<table:(?:table-cell|covered-table-cell)\b[^>]*>/)?.[0] ?? ''
         const columnRepeat = readPositiveIntegerAttribute(cellOpening, 'table:number-columns-repeated')
 
         if (/^<table:covered-table-cell\b/i.test(cellOpening)) {
-          for (const paragraphMatch of cellXml.matchAll(PARAGRAPH)) {
-            consumeParagraph(paragraphMatch[0])
-          }
+          addParagraphs(cellXml, cellOffset, { location: '', consumeOnly: true })
           columnIndex += columnRepeat
           continue
         }
 
-        const cellStyle = readAttribute(cellOpening, 'table:style-name')
-        const cellResolved = resolveOdfStyleLanguage(cellStyle, 'table-cell', context)
-        const cellSource: StoredLanguageSource = cellResolved.tag ? 'style' : 'none'
         const columnSpan = readPositiveIntegerAttribute(cellOpening, 'table:number-columns-spanned')
         const rowSpan = readPositiveIntegerAttribute(cellOpening, 'table:number-rows-spanned')
         const location = spreadsheetCellLocation(
@@ -135,10 +159,10 @@ export function extractOdfTextFragments(
           columnSpan,
           rowSpan,
         )
-
-        for (const paragraphMatch of cellXml.matchAll(PARAGRAPH)) {
-          processParagraph(paragraphMatch[0], cellResolved.tag, cellSource, location)
-        }
+        addParagraphs(cellXml, cellOffset, {
+          location,
+          cellStyle: readAttribute(cellOpening, 'table:style-name'),
+        })
 
         columnIndex += columnRepeat
       }
@@ -158,12 +182,9 @@ export function extractOdfTextFragments(
         const location = pageName && !genericName
           ? `Slide ${pageIndex + 1} · ${pageName}`
           : `Slide ${pageIndex + 1}`
-
-        for (const paragraphMatch of pageXml.matchAll(PARAGRAPH)) {
-          processParagraph(paragraphMatch[0], null, 'none', location)
-        }
+        addParagraphs(pageXml, pageMatch.index ?? 0, { location })
       })
-      return fragments
+      return sites
     }
   }
 
@@ -175,23 +196,26 @@ export function extractOdfTextFragments(
         const tableOpening = tableXml.match(/^<table:table(?=\s|>)[^>]*>/)?.[0] ?? ''
         const tableName = readAttribute(tableOpening, 'table:name')
         const sheetLabel = tableName ? `Sheet: ${tableName}` : `Sheet ${tableIndex + 1}`
-        processSpreadsheetCells(tableXml, sheetLabel)
+        collectSpreadsheetCells(tableXml, tableMatch.index ?? 0, sheetLabel)
       })
     } else {
-      processSpreadsheetCells(contentXml, 'Spreadsheet content')
+      collectSpreadsheetCells(contentXml, 0, 'Spreadsheet content')
     }
 
-    return fragments
+    return sites
   }
 
   const fallbackLocation = /<office:presentation\b/i.test(contentXml)
     ? 'Presentation content'
     : 'Document content'
-  for (const paragraphMatch of contentXml.matchAll(PARAGRAPH)) {
-    processParagraph(paragraphMatch[0], null, 'none', fallbackLocation)
-  }
+  addParagraphs(contentXml, 0, { location: fallbackLocation })
+  return sites
+}
 
-  return fragments
+function countOdfParagraphRuns(paragraphXml: string): number {
+  const spans = Array.from(paragraphXml.matchAll(SPAN))
+  if (spans.length > 0) return spans.filter((spanMatch) => normalizeOdfText(spanMatch[0])).length
+  return normalizeOdfText(paragraphXml) ? 1 : 0
 }
 
 export function replaceOdfLanguageStyles(
@@ -236,7 +260,7 @@ export function replaceOdfFragmentLanguages(
     return name
   }
 
-  let patched = contentXml.replace(PARAGRAPH, (paragraphXml) => {
+  const patchParagraph = (paragraphXml: string): string => {
     const spans = Array.from(paragraphXml.matchAll(SPAN))
 
     if (spans.length > 0) {
@@ -282,7 +306,20 @@ export function replaceOdfFragmentLanguages(
     const nextOpening = setAttribute(opening, 'text:style-name', newStyleName)
     changes += 1
     return paragraphXml.replace(opening, nextOpening)
-  })
+  }
+
+  // Same traversal as the scan; splice patched paragraphs back so other bytes stay intact.
+  let patched = ''
+  let cursor = 0
+  for (const site of collectOdfParagraphs(contentXml)) {
+    if (site.consumeOnly) {
+      runIndex += countOdfParagraphRuns(site.xml)
+      continue
+    }
+    patched += contentXml.slice(cursor, site.start) + patchParagraph(site.xml)
+    cursor = site.start + site.xml.length
+  }
+  patched += contentXml.slice(cursor)
 
   if (newStyles.length > 0) {
     const insertion = newStyles.join('')

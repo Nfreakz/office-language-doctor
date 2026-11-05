@@ -138,4 +138,43 @@ await exercise('odt', 'ca-ES')
 await exercise('odp', 'ca-ES-valencia')
 await exercise('ods', 'ca-ES')
 
+// Regression: text outside the audited traversal (shapes, notes) must not shift patch indexes.
+async function buildCustom(kind: Kind, body: string): Promise<File> {
+  const base = contentXml(kind)
+  const xml = base.replace(/<office:body>[\s\S]*<\/office:body>/, `<office:body>${body}</office:body>`)
+  const zip = new JSZip()
+  zip.file('mimetype', mimeFor(kind), { compression: 'STORE' })
+  zip.file('content.xml', xml)
+  zip.file('styles.xml', stylesXml)
+  return new File([await zip.generateAsync({ type: 'uint8array' })], `shape.${kind}`, { type: mimeFor(kind) })
+}
+
+async function assertShapeIgnored(kind: Kind, body: string, shapeText: string): Promise<void> {
+  const file = await buildCustom(kind, body)
+  const scan = await scanOdf(file)
+  assert.deepEqual(scan.fragments.map((fragment) => fragment.text), ['Català: Benvinguts a la sessió.'])
+  const fixed = await patchOdfFragments(file, [{
+    fragmentId: scan.fragments[0].id,
+    part: scan.fragments[0].part,
+    runIndex: scan.fragments[0].runIndex,
+    targetTag: 'ca-ES',
+  }])
+  assert.equal(fixed.changedFragments, 1)
+  const after = await scanOdf(new File([fixed.blob], `shape-after.${kind}`, { type: mimeFor(kind) }))
+  assert.deepEqual(after.fragments.map((fragment) => fragment.storedTag), ['ca-ES'])
+  const xml = await (await JSZip.loadAsync(fixed.blob)).file('content.xml')!.async('string')
+  assert.ok(xml.includes(`<text:p>${shapeText}</text:p>`), 'shape paragraph must stay untouched')
+}
+
+await assertShapeIgnored(
+  'ods',
+  '<office:spreadsheet><table:table table:name="S"><table:shapes><draw:frame><draw:text-box><text:p>Shape note</text:p></draw:text-box></draw:frame></table:shapes><table:table-row><table:table-cell table:style-name="CellEN" office:value-type="string"><text:p>Català: Benvinguts a la sessió.</text:p></table:table-cell></table:table-row></table:table></office:spreadsheet>',
+  'Shape note',
+)
+await assertShapeIgnored(
+  'odp',
+  '<office:presentation><office:forms><text:p>Outside page</text:p></office:forms><draw:page draw:name="page1"><draw:frame><draw:text-box><text:p>Català: Benvinguts a la sessió.</text:p></draw:text-box></draw:frame></draw:page></office:presentation>',
+  'Outside page',
+)
+
 console.log('ODT + ODP + ODS scan and fragment repair: OK')

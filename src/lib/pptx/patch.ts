@@ -1,4 +1,4 @@
-import { generatePowerPoint, getPowerPointXmlParts, loadPowerPoint, powerPointMimeForFile } from './package'
+import { generatePowerPoint, getPowerPointContentXmlParts, loadPowerPoint, powerPointMimeForFile } from './package'
 import { replaceLanguageTags, replaceTextRunLanguages } from './xml'
 import type { FragmentFix, PatchResult } from '../document/types'
 
@@ -12,7 +12,7 @@ export async function patchPowerPoint(
   }
 
   const zip = await loadPowerPoint(file)
-  const parts = getPowerPointXmlParts(zip)
+  const parts = getPowerPointContentXmlParts(zip)
   let changedFragments = 0
   let changedParts = 0
 
