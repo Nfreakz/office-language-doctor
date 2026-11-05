@@ -1,3 +1,4 @@
+import { isNeutralLanguageTag } from '../language/detect'
 import type { ScanResult, TextFragment } from '../document/types'
 import { fragmentLocationLabel, storedLanguageSourceLabel } from '../document/labels'
 
@@ -103,7 +104,8 @@ export function auditReportToCsv(report: AuditReport): string {
     ]),
   ]
 
-  return rows.map((row) => row.map(csvCell).join(',')).join('\r\n') + '\r\n'
+  // The UTF-8 byte order mark lets Excel on Windows read accents correctly.
+  return '\uFEFF' + rows.map((row) => row.map(csvCell).join(',')).join('\r\n') + '\r\n'
 }
 
 export function auditReportFileName(
@@ -117,11 +119,14 @@ export function auditReportFileName(
 function reportStatus(fragment: TextFragment): AuditReportStatus {
   if (!fragment.detectedTag || fragment.confidence === 'unknown') return 'no_language'
   if (fragment.confidence === 'low') return 'low_confidence'
-  if (!fragment.storedTag) return 'missing_tag'
+  if (isNeutralLanguageTag(fragment.storedTag)) return 'missing_tag'
   if (fragment.mismatch) return 'mismatch'
   return 'matches'
 }
 
+// Cells starting with = + - @ (after leading whitespace) get a ' prefix so
+// spreadsheets never evaluate them as formulas. This deliberately also marks
+// harmless text such as "- item" or "-5%"; JSON exports keep the exact text.
 function csvCell(value: string): string {
   const safe = /^[=+\-@]/.test(value.trimStart()) ? `'${value}` : value
   return `"${safe.replace(/"/g, '""')}"`

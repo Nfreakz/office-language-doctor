@@ -98,6 +98,18 @@ XLSX is not a proofing-language repair target because SpreadsheetML does not exp
 - document-check logo used as header mark and favicon;
 - simple visit counter kept secondary in the footer.
 
+## Post-0.6.0 audit fixes (Unreleased)
+
+A code and quality audit on 2026-11-05 found and fixed, with regression tests:
+
+- **Audit/repair index parity:** DOCX (`enumerateWordStructure` in `src/lib/docx/xml.ts`) and ODF (`collectOdfParagraphs` in `src/lib/odf/xml.ts`) now use one shared traversal for scan and patch. Before, nested text boxes (DOCX) and shape text outside cells/slides (ODS/ODP) shifted indexes so a fix could land on an unreviewed fragment. Any future engine change must keep scan and patch on the same enumeration.
+- **RTF byte preservation:** RTF is loaded as a one-char-per-byte string and written back byte-for-byte; detection text is decoded via `\ansicpg`; `\binN` payloads are skipped.
+- **Neutral and equivalent tags:** `isNeutralLanguageTag` (`x-none`, `und`, `zxx`, `mul`, `x-*`) routes those fragments to the review-only missing-tag path; `languageFamily` normalizes `_`, bare `nb`/`nn`/`no` and ISO 639-2 codes. Short all-caps labels stay undetected.
+- **Packaging:** ODF output rebuilds the archive with `mimetype` first and stored; self-closing `office:automatic-styles` handled; `src/lib/document/zip.ts` rejects archives above 20,000 entries, 2 GiB declared total or 256 MiB per XML part (`package-too-large`, localized). The check uses the declared central-directory sizes, so it stops honest-header bombs, not every crafted archive.
+- **Export:** CSV starts with a UTF-8 BOM for Excel.
+
+Deliberately unchanged: whole-document repair still remaps styles, defaults, masters and layouts, because the audit reports those parts as stored-language origins. Manual Word/PowerPoint/LibreOffice reopening of repaired files from these fixes is still pending.
+
 ## Smart Fix policy
 
 Smart Fix must remain conservative:

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { detectTextLanguage, isLikelyMismatch } from '../src/lib/language/detect.ts'
+import { detectTextLanguage, isLikelyMismatch, isNeutralLanguageTag, languageFamily } from '../src/lib/language/detect.ts'
 
 const neutralFragments = [
   '2026',
@@ -99,6 +99,40 @@ assert.equal(
   0,
   `Ambiguous fragment regressions failed:\n${failures.join('\n')}`,
 )
+
+// Stored tags that mean "no language" must never become direct mismatches.
+for (const neutral of [null, '', 'x-none', 'X-NONE', 'und', 'zxx', 'mul', 'none', 'x-unknown']) {
+  assert.equal(isNeutralLanguageTag(neutral), true, `neutral tag: ${neutral}`)
+  for (const detected of ['es-ES', 'en-US', 'nb-NO', 'ca-ES']) {
+    assert.equal(isLikelyMismatch(neutral, detected, 'high'), false, `${neutral} vs ${detected}`)
+  }
+}
+assert.equal(isNeutralLanguageTag('es-ES'), false)
+
+// Equivalent spellings of the same language family are not mismatches.
+const sameFamily: Array<[string, string]> = [
+  ['nb', 'nb-NO'], ['nn', 'nb-NO'], ['no', 'nb-NO'], ['nn-NO', 'nb-NO'], ['NB_no', 'nb-NO'],
+  ['es_ES', 'es-ES'], ['ES-es', 'es-ES'], ['spa', 'es-ES'], ['es', 'es-ES'],
+  ['pt', 'pt-PT'], ['pt-BR', 'pt-PT'], ['en', 'en-US'], ['en-GB', 'en-US'],
+  ['ca-ES-valencia', 'ca-ES'], ['cat', 'ca-ES'],
+]
+for (const [stored, detected] of sameFamily) {
+  assert.equal(isLikelyMismatch(stored, detected, 'high'), false, `${stored} vs ${detected}`)
+}
+// Real differences still count, including non-hyphenated stored tags.
+assert.equal(isLikelyMismatch('es', 'en-US', 'high'), true)
+assert.equal(isLikelyMismatch('nb', 'da-DK', 'high'), true)
+assert.equal(isLikelyMismatch('sr-Latn-RS', 'hr-HR', 'high'), true)
+assert.equal(languageFamily('sr-Latn-RS'), 'sr')
+
+// Short all-caps labels (names, companies, headings) stay undetected.
+for (const label of [
+  'JOHN SMITH AND MARY JONES CONSULTING',
+  'DEPARTAMENT DE RECURSOS HUMANS I FORMACIÓ',
+  'INFORME ANUAL DE ACTIVIDADES',
+]) {
+  assert.equal(detectTextLanguage(label).confidence, 'unknown', label)
+}
 
 console.log(
   `Ambiguous fragment safety: OK (${neutralFragments.length} neutral, ${mixedLanguageLabels.length} mixed, ${ambiguousShortText.length} ambiguous short, ${shortReliableControls.length} controls)`,

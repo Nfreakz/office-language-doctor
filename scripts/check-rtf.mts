@@ -191,4 +191,58 @@ assert.equal(hexFragments.length, 1)
 assert.equal(hexFragments[0].text, 'Français')
 assert.equal(hexFragments[0].storedTag, 'fr-FR')
 
-console.log('RTF scan + selected repair + Unicode/hex decoding: OK')
+// Byte preservation: raw 8-bit bytes (font table + body) and bytes windows-1252 cannot round-trip.
+const enc = (text: string) => Uint8Array.from(text, (c) => c.charCodeAt(0))
+const concat = (...parts: Uint8Array[]) => {
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0))
+  let o = 0
+  for (const p of parts) { out.set(p, o); o += p.length }
+  return out
+}
+const rawHead = concat(
+  enc('{\\rtf1\\ansi\\ansicpg1252\\deflang1033{\\fonttbl{\\f0 Caf'), Uint8Array.of(0xe9),
+  enc(' Sans;}}\\pard\\lang1033 '),
+)
+const rawBody = concat(
+  enc('Bonjour, je suis tr'), Uint8Array.of(0xe8), enc("s content de vous voir aujourd'hui pour parler du caf"),
+  Uint8Array.of(0xe9, 0x81, 0x8d, 0x8f, 0x90, 0x9d),
+)
+const rawTail = enc('\\par}')
+const rawInput = concat(rawHead, rawBody, rawTail)
+const rawFile = new File([rawInput], 'raw.rtf', { type: 'application/rtf' })
+const rawFragments = extractRtfTextFragments(String.fromCharCode(...rawInput))
+assert.equal(rawFragments.length, 1)
+assert.match(rawFragments[0].text, /très content .* café/)
+const rawPatched = await patchRtfFragments(rawFile, [
+  { fragmentId: 'rtf/body#0', part: 'rtf/body', runIndex: 0, targetTag: 'fr-FR' },
+])
+assert.deepEqual(
+  new Uint8Array(await rawPatched.blob.arrayBuffer()),
+  concat(rawHead, enc('{\\lang1036 '), rawBody, enc('}'), rawTail),
+)
+const rawUnchanged = await patchRtfFragments(rawFile, [])
+assert.deepEqual(new Uint8Array(await rawUnchanged.blob.arrayBuffer()), rawInput)
+
+// \binN: payload bytes are skipped, never parsed or patched, and preserved.
+const binPayload = concat(enc('{\\lang1033 Hello}'), Uint8Array.of(0x00, 0xff, 0x81))
+const binInput = concat(
+  enc('{\\rtf1\\ansi\\deflang1033{\\*\\blipuid x}\\pard\\lang1033 Hola, esto es una prueba en espa'),
+  Uint8Array.of(0xf1), enc('ol para todos.{\\bin' + binPayload.length + ' '), binPayload, enc('}\\par}'),
+)
+const binFragments = extractRtfTextFragments(String.fromCharCode(...binInput))
+assert.equal(binFragments.length, 1)
+assert.match(binFragments[0].text, /español para todos\.$/)
+const binPatched = await patchRtfFragments(new File([binInput], 'bin.rtf'), [
+  { fragmentId: 'rtf/body#0', part: 'rtf/body', runIndex: 0, targetTag: 'es-ES' },
+])
+const binOut = new Uint8Array(await binPatched.blob.arrayBuffer())
+const binText = String.fromCharCode(...binOut)
+assert.equal(binText.split('{\\lang3082 ').length, 2)
+assert.ok(binText.includes(String.fromCharCode(...binPayload)))
+assert.equal(binOut.length, binInput.length + '{\\lang3082 }'.length)
+
+// \uN fallback must not swallow a closing brace.
+const ucFragments = extractRtfTextFragments(String.raw`{\rtf1\deflang1033{\uc2\lang1033 a\u233}b}`)
+assert.equal(ucFragments.map((f) => f.text).join('|'), 'aé|b')
+
+console.log('RTF scan + selected repair + Unicode/hex decoding + byte preservation + \\bin: OK')

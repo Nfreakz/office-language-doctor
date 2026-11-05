@@ -221,4 +221,12 @@ assert.equal(getParagraphReviewPlan([
   fragment({ id: 'word/document.xml#31', detectionSource: 'direct' }),
 ]), null)
 
+// "No proofing" / undetermined stored tags are review-only missing tags, never preselected.
+for (const neutral of ['x-none', 'und', 'zxx']) {
+  const neutralTagged = fragment({ storedTag: neutral, detectedIso3: 'spa', detectedTag: 'es-ES', confidence: 'high', mismatch: false })
+  assert.equal(isReliableMissingTag(neutralTagged), true, neutral)
+  assert.equal(isReviewIssue(neutralTagged), true, neutral)
+  assert.equal(shouldPreselectSmartFix(neutralTagged), false, neutral)
+}
+
 console.log('Smart Fix safety policy + explicit paragraph review: OK')

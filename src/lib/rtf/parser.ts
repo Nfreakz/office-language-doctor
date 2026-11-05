@@ -39,7 +39,35 @@ const IGNORED_DESTINATIONS = new Set([
   'fldinst',
 ])
 
+const decoders = new Map<number, TextDecoder>()
+
+function decoderFor(codePage: number): TextDecoder {
+  let decoder = decoders.get(codePage)
+  if (!decoder) {
+    try {
+      decoder = new TextDecoder(codePage === 1252 ? 'windows-1252' : `windows-${codePage}`)
+    } catch {
+      decoder = decoders.get(1252) ?? new TextDecoder('windows-1252')
+    }
+    decoders.set(codePage, decoder)
+  }
+  return decoder
+}
+
+/** Decodes a binary string (one char per byte) using the document code page. */
+function decodeCodePage(raw: string, codePage: number): string {
+  if (!/[\x80-\xff]/.test(raw)) return raw
+  const bytes = new Uint8Array(raw.length)
+  for (let i = 0; i < raw.length; i += 1) bytes[i] = raw.charCodeAt(i) & 0xff
+  return decoderFor(codePage).decode(bytes)
+}
+
+/**
+ * `source` must be a binary string (one char per byte, see loadRtf); raw offsets
+ * in the returned fragments index into it. 8-bit text is decoded via \ansicpg.
+ */
 export function extractRtfTextFragments(source: string): RtfTextFragment[] {
+  let codePage = 1252
   const fragments: RtfTextFragment[] = []
   const stack: ParserState[] = []
   let defaultLcid: number | null = null
@@ -122,7 +150,7 @@ export function extractRtfTextFragments(source: string): RtfTextFragment[] {
     if (char !== '\\') {
       let end = i + 1
       while (end < source.length && !['{', '}', '\\'].includes(source[end])) end += 1
-      appendText(source.slice(i, end), i, end)
+      appendText(decodeCodePage(source.slice(i, end), codePage), i, end)
       i = end
       continue
     }
@@ -150,7 +178,7 @@ export function extractRtfTextFragments(source: string): RtfTextFragment[] {
       const hex = source.slice(i + 2, i + 4)
       if (/^[0-9a-f]{2}$/i.test(hex)) {
         const byte = Number.parseInt(hex, 16)
-        const decoded = new TextDecoder('windows-1252').decode(Uint8Array.of(byte))
+        const decoded = decoderFor(codePage).decode(Uint8Array.of(byte))
         appendText(decoded, i, i + 4)
         i += 4
         continue
@@ -189,6 +217,18 @@ export function extractRtfTextFragments(source: string): RtfTextFragment[] {
     if (state.pendingStar) {
       state.ignore = true
       state.pendingStar = false
+    }
+
+    if (word === 'bin') {
+      // \binN: the next N bytes are raw binary data; never parse or patch them.
+      flush()
+      if (parameter != null && parameter > 0) i = Math.min(source.length, i + parameter)
+      continue
+    }
+
+    if (word === 'ansicpg' && parameter != null) {
+      codePage = parameter
+      continue
     }
 
     if (IGNORED_DESTINATIONS.has(word)) {
@@ -256,6 +296,8 @@ function skipFallbackCharacters(source: string, start: number, count: number): n
   let skipped = 0
 
   while (i < source.length && skipped < count) {
+    // Group delimiters end the fallback; they are never part of it.
+    if (source[i] === '{' || source[i] === '}') break
     if (source[i] !== '\\') {
       i += 1
       skipped += 1

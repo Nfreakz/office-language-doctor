@@ -138,4 +138,72 @@ await exercise('odt', 'ca-ES')
 await exercise('odp', 'ca-ES-valencia')
 await exercise('ods', 'ca-ES')
 
+// Regression: text outside the audited traversal (shapes, notes) must not shift patch indexes.
+async function buildCustom(kind: Kind, body: string): Promise<File> {
+  const base = contentXml(kind)
+  const xml = base.replace(/<office:body>[\s\S]*<\/office:body>/, `<office:body>${body}</office:body>`)
+  const zip = new JSZip()
+  zip.file('mimetype', mimeFor(kind), { compression: 'STORE' })
+  zip.file('content.xml', xml)
+  zip.file('styles.xml', stylesXml)
+  return new File([await zip.generateAsync({ type: 'uint8array' })], `shape.${kind}`, { type: mimeFor(kind) })
+}
+
+async function assertShapeIgnored(kind: Kind, body: string, shapeText: string): Promise<void> {
+  const file = await buildCustom(kind, body)
+  const scan = await scanOdf(file)
+  assert.deepEqual(scan.fragments.map((fragment) => fragment.text), ['Català: Benvinguts a la sessió.'])
+  const fixed = await patchOdfFragments(file, [{
+    fragmentId: scan.fragments[0].id,
+    part: scan.fragments[0].part,
+    runIndex: scan.fragments[0].runIndex,
+    targetTag: 'ca-ES',
+  }])
+  assert.equal(fixed.changedFragments, 1)
+  const after = await scanOdf(new File([fixed.blob], `shape-after.${kind}`, { type: mimeFor(kind) }))
+  assert.deepEqual(after.fragments.map((fragment) => fragment.storedTag), ['ca-ES'])
+  const xml = await (await JSZip.loadAsync(fixed.blob)).file('content.xml')!.async('string')
+  assert.ok(xml.includes(`<text:p>${shapeText}</text:p>`), 'shape paragraph must stay untouched')
+}
+
+await assertShapeIgnored(
+  'ods',
+  '<office:spreadsheet><table:table table:name="S"><table:shapes><draw:frame><draw:text-box><text:p>Shape note</text:p></draw:text-box></draw:frame></table:shapes><table:table-row><table:table-cell table:style-name="CellEN" office:value-type="string"><text:p>Català: Benvinguts a la sessió.</text:p></table:table-cell></table:table-row></table:table></office:spreadsheet>',
+  'Shape note',
+)
+await assertShapeIgnored(
+  'odp',
+  '<office:presentation><office:forms><text:p>Outside page</text:p></office:forms><draw:page draw:name="page1"><draw:frame><draw:text-box><text:p>Català: Benvinguts a la sessió.</text:p></draw:text-box></draw:frame></draw:page></office:presentation>',
+  'Outside page',
+)
+
+// Packaging: mimetype must come first and stored even when the input put it later,
+// and a self-closing <office:automatic-styles/> must not produce a second element.
+{
+  const mime = ODT_MIME
+  const zip = new JSZip()
+  zip.file('content.xml', `<?xml version="1.0" encoding="UTF-8"?>
+<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0" office:version="1.3"><office:automatic-styles/><office:body><office:text><text:p text:style-name="Standard">Català: Benvinguts a la sessió.</text:p></office:text></office:body></office:document-content>`)
+  zip.file('styles.xml', stylesXml)
+  zip.file('mimetype', mime, { compression: 'STORE' })
+  const input = new File([await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' })], 'Order.odt', { type: mime })
+
+  const scan = await scanOdf(input)
+  const target = scan.fragments.find((fragment) => fragment.detectedTag === 'ca-ES')
+  assert.ok(target, 'Catalan paragraph should be detected')
+  const repaired = await patchOdfFragments(input, [{ fragmentId: target.id, part: target.part, runIndex: target.runIndex, targetTag: 'ca-ES' }])
+  const bytes = new Uint8Array(await repaired.blob.arrayBuffer())
+  const view = new DataView(bytes.buffer)
+  assert.equal(view.getUint32(0, true), 0x04034b50, 'first local header')
+  assert.equal(view.getUint16(8, true), 0, 'mimetype stored, not deflated')
+  const nameLength = view.getUint16(26, true)
+  assert.equal(new TextDecoder().decode(bytes.subarray(30, 30 + nameLength)), 'mimetype')
+
+  const repairedZip = await JSZip.loadAsync(repaired.blob)
+  const content = await repairedZip.file('content.xml')!.async('string')
+  assert.equal(content.match(/<office:automatic-styles\b/g)?.length, 1)
+  assert.doesNotMatch(content, /<office:automatic-styles\/>/)
+  assert.equal((await scanOdf(new File([repaired.blob], 'Order.odt', { type: mime }))).fragments.find((f) => f.text === target.text)?.storedTag, 'ca-ES')
+}
+
 console.log('ODT + ODP + ODS scan and fragment repair: OK')

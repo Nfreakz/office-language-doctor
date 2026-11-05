@@ -99,6 +99,7 @@ const EN = {
   'error.invalidRtfDocument': 'This file is not a valid or readable RTF document.',
   'error.rtfLcidMissing': 'RTF repair is not configured for the target language {tag}.',
   'error.odfStyleInsertionFailed': 'The OpenDocument file does not contain a safe location for the repaired language style.',
+  'error.packageTooLarge': 'This file is too large or contains too many internal parts to process safely in the browser.',
   'summary.storedTags.one': '{format} · 1 stored language tag',
   'summary.storedTags.many': '{format} · {count} stored language tags',
   'stored.noTags': 'No proofing-language tags were found on text fragments in this document.',
@@ -301,6 +302,7 @@ const ES: Record<MessageKey, string> = {
   'error.invalidRtfDocument': 'Este archivo no es un documento RTF válido o no se puede leer.',
   'error.rtfLcidMissing': 'La reparación RTF no está configurada para el idioma de destino {tag}.',
   'error.odfStyleInsertionFailed': 'El archivo OpenDocument no contiene una ubicación segura para el estilo de idioma reparado.',
+  'error.packageTooLarge': 'Este archivo es demasiado grande o contiene demasiadas partes internas para procesarlo con seguridad en el navegador.',
   'summary.storedTags.one': '{format} · 1 etiqueta de idioma guardada',
   'summary.storedTags.many': '{format} · {count} etiquetas de idioma guardadas',
   'stored.noTags': 'No se han encontrado etiquetas de idioma de corrección en los fragmentos de texto de este documento.',
@@ -501,6 +503,7 @@ const CA: Record<MessageKey, string> = {
   'error.invalidRtfDocument': 'Aquest fitxer no és un document RTF vàlid o no es pot llegir.',
   'error.rtfLcidMissing': "La reparació RTF no està configurada per a la llengua de destinació {tag}.",
   'error.odfStyleInsertionFailed': "El fitxer OpenDocument no conté una ubicació segura per a l'estil de llengua reparat.",
+  'error.packageTooLarge': 'Aquest fitxer és massa gran o conté massa parts internes per processar-lo amb seguretat al navegador.',
   'summary.storedTags.one': '{format} · 1 etiqueta de llengua desada',
   'summary.storedTags.many': '{format} · {count} etiquetes de llengua desades',
   'stored.noTags': "No s'han trobat etiquetes de llengua de correcció als fragments de text d'aquest document.",
@@ -693,6 +696,7 @@ const DOCUMENT_ERROR_MESSAGE_KEYS: Record<DocumentErrorCode, MessageKey> = {
   'invalid-rtf-document': 'error.invalidRtfDocument',
   'rtf-lcid-missing': 'error.rtfLcidMissing',
   'odf-style-insertion-failed': 'error.odfStyleInsertionFailed',
+  'package-too-large': 'error.packageTooLarge',
 }
 
 export function documentErrorMessage(

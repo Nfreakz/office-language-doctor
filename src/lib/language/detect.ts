@@ -223,6 +223,7 @@ export function detectTextLanguage(text: string): LanguageDetection {
     looksLikeNonProseIdentifier(normalized) ||
     looksLikeDelimitedLabel(normalized) ||
     looksLikeShortTitleCaseMetadata(normalized) ||
+    looksLikeAllCapsLabel(normalized) ||
     looksLikeAuthorshipMetadata(normalized)
   ) {
     return unknownDetection()
@@ -340,41 +341,31 @@ export function detectTextLanguage(text: string): LanguageDetection {
   }
 }
 
+const NEUTRAL_LANGUAGE_TAGS = new Set(['', 'und', 'zxx', 'mul', 'mis', 'none'])
+const NORWEGIAN_CODES = new Set(['no', 'nb', 'nn', 'nor', 'nob', 'nno'])
+
+/**
+ * True when a stored tag carries no usable language: absent, empty or a
+ * "no proofing"/undetermined value such as `x-none`, `und` or `zxx`.
+ * Such fragments are treated as missing a tag, never as a mismatch.
+ */
+export function isNeutralLanguageTag(tag: string | null): boolean {
+  if (!tag) return true
+  const primary = tag.trim().toLowerCase().replace(/_/g, '-').split('-')[0]
+  return NEUTRAL_LANGUAGE_TAGS.has(primary) || primary === 'x' || primary === 'i'
+}
+
 export function languageFamily(tag: string | null): string | null {
-  if (!tag) return null
-  const normalized = tag.toLowerCase()
+  if (isNeutralLanguageTag(tag)) return null
+  const primary = tag!.trim().toLowerCase().replace(/_/g, '-').split('-')[0]
 
-  if (normalized.startsWith('ca-')) return 'ca'
-  if (normalized.startsWith('gl-')) return 'gl'
-  if (normalized.startsWith('eu-')) return 'eu'
-  if (normalized.startsWith('es-')) return 'es'
-  if (normalized.startsWith('en-')) return 'en'
-  if (normalized.startsWith('fr-')) return 'fr'
-  if (normalized.startsWith('pt-')) return 'pt'
-  if (normalized.startsWith('de-')) return 'de'
-  if (normalized.startsWith('it-')) return 'it'
-  if (normalized.startsWith('nl-')) return 'nl'
-  if (normalized.startsWith('pl-')) return 'pl'
-  if (normalized.startsWith('ro-')) return 'ro'
-  if (normalized.startsWith('cs-')) return 'cs'
-  if (normalized.startsWith('sv-')) return 'sv'
-  if (normalized.startsWith('da-')) return 'da'
-  if (normalized.startsWith('nb-') || normalized.startsWith('no-') || normalized.startsWith('nn-')) return 'no'
-  if (normalized.startsWith('fi-')) return 'fi'
-  if (normalized.startsWith('hu-')) return 'hu'
-  if (normalized.startsWith('el-')) return 'el'
-  if (normalized.startsWith('tr-')) return 'tr'
-  if (normalized.startsWith('sk-')) return 'sk'
-  if (normalized.startsWith('sl-')) return 'sl'
-  if (normalized.startsWith('hr-')) return 'hr'
-  if (normalized.startsWith('bg-')) return 'bg'
-  if (normalized.startsWith('et-')) return 'et'
-  if (normalized.startsWith('ga-')) return 'ga'
-  if (normalized.startsWith('lv-')) return 'lv'
-  if (normalized.startsWith('lt-')) return 'lt'
-  if (normalized.startsWith('mt-')) return 'mt'
+  if (NORWEGIAN_CODES.has(primary)) return 'no'
+  if (primary.length === 3) {
+    const mapped = ISO3_TO_TAG[primary]
+    if (mapped) return languageFamily(mapped)
+  }
 
-  return normalized
+  return primary
 }
 
 export function isLikelyMismatch(
@@ -382,11 +373,13 @@ export function isLikelyMismatch(
   detectedTag: string | null,
   confidence: DetectionConfidence,
 ): boolean {
-  if (!storedTag || !detectedTag || (confidence !== 'high' && confidence !== 'medium')) {
-    return false
-  }
+  if (confidence !== 'high' && confidence !== 'medium') return false
 
-  return languageFamily(storedTag) !== languageFamily(detectedTag)
+  const storedFamily = languageFamily(storedTag)
+  const detectedFamily = languageFamily(detectedTag)
+  if (!storedFamily || !detectedFamily) return false
+
+  return storedFamily !== detectedFamily
 }
 
 function looksLikeNonProseIdentifier(text: string): boolean {
@@ -424,6 +417,14 @@ function looksLikeShortTitleCaseMetadata(text: string): boolean {
 
   const capitalized = words.filter((word) => /^\p{Lu}/u.test(word)).length
   return capitalized >= Math.ceil(words.length * 0.6)
+}
+
+// Short all-caps strings are usually names, headings or company labels whose
+// spelling gives weak language evidence; keep them out of automatic fixes.
+function looksLikeAllCapsLabel(text: string): boolean {
+  if (/\p{Ll}/u.test(text)) return false
+  const words = text.match(/\p{L}+/gu) ?? []
+  return words.length >= 2 && words.length < 8
 }
 
 function looksLikeAuthorshipMetadata(text: string): boolean {

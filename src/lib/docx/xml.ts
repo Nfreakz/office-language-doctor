@@ -1,8 +1,6 @@
 import { resolveWordStyleLanguage, type WordLanguageContext } from './styles'
 import type { StoredLanguageSource } from '../document/types'
 
-const PARAGRAPH = /<w:p\b[^>]*>[\s\S]*?<\/w:p>/g
-const RUN = /<w:r\b[^>]*>[\s\S]*?<\/w:r>/g
 const TEXT = /<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g
 const RUN_PROPERTIES = /<w:rPr\b[^>]*>[\s\S]*?<\/w:rPr>|<w:rPr\b[^>]*\/>/i
 const PARAGRAPH_PROPERTIES = /<w:pPr\b[^>]*>[\s\S]*?<\/w:pPr>|<w:pPr\b[^>]*\/>/i
@@ -17,62 +15,161 @@ export interface ExtractedWordTextFragment {
   paragraphText: string
 }
 
+interface WordElementRange {
+  start: number
+  end: number
+  /** Index just after the opening tag. */
+  openEnd: number
+  /** Ranges of nested paragraphs (e.g. textbox content) to exclude from this element's own XML. */
+  holes: Array<[number, number]>
+}
+
+interface WordRunRange extends WordElementRange {
+  paragraphIndex: number
+}
+
+/**
+ * Single nesting-aware enumeration of paragraphs and runs shared by scan and patch,
+ * so run indexes always agree. Runs and paragraphs are numbered in document (opening
+ * tag) order; nested paragraphs (w:txbxContent inside w:pict / mc:AlternateContent)
+ * are their own paragraphs and their runs their own runs.
+ */
+function enumerateWordStructure(xml: string): { paragraphs: WordElementRange[]; runs: WordRunRange[] } {
+  const paragraphs: WordElementRange[] = []
+  const runs: WordRunRange[] = []
+  const stack: Array<{ kind: 'p' | 'r'; range: WordElementRange; paragraphIndex: number; slot: number }> = []
+  const runSlots: Array<WordRunRange | null> = []
+  const paragraphSlots: Array<WordElementRange | null> = []
+  const TOKEN = /<(\/?)w:(p|r)\b[^>]*?(\/?)>/g
+
+  for (const match of xml.matchAll(TOKEN)) {
+    const [tag, closing, kindRaw, selfClosing] = match
+    const kind = kindRaw as 'p' | 'r'
+    const position = match.index ?? 0
+    const tagEnd = position + tag.length
+
+    if (closing) {
+      let depth = stack.length - 1
+      while (depth >= 0 && stack[depth].kind !== kind) depth -= 1
+      if (depth < 0) continue
+      const [frame] = stack.splice(depth)
+      frame.range.end = tagEnd
+      if (kind === 'p') {
+        paragraphSlots[frame.slot] = frame.range
+        for (const outer of stack) outer.range.holes.push([frame.range.start, tagEnd])
+      } else {
+        runSlots[frame.slot] = { ...frame.range, paragraphIndex: frame.paragraphIndex }
+      }
+      continue
+    }
+
+    const range: WordElementRange = { start: position, end: tagEnd, openEnd: tagEnd, holes: [] }
+    const enclosingParagraph = [...stack].reverse().find((frame) => frame.kind === 'p')
+    if (kind === 'p') {
+      const slot = paragraphSlots.length
+      paragraphSlots.push(null)
+      if (selfClosing) paragraphSlots[slot] = range
+      else stack.push({ kind, range, paragraphIndex: slot, slot })
+    } else {
+      const slot = runSlots.length
+      runSlots.push(null)
+      const paragraphIndex = enclosingParagraph?.paragraphIndex ?? -1
+      if (selfClosing) runSlots[slot] = { ...range, paragraphIndex }
+      else stack.push({ kind, range, paragraphIndex, slot })
+    }
+  }
+
+  // Unclosed elements are dropped; renumber so indexes stay dense and shared.
+  const paragraphRemap = new Map<number, number>()
+  paragraphSlots.forEach((range, slot) => {
+    if (!range) return
+    paragraphRemap.set(slot, paragraphs.length)
+    paragraphs.push(range)
+  })
+  for (const run of runSlots) {
+    if (!run) continue
+    runs.push({ ...run, paragraphIndex: paragraphRemap.get(run.paragraphIndex) ?? -1 })
+  }
+
+  return { paragraphs, runs }
+}
+
+/** XML of the element excluding nested paragraphs. */
+function ownXml(xml: string, range: WordElementRange): string {
+  let cursor = range.start
+  let result = ''
+  for (const [holeStart, holeEnd] of [...range.holes].sort((a, b) => a[0] - b[0])) {
+    if (holeStart < cursor) continue
+    result += xml.slice(cursor, holeStart)
+    cursor = holeEnd
+  }
+  return result + xml.slice(cursor, range.end)
+}
+
+/** Direct-child prefix of a run (opening tag up to its first nested paragraph). */
+function runHead(xml: string, range: WordElementRange): string {
+  const firstHole = Math.min(range.end, ...range.holes.map(([holeStart]) => holeStart))
+  return xml.slice(range.start, firstHole)
+}
+
 export function extractWordTextFragments(
   xml: string,
   context: WordLanguageContext,
 ): ExtractedWordTextFragment[] {
   const fragments: ExtractedWordTextFragment[] = []
-  let runIndex = 0
-  let paragraphIndex = 0
+  const { paragraphs, runs } = enumerateWordStructure(xml)
 
-  for (const paragraphMatch of xml.matchAll(PARAGRAPH)) {
-    const paragraphXml = paragraphMatch[0]
+  const paragraphInfo = paragraphs.map((range) => {
+    const paragraphXml = ownXml(xml, range)
     const paragraphText = Array.from(paragraphXml.matchAll(TEXT))
       .map((match) => decodeXmlText(match[1] ?? ''))
       .join('')
       .replace(/\s+/g, ' ')
       .trim()
     const pPr = paragraphXml.match(PARAGRAPH_PROPERTIES)?.[0] ?? ''
-    const paragraphDirectLanguage = readLanguageFromProperties(pPr)
     const paragraphStyleId = readValFromTag(pPr.match(/<w:pStyle\b[^>]*>/i)?.[0] ?? '')
-    const paragraphStyleLanguage = resolveWordStyleLanguage(paragraphStyleId, context)
-
-    for (const runMatch of paragraphXml.matchAll(RUN)) {
-      const runXml = runMatch[0]
-      const rPr = runXml.match(RUN_PROPERTIES)?.[0] ?? ''
-      const directLanguage = readLanguageFromProperties(rPr)
-      const characterStyleId = readValFromTag(rPr.match(/<w:rStyle\b[^>]*>/i)?.[0] ?? '')
-      const characterStyleLanguage = resolveWordStyleLanguage(characterStyleId, context)
-
-      const text = Array.from(runXml.matchAll(TEXT))
-        .map((match) => decodeXmlText(match[1] ?? ''))
-        .join('')
-
-      const normalizedText = text.replace(/\s+/g, ' ').trim()
-      if (normalizedText) {
-        const resolved = resolveStoredLanguage(
-          directLanguage,
-          characterStyleLanguage,
-          paragraphDirectLanguage,
-          paragraphStyleLanguage,
-          context.documentDefault,
-        )
-
-        fragments.push({
-          text: normalizedText,
-          storedTag: resolved.tag,
-          storedSource: resolved.source,
-          runIndex,
-          paragraphIndex,
-          paragraphText,
-        })
-      }
-
-      runIndex += 1
+    return {
+      paragraphText,
+      paragraphDirectLanguage: readLanguageFromProperties(pPr),
+      paragraphStyleLanguage: resolveWordStyleLanguage(paragraphStyleId, context),
     }
+  })
 
-    paragraphIndex += 1
-  }
+  runs.forEach((run, runIndex) => {
+    // Runs outside any paragraph were never scanned before; keep their index reserved.
+    const paragraph = paragraphInfo[run.paragraphIndex]
+    if (!paragraph) return
+
+    const runXml = ownXml(xml, run)
+    const rPr = runHead(xml, run).match(RUN_PROPERTIES)?.[0] ?? ''
+    const directLanguage = readLanguageFromProperties(rPr)
+    const characterStyleId = readValFromTag(rPr.match(/<w:rStyle\b[^>]*>/i)?.[0] ?? '')
+    const characterStyleLanguage = resolveWordStyleLanguage(characterStyleId, context)
+
+    const text = Array.from(runXml.matchAll(TEXT))
+      .map((match) => decodeXmlText(match[1] ?? ''))
+      .join('')
+
+    const normalizedText = text.replace(/\s+/g, ' ').trim()
+    if (!normalizedText) return
+
+    const resolved = resolveStoredLanguage(
+      directLanguage,
+      characterStyleLanguage,
+      paragraph.paragraphDirectLanguage,
+      paragraph.paragraphStyleLanguage,
+      context.documentDefault,
+    )
+
+    fragments.push({
+      text: normalizedText,
+      storedTag: resolved.tag,
+      storedSource: resolved.source,
+      runIndex,
+      paragraphIndex: run.paragraphIndex,
+      paragraphText: paragraph.paragraphText,
+    })
+  })
 
   return fragments
 }
@@ -103,49 +200,61 @@ export function replaceWordRunLanguages(
   xml: string,
   replacements: ReadonlyMap<number, string>,
 ): { xml: string; changes: number } {
-  let runIndex = 0
   let changes = 0
 
-  const patched = xml.replace(RUN, (runXml) => {
-    const currentIndex = runIndex
-    runIndex += 1
+  const { runs } = enumerateWordStructure(xml)
+  const edits: Array<{ start: number; end: number; text: string }> = []
 
+  runs.forEach((run, currentIndex) => {
     const target = replacements.get(currentIndex)
-    if (!target) return runXml
+    if (!target) return
 
-    const rPr = runXml.match(RUN_PROPERTIES)?.[0]
+    const head = runHead(xml, run)
+    const rPr = head.match(RUN_PROPERTIES)
     if (rPr) {
-      const langTag = rPr.match(LANG)?.[0]
+      const rPrXml = rPr[0]
+      const rPrStart = run.start + (rPr.index ?? 0)
+      const langTag = rPrXml.match(LANG)?.[0]
+      let nextRPr: string
       if (langTag) {
         const current = readAttribute(langTag, 'w:val')
-        if (current?.toLowerCase() === target.toLowerCase()) return runXml
+        if (current?.toLowerCase() === target.toLowerCase()) return
 
         const nextLang = current
           ? replaceAttribute(langTag, 'w:val', target)
           : addAttribute(langTag, 'w:val', target)
-
-        const nextRPr = rPr.replace(langTag, nextLang)
-        changes += 1
-        return runXml.replace(rPr, nextRPr)
+        nextRPr = rPrXml.replace(langTag, nextLang)
+      } else {
+        nextRPr = rPrXml.endsWith('/>')
+          ? `${rPrXml.slice(0, -2)}><w:lang w:val="${escapeXmlAttribute(target)}"/></w:rPr>`
+          : rPrXml.replace(/<\/w:rPr>$/i, `<w:lang w:val="${escapeXmlAttribute(target)}"/></w:rPr>`)
       }
 
-      const nextRPr = rPr.endsWith('/>')
-        ? `${rPr.slice(0, -2)}><w:lang w:val="${escapeXmlAttribute(target)}"/></w:rPr>`
-        : rPr.replace(/<\/w:rPr>$/i, `<w:lang w:val="${escapeXmlAttribute(target)}"/></w:rPr>`)
-
-      changes += 1
-      return runXml.replace(rPr, nextRPr)
+      edits.push({ start: rPrStart, end: rPrStart + rPrXml.length, text: nextRPr })
+      return
     }
 
-    const opening = runXml.match(/^<w:r\b[^>]*>/)?.[0]
-    if (!opening) return runXml
-
-    changes += 1
-    return runXml.replace(
-      opening,
-      `${opening}<w:rPr><w:lang w:val="${escapeXmlAttribute(target)}"/></w:rPr>`,
-    )
+    const opening = xml.slice(run.start, run.openEnd)
+    if (opening.endsWith('/>')) {
+      edits.push({
+        start: run.start,
+        end: run.openEnd,
+        text: `${opening.slice(0, -2).trimEnd()}><w:rPr><w:lang w:val="${escapeXmlAttribute(target)}"/></w:rPr></w:r>`,
+      })
+      return
+    }
+    edits.push({
+      start: run.openEnd,
+      end: run.openEnd,
+      text: `<w:rPr><w:lang w:val="${escapeXmlAttribute(target)}"/></w:rPr>`,
+    })
   })
+
+  let patched = xml
+  for (const edit of edits.sort((x, y) => y.start - x.start)) {
+    patched = patched.slice(0, edit.start) + edit.text + patched.slice(edit.end)
+    changes += 1
+  }
 
   return { xml: patched, changes }
 }

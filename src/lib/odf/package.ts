@@ -1,4 +1,5 @@
 import JSZip from 'jszip'
+import { loadZipPackage } from '../document/zip'
 import { DocumentError } from '../document/errors'
 import type { DocumentFormat } from '../document/types'
 
@@ -25,12 +26,7 @@ export async function loadOdf(file: File): Promise<{ zip: JSZip; format: OdfForm
     throw new DocumentError('unsupported-odf-format')
   }
 
-  let zip: JSZip
-  try {
-    zip = await JSZip.loadAsync(file)
-  } catch {
-    throw new DocumentError('invalid-odf-package')
-  }
+  const zip = await loadZipPackage(file, 'invalid-odf-package')
 
   const mimetypeEntry = zip.file('mimetype')
   const contentEntry = zip.file('content.xml')
@@ -59,9 +55,26 @@ export async function getOdfStylesXml(zip: JSZip): Promise<string | null> {
 }
 
 export async function generateOdf(zip: JSZip, mime: string): Promise<Blob> {
-  zip.file('mimetype', mime, { compression: 'STORE' })
+  // ODF requires `mimetype` to be the first entry and stored uncompressed.
+  // JSZip keeps an existing entry in place, so rebuild the archive in order.
+  const ordered = new JSZip()
+  ordered.file('mimetype', mime, { compression: 'STORE' })
 
-  return zip.generateAsync({
+  for (const entry of Object.values(zip.files)) {
+    if (entry.name === 'mimetype') continue
+    if (entry.dir) {
+      ordered.folder(entry.name)
+      continue
+    }
+    ordered.file(entry.name, await entry.async('uint8array'), {
+      date: entry.date,
+      comment: entry.comment ?? undefined,
+      unixPermissions: entry.unixPermissions ?? undefined,
+      dosPermissions: entry.dosPermissions ?? undefined,
+    })
+  }
+
+  return ordered.generateAsync({
     type: 'blob',
     mimeType: mime,
     compression: 'DEFLATE',

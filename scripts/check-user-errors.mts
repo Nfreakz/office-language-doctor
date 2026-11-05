@@ -6,6 +6,8 @@ import {
   type DocumentErrorCode,
 } from '../src/lib/document/errors.ts'
 import { documentErrorMessage } from '../src/i18n.ts'
+import JSZip from 'jszip'
+import { MAX_PACKAGE_ENTRIES } from '../src/lib/document/zip.ts'
 
 async function expectDocumentError(
   action: () => unknown | Promise<unknown>,
@@ -83,5 +85,20 @@ assert.equal(
   'No se ha podido analizar este documento.',
 )
 assert.ok(!documentErrorMessage(raw, 'status.analyzeError', 'en').includes(raw.message))
+
+// Archives with more parts than a browser tab can safely unpack are rejected
+// before any part is decompressed, with a localized message.
+{
+  const zip = new JSZip()
+  zip.file('[Content_Types].xml', '<Types/>')
+  zip.file('word/document.xml', '<w:document/>')
+  for (let i = 0; i < MAX_PACKAGE_ENTRIES; i += 1) zip.file(`word/media/f${i}.bin`, '')
+  const bytes = await zip.generateAsync({ type: 'uint8array', compression: 'STORE' })
+  await expectDocumentError(() => scanDocument(new File([bytes], 'huge.docx')), 'package-too-large')
+  assert.match(
+    documentErrorMessage(new DocumentError('package-too-large'), 'status.analyzeError', 'ca'),
+    /massa gran/,
+  )
+}
 
 console.log('Localized document errors and raw-error boundary: OK')
