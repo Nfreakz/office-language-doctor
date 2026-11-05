@@ -3,7 +3,7 @@ import JSZip from 'jszip'
 import { detectDocumentFormat, repairedFileName } from '../src/lib/document/engine.ts'
 import { patchWordFragments } from '../src/lib/docx/patch.ts'
 import { loadWord, wordMimeForFile } from '../src/lib/docx/package.ts'
-import { patchPowerPointFragments } from '../src/lib/pptx/patch.ts'
+import { patchPowerPoint, patchPowerPointFragments } from '../src/lib/pptx/patch.ts'
 import { loadPowerPoint, powerPointMimeForFile } from '../src/lib/pptx/package.ts'
 import { loadOdf } from '../src/lib/odf/package.ts'
 
@@ -123,5 +123,20 @@ for (const [extension, family, mime] of odfVariants) {
   assert.equal(loaded.format, family)
   assert.equal(loaded.mime, mime)
 }
+
+// Regression: PPTX whole-document repair escapes the tag and also remaps inherited
+// language sources (masters/layouts), which the audit reports as stored-language origins.
+const globalPptZip = new JSZip()
+globalPptZip.file('[Content_Types].xml', '<Types/>')
+globalPptZip.file('ppt/presentation.xml', '<p:presentation xmlns:p="p"/>')
+globalPptZip.file('ppt/slides/slide1.xml', '<p:sld xmlns:p="p" xmlns:a="a"><a:p><a:r><a:rPr lang="en-US"/><a:t>Hola</a:t></a:r></a:p></p:sld>')
+const masterXml = '<p:sldMaster xmlns:p="p" xmlns:a="a"><a:defRPr lang="en-US"/></p:sldMaster>'
+globalPptZip.file('ppt/slideMasters/slideMaster1.xml', masterXml)
+const globalPptFile = new File([await globalPptZip.generateAsync({ type: 'uint8array' })], 'global.pptx', { type: powerPointMimes.pptx })
+const globalPpt = await patchPowerPoint(globalPptFile, new Map([['en-US', 'es-ES"x']]))
+assert.equal(globalPpt.changedParts, 2)
+const globalPptAfter = await JSZip.loadAsync(globalPpt.blob)
+assert.ok((await globalPptAfter.file('ppt/slides/slide1.xml')!.async('string')).includes('lang="es-ES&quot;x"'))
+assert.ok((await globalPptAfter.file('ppt/slideMasters/slideMaster1.xml')!.async('string')).includes('lang="es-ES&quot;x"'))
 
 console.log('OOXML/ODF format variants and macro preservation: OK')

@@ -13,6 +13,12 @@
 
 - dependency installs are now reproducible: a committed `package-lock.json` pins the full dependency tree, and the CI, Pages deployment and live-VBA validation workflows use `npm ci` with the lockfile as npm cache key instead of resolving transitive versions on every run. No product behavior change.
 
+### Fixed
+
+- DOCX: scan and repair share one nesting-aware run enumeration, so fixes in documents with textboxes (`w:txbxContent`) land on the audited run.
+- ODT/ODP/ODS: fragment repair uses the same traversal as the audit, so shape text or paragraphs outside slides/cells no longer shift indexes.
+- PPTX: whole-document repair now XML-escapes the target tag, as fragment repair already did.
+
 ## 0.6.0 · Community Edition — 2026-10-04
 
 Office Language Doctor 0.6.0 expands the Community Edition with full EU official-language coverage, CA / ES / EN UI localization, paragraph-aware review, reliable missing-tag repair, safer repeated-repair sessions, localized errors, large-document responsiveness and stronger end-to-end regression coverage.
