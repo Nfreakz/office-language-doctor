@@ -124,7 +124,8 @@ for (const [extension, family, mime] of odfVariants) {
   assert.equal(loaded.mime, mime)
 }
 
-// Regression: PPTX whole-document repair leaves masters/layouts alone and escapes the tag.
+// Regression: PPTX whole-document repair escapes the tag and also remaps inherited
+// language sources (masters/layouts), which the audit reports as stored-language origins.
 const globalPptZip = new JSZip()
 globalPptZip.file('[Content_Types].xml', '<Types/>')
 globalPptZip.file('ppt/presentation.xml', '<p:presentation xmlns:p="p"/>')
@@ -133,9 +134,9 @@ const masterXml = '<p:sldMaster xmlns:p="p" xmlns:a="a"><a:defRPr lang="en-US"/>
 globalPptZip.file('ppt/slideMasters/slideMaster1.xml', masterXml)
 const globalPptFile = new File([await globalPptZip.generateAsync({ type: 'uint8array' })], 'global.pptx', { type: powerPointMimes.pptx })
 const globalPpt = await patchPowerPoint(globalPptFile, new Map([['en-US', 'es-ES"x']]))
-assert.equal(globalPpt.changedParts, 1)
+assert.equal(globalPpt.changedParts, 2)
 const globalPptAfter = await JSZip.loadAsync(globalPpt.blob)
 assert.ok((await globalPptAfter.file('ppt/slides/slide1.xml')!.async('string')).includes('lang="es-ES&quot;x"'))
-assert.equal(await globalPptAfter.file('ppt/slideMasters/slideMaster1.xml')!.async('string'), masterXml)
+assert.ok((await globalPptAfter.file('ppt/slideMasters/slideMaster1.xml')!.async('string')).includes('lang="es-ES&quot;x"'))
 
 console.log('OOXML/ODF format variants and macro preservation: OK')

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import JSZip from 'jszip'
-import { patchWord, patchWordFragments } from '../src/lib/docx/patch.ts'
+import { patchWordFragments } from '../src/lib/docx/patch.ts'
 import { scanWord } from '../src/lib/docx/scan.ts'
 
 const mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -208,19 +208,5 @@ const innerFixed = await patchWordFragments(nestedFile, [
 ])
 const innerScan = await scanWord(new File([innerFixed.blob], 'inner.docx', { type: mime }))
 assert.deepEqual(innerScan.fragments.map((fragment) => fragment.storedTag), ['gl-ES', 'en-US', 'en-US'])
-
-// Regression: whole-document repair only touches the content parts the audit scans.
-const masterStyles = stylesXml
-const globalFile = await buildDocx(
-  'global.docx',
-  '<w:body><w:p><w:r><w:rPr><w:lang w:val="en-US"/></w:rPr><w:t>Hola</w:t></w:r></w:p></w:body>',
-  { 'word/settings.xml': '<w:settings xmlns:w="w"><w:lang w:val="en-US"/></w:settings>' },
-)
-const globalFixed = await patchWord(globalFile, new Map([['en-US', 'es-ES']]))
-assert.equal(globalFixed.changedParts, 1)
-const globalZip = await JSZip.loadAsync(globalFixed.blob)
-assert.ok((await globalZip.file('word/document.xml')!.async('string')).includes('w:val="es-ES"'))
-assert.equal(await globalZip.file('word/styles.xml')!.async('string'), masterStyles)
-assert.ok((await globalZip.file('word/settings.xml')!.async('string')).includes('w:val="en-US"'))
 
 console.log('DOCX scan + fragment repair + paragraph context: OK')

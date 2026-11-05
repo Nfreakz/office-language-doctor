@@ -10,7 +10,7 @@
 
 - DOCX: scan and repair share one nesting-aware run enumeration, so fixes in documents with textboxes (`w:txbxContent`) land on the audited run.
 - ODT/ODP/ODS: fragment repair uses the same traversal as the audit, so shape text or paragraphs outside slides/cells no longer shift indexes.
-- DOCX/PPTX: whole-document repair only rewrites the content parts the audit scans (styles, settings, masters and layouts stay untouched); PPTX tags are now XML-escaped.
+- PPTX: whole-document repair now XML-escapes the target tag, as fragment repair already did.
 
 ## 0.6.0 · Community Edition — 2026-10-04
 
