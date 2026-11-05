@@ -1,3 +1,4 @@
+import { isNeutralLanguageTag } from './detect'
 import type { TextFragment } from '../document/types'
 
 export function isReliableMismatch(fragment: TextFragment): boolean {
@@ -10,7 +11,7 @@ export function isReliableMismatch(fragment: TextFragment): boolean {
 
 export function isReliableMissingTag(fragment: TextFragment): boolean {
   return Boolean(
-    !fragment.storedTag &&
+    isNeutralLanguageTag(fragment.storedTag) &&
     fragment.detectedTag &&
     (fragment.confidence === 'high' || fragment.confidence === 'medium'),
   )

@@ -1,5 +1,6 @@
 import './style.css'
 import { LANGUAGE_OPTIONS, detectedLanguageLabel, languageLabel } from './data/languages'
+import { isNeutralLanguageTag } from './lib/language/detect'
 import {
   patchDocument,
   patchDocumentFragments,
@@ -894,7 +895,7 @@ function isUndetectedFragment(fragment: TextFragment): boolean {
 
 function isMatchedFragment(fragment: TextFragment): boolean {
   return Boolean(
-    fragment.storedTag &&
+    !isNeutralLanguageTag(fragment.storedTag) &&
     fragment.detectedTag &&
     !fragment.mismatch &&
     (fragment.confidence === 'high' || fragment.confidence === 'medium'),
@@ -908,7 +909,7 @@ function fragmentStatus(fragment: TextFragment): { label: string; className: str
   if (fragment.confidence === 'low') {
     return { label: t('badge.lowConfidence'), className: 'neutral' }
   }
-  if (!fragment.storedTag) {
+  if (isNeutralLanguageTag(fragment.storedTag)) {
     return { label: t('badge.missingTag'), className: 'warning' }
   }
   if (fragment.mismatch) {

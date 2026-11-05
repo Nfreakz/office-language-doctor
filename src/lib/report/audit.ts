@@ -1,3 +1,4 @@
+import { isNeutralLanguageTag } from '../language/detect'
 import type { ScanResult, TextFragment } from '../document/types'
 import { fragmentLocationLabel, storedLanguageSourceLabel } from '../document/labels'
 
@@ -117,7 +118,7 @@ export function auditReportFileName(
 function reportStatus(fragment: TextFragment): AuditReportStatus {
   if (!fragment.detectedTag || fragment.confidence === 'unknown') return 'no_language'
   if (fragment.confidence === 'low') return 'low_confidence'
-  if (!fragment.storedTag) return 'missing_tag'
+  if (isNeutralLanguageTag(fragment.storedTag)) return 'missing_tag'
   if (fragment.mismatch) return 'mismatch'
   return 'matches'
 }

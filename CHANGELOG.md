@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Fixed
+
+- stored proofing tags that carry no language (`x-none`, `und`, `zxx`, `mul`, other `x-*`) are now treated as missing tags (review-only) instead of direct mismatches that Smart Fix could preselect;
+- equivalent spellings of the same language no longer produce false mismatches: bare `nb` / `nn` / `no`, underscore tags such as `es_ES`, and three-letter codes such as `spa` match their family;
+- short all-caps labels (names, company lines, headings under eight words) are kept undetected instead of receiving a high-confidence guess.
+
 ### Changed
 
 - dependency installs are now reproducible: a committed `package-lock.json` pins the full dependency tree, and the CI, Pages deployment and live-VBA validation workflows use `npm ci` with the lockfile as npm cache key instead of resolving transitive versions on every run. No product behavior change.
