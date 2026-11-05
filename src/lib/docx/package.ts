@@ -1,4 +1,5 @@
 import JSZip from 'jszip'
+import { loadZipPackage } from '../document/zip'
 import { DocumentError } from '../document/errors'
 
 const WORD_MIME_BY_EXTENSION: Record<string, string> = {
@@ -32,12 +33,7 @@ export function wordMimeForFile(file: File): string {
 export async function loadWord(file: File): Promise<JSZip> {
   wordExtension(file)
 
-  let zip: JSZip
-  try {
-    zip = await JSZip.loadAsync(file)
-  } catch {
-    throw new DocumentError('invalid-word-package')
-  }
+  const zip = await loadZipPackage(file, 'invalid-word-package')
 
   if (!zip.file('[Content_Types].xml') || !zip.file('word/document.xml')) {
     throw new DocumentError('invalid-word-package')

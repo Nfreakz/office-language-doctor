@@ -1011,50 +1011,32 @@ function repairedAuditStatus(scan: ScanResult): string {
 }
 
 async function repairWholeDocument(): Promise<void> {
-  if (!currentFile) return
   const replacements = getPreparedReplacements()
   if (replacements.size === 0) return
-
-  setBusy(true)
-  status.textContent = t('repair.globalWorking')
-
-  try {
-    const sourceFile = currentFile
-    const fileName = repairedFileName(sourceFile, false)
-    const result = await patchDocument(sourceFile, replacements)
-    const done = t('repair.globalDone', {
-      fragments: formatNumber(result.changedFragments),
-      parts: formatNumber(result.changedParts),
-    })
-
-    downloadBlob(result.blob, fileName)
-
-    try {
-      const refreshed = await refreshRepairedSession(result.blob, fileName)
-      status.textContent = `${done} ${repairedAuditStatus(refreshed)}`
-    } catch {
-      status.textContent = `${done} ${t('repair.recheckError')}`
-    }
-  } catch (error) {
-    status.textContent = documentErrorMessage(error, 'repair.globalError')
-  } finally {
-    setBusy(false)
-  }
+  await runRepair('global', false, (file) => patchDocument(file, replacements))
 }
 
 async function repairSelectedFragments(): Promise<void> {
-  if (!currentFile) return
   const fixes = getSelectedFragmentFixes()
   if (fixes.length === 0) return
+  await runRepair('selected', true, (file) => patchDocumentFragments(file, fixes))
+}
+
+async function runRepair(
+  kind: 'global' | 'selected',
+  smartFixName: boolean,
+  patch: (file: File) => ReturnType<typeof patchDocument>,
+): Promise<void> {
+  if (!currentFile) return
 
   setBusy(true)
-  status.textContent = t('repair.selectedWorking')
+  status.textContent = t(`repair.${kind}Working`)
 
   try {
     const sourceFile = currentFile
-    const fileName = repairedFileName(sourceFile, true)
-    const result = await patchDocumentFragments(sourceFile, fixes)
-    const done = t('repair.selectedDone', {
+    const fileName = repairedFileName(sourceFile, smartFixName)
+    const result = await patch(sourceFile)
+    const done = t(`repair.${kind}Done`, {
       fragments: formatNumber(result.changedFragments),
       parts: formatNumber(result.changedParts),
     })
@@ -1068,7 +1050,7 @@ async function repairSelectedFragments(): Promise<void> {
       status.textContent = `${done} ${t('repair.recheckError')}`
     }
   } catch (error) {
-    status.textContent = documentErrorMessage(error, 'repair.selectedError')
+    status.textContent = documentErrorMessage(error, `repair.${kind}Error`)
   } finally {
     setBusy(false)
   }

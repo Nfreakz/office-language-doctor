@@ -12,6 +12,7 @@ export const DOCUMENT_ERROR_CODES = [
   'invalid-rtf-document',
   'rtf-lcid-missing',
   'odf-style-insertion-failed',
+  'package-too-large',
 ] as const
 
 export type DocumentErrorCode = (typeof DOCUMENT_ERROR_CODES)[number]

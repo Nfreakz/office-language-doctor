@@ -4,20 +4,21 @@
 
 ### Fixed
 
-- stored proofing tags that carry no language (`x-none`, `und`, `zxx`, `mul`, other `x-*`) are now treated as missing tags (review-only) instead of direct mismatches that Smart Fix could preselect;
-- equivalent spellings of the same language no longer produce false mismatches: bare `nb` / `nn` / `no`, underscore tags such as `es_ES`, and three-letter codes such as `spa` match their family;
-- short all-caps labels (names, company lines, headings under eight words) are kept undetected instead of receiving a high-confidence guess.
-- RTF repair now preserves the file byte-for-byte outside the inserted `{\langN …}` wrappers: raw 8-bit characters (e.g. `é` in the font table or body) are no longer re-encoded as UTF-8, and bytes such as 0x81/0x8D are kept. Text for language detection is decoded via the document `\ansicpg`. `\binN` payloads are skipped and never patched, and `\uN` fallback skipping stops at group braces.
+- DOCX: audit and repair share one nesting-aware run enumeration, so fixes in documents with text boxes (`w:txbxContent`) land on the audited run instead of a neighbouring one;
+- ODT / ODP / ODS: fragment repair uses the same traversal as the audit, so shape text or paragraphs outside slides and cells no longer shift the repaired fragment;
+- RTF: repair preserves the file byte-for-byte outside the inserted `{\langN …}` wrappers; raw 8-bit characters (e.g. `é` in the font table or body) are no longer re-encoded as UTF-8. Detection text is decoded through the document `\ansicpg`, `\binN` payloads are skipped and never patched, and `\uN` fallback skipping stops at group braces;
+- stored proofing tags that carry no language (`x-none`, `und`, `zxx`, `mul`, other `x-*`) are treated as missing tags (review-only) instead of direct mismatches that Smart Fix could preselect;
+- equivalent spellings of the same language no longer produce false mismatches: bare `nb` / `nn` / `no`, underscore tags such as `es_ES` and three-letter codes such as `spa` match their family;
+- short all-caps labels (names, company lines, headings under eight words) stay undetected instead of receiving a high-confidence guess;
+- OpenDocument repairs always write `mimetype` as the first, uncompressed archive entry, and no longer create a second `office:automatic-styles` element when the document had a self-closing one;
+- Word, PowerPoint and OpenDocument packages with an excessive number of parts or declared uncompressed size are rejected with a localized message before unpacking;
+- PPTX whole-document repair XML-escapes the target tag, as fragment repair already did;
+- CSV audit exports start with a UTF-8 byte order mark so Excel on Windows shows accented text correctly.
 
 ### Changed
 
-- dependency installs are now reproducible: a committed `package-lock.json` pins the full dependency tree, and the CI, Pages deployment and live-VBA validation workflows use `npm ci` with the lockfile as npm cache key instead of resolving transitive versions on every run. No product behavior change.
-
-### Fixed
-
-- DOCX: scan and repair share one nesting-aware run enumeration, so fixes in documents with textboxes (`w:txbxContent`) land on the audited run.
-- ODT/ODP/ODS: fragment repair uses the same traversal as the audit, so shape text or paragraphs outside slides/cells no longer shift indexes.
-- PPTX: whole-document repair now XML-escapes the target tag, as fragment repair already did.
+- dependency installs are reproducible: a committed `package-lock.json` pins the full dependency tree and every workflow uses `npm ci` with the lockfile as npm cache key. No product behavior change;
+- whole-document and selected-fragment repair share one UI flow; the CSV formula guard is documented (JSON exports keep the exact text).
 
 ## 0.6.0 · Community Edition — 2026-10-04
 
