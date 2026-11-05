@@ -17,6 +17,10 @@ This application is independent from every other NeoRS application. Do not reuse
 ## Current verified state
 
 - Branch: `main`
+- Repository state checked: **2026-11-05**; last application/infrastructure commit before this HANDOFF refresh: `a0986288977a82833d1cd08a047c81eeaf1104f1` (PR #41)
+- Open PRs at verification: **none**
+- Latest verified main CI: **#237 SUCCESS**, run `37668993048`, on `DESKTOP-0NEP6ON`
+- Latest verified Pages deploy: **#44 SUCCESS**, run `37668992960`, on `DESKTOP-0NEP6ON`
 - Clean public root: `65dac5d41f44f3b34fc85d6f4e4247b7dd7a4c79`
 - Version: `0.6.0`
 - Release state: **published Community Edition**
@@ -337,21 +341,29 @@ Current automated checks:
 
 ## GitHub Pages deployment
 
-Workflow: `.github/workflows/deploy-pages.yml`
+**Current workflow (verified 2026-11-05):** `.github/workflows/deploy-pages.yml` in `main`, named `Deploy · GitHub Pages self-hosted`.
 
-Policy:
+**Mandatory configuration:** GitHub repository **Settings → Pages → Build and deployment → Source = GitHub Actions**. Do not choose `Deploy from a branch` or publish build output to `gh-pages`. The old branch is historical only. Branch-source Pages automatically started GitHub-managed `ubuntu-latest` jobs even though our build ran locally.
 
-- triggers from `main` or manual workflow dispatch;
-- runs only on the approved Windows self-hosted runner;
-- builds Vite locally;
-- verifies `dist/index.html`;
-- force-updates the generated `gh-pages` branch;
-- writes `.nojekyll`;
-- publishes `public/CNAME`, preserving `language-doctor.cecolab.cat` on every generated `gh-pages` deployment;
-- publishes `robots.txt` and `sitemap.xml` for the custom domain;
-- Vite uses `base: './'`.
+Current deployment path:
 
-The rebuilt v0.5.0 public baseline passed the local Windows CI suite and the Pages deployment workflow recreated `gh-pages` successfully before the GitHub Release was republished.
+1. Push to `main` (or approved manual workflow dispatch).
+2. Job `Build and deploy on DESKTOP-0NEP6ON` with `runs-on: [self-hosted, Windows, X64]` verifies runner name and computer name and runs `scripts/check-local-runners.ps1`.
+3. Builds with Node 22 and Vite; checks `dist/index.html` and requires `dist/CNAME` to be exactly `language-doctor.cecolab.cat` (source: `public/CNAME`).
+4. Runs `actions/configure-pages@v5`; adds existing Git for Windows Bash to `GITHUB_PATH`; uploads `./dist` with `actions/upload-pages-artifact@v4`.
+5. Runs `actions/deploy-pages@v4` in the same Windows self-hosted job using `contents: read`, `pages: write`, `id-token: write` and the `github-pages` environment.
+
+The **Git Bash PATH step must remain**. The first migration deployment (#42 on commit `d272577...`) failed during `Upload GitHub Pages artifact` with `bash: command not found`, because the action's Windows archive step uses Bash. PR #40 fixed this by exposing the existing Git Bash executable; no GitHub-hosted runner was introduced. PR #41 added a regression guard in `scripts/check-local-runners.ps1` that rejects `gh-pages` branch publishing, missing Pages artifact/deploy actions, or GitHub-hosted runner labels in repository workflows.
+
+Migration history: PR #39 changed branch-based publishing to direct Pages Actions deployment; PR #40 repaired Windows artifact packaging; PR #41 added permanent guards. **No application logic, format support, or public version bump** was introduced by these infrastructure changes.
+
+Verified successful results: CI **#237** and self-hosted Pages deploy **#44**, both for `a0986288977a82833d1cd08a047c81eeaf1104f1`, completed successfully on 2026-10-07. In deploy #44, `Configure GitHub Pages`, `Enable Git Bash`, `Upload GitHub Pages artifact` and `Deploy to GitHub Pages` all succeeded on `DESKTOP-0NEP6ON`. The most recent legacy GitHub-managed `pages build and deployment` job in the inspected runs was #39 at 2026-10-07 18:08 UTC, **before** the migration. This is evidence of no newly triggered branch-source build in the inspected period, not a promise about future account billing.
+
+GitHub Actions usage is not the same as runner billing. Historical `Gross amount` in GitHub usage is before discounts; do not claim it equals `Net amount` without checking billing. The enforced engineering policy is **zero GitHub-hosted runners for this application's authored validation/deployment**, while GitHub still provides source hosting and Pages service.
+
+Keep `robots.txt` and `sitemap.xml` in the generated site and Vite `base: './'`; preserve the existing custom domain. For any future deployment change, validate the exact job runner identity, deployment steps, Pages source, and absence of new internal `pages build and deployment` jobs. Do not silently revert to `gh-pages`.
+
+Historical context: the rebuilt 0.5.0 public baseline originally used `gh-pages`. That is **not** the current deployment architecture.
 
 ## Release policy
 
@@ -360,6 +372,8 @@ Current package version is `0.6.0`.
 Version 0.5.0 remains the first public Community Edition baseline in the rebuilt repository and its annotated tag must remain untouched. Version 0.6.0 is the current published Community Edition release. The annotated `v0.6.0` tag pins release commit `95d48d089a6bf726d90213c0031b8a71efc25262`; the GitHub Release was published on 2026-10-04 after final `main` CI and Pages deployment succeeded. Future changes must accumulate under Unreleased until the next deliberate release.
 
 ## Remaining validation / next steps
+
+The release and Pages migration are closed, not outstanding blockers. Before any new change, fetch `main`, PRs and workflow runs again: this HANDOFF is a snapshot, not authority to overwrite newer changes. Verify `.github/workflows/deploy-pages.yml` and `scripts/check-local-runners.ps1` before touching deployment. Keep each NeoRS application independent.
 
 1. Optional: perform a visual/manual GUI pass for OTT / OTP / OTS. Real LibreOffice 25.2.3.2 engine round-trip validation is complete.
 2. When a genuinely large real-world document is available, do one browser/device manual pass to complement the 12,000-fragment automated scale regression.
