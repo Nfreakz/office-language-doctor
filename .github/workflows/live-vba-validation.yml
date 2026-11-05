@@ -29,10 +29,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: package.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Validate live VBA before and after Language Doctor repair
         run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-live-vba-office.ps1
