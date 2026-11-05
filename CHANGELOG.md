@@ -7,6 +7,7 @@
 - stored proofing tags that carry no language (`x-none`, `und`, `zxx`, `mul`, other `x-*`) are now treated as missing tags (review-only) instead of direct mismatches that Smart Fix could preselect;
 - equivalent spellings of the same language no longer produce false mismatches: bare `nb` / `nn` / `no`, underscore tags such as `es_ES`, and three-letter codes such as `spa` match their family;
 - short all-caps labels (names, company lines, headings under eight words) are kept undetected instead of receiving a high-confidence guess.
+- RTF repair now preserves the file byte-for-byte outside the inserted `{\langN …}` wrappers: raw 8-bit characters (e.g. `é` in the font table or body) are no longer re-encoded as UTF-8, and bytes such as 0x81/0x8D are kept. Text for language detection is decoded via the document `\ansicpg`. `\binN` payloads are skipped and never patched, and `\uN` fallback skipping stops at group braces.
 
 ### Changed
 
