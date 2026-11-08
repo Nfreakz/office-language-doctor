@@ -5,6 +5,10 @@
 ### Fixed
 
 - DOCX: audit and repair share one nesting-aware run enumeration, so fixes in documents with text boxes (`w:txbxContent`) land on the audited run instead of a neighbouring one;
+- DOCX: tracked formatting changes (`w:rPrChange` / `w:pPrChange`) no longer leak the historical properties into the audit or the repair: the stored language is read from the current properties and `w:lang` is written before the history block, not inside it;
+- DOCX: text boxes that Word stores twice (`mc:Choice` + `mc:Fallback`) are audited once; repairing the fragment updates both copies so the legacy fallback never disagrees with the visible text (uneven copies are left untouched);
+- DOCX: repairing thousands of selected fragments in one part is linear again instead of rebuilding the part once per fragment;
+- RTF: `\ansicpg` values whose encoding label is not `windows-<N>` (932, 936, 949, 950, 874, 65001, …) decode detection text instead of silently falling back to windows-1252;
 - ODT / ODP / ODS: fragment repair uses the same traversal as the audit, so shape text or paragraphs outside slides and cells no longer shift the repaired fragment;
 - ODT / ODP / ODS: paragraphs are enumerated with a nesting-aware tokenizer instead of a lazy regex, so a text frame or caption anchored inside a paragraph (LibreOffice nests the `draw:frame` in the `text:p`) is audited as its own fragment and repairing it restyles the caption paragraph, not the enclosing one; the body text that follows the frame is now audited too;
 - ODT / ODP / ODS: headings (`text:h`) are audited and repaired like paragraphs;
@@ -20,6 +24,7 @@
 
 ### Changed
 
+- regression checks now cover the declared-size branch of the package guard and a 12,000-fragment repair time budget;
 - DOCX and OpenDocument share one generic nesting-aware block/inline enumerator (`src/lib/document/xml-structure.ts`) and one offset-based splice helper; DOCX behaviour is unchanged;
 - the ODF regression check includes a real LibreOffice-generated `.odt` fixture (`scripts/fixtures/odt-frame-heading.odt`, source `.fodt` alongside) with a paragraph-anchored text frame and caption, a Heading 1, a bold span and a plain paragraph;
 - dependency installs are reproducible: a committed `package-lock.json` pins the full dependency tree and every workflow uses `npm ci` with the lockfile as npm cache key. No product behavior change;

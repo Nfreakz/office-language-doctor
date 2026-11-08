@@ -37,6 +37,57 @@ function enumerateWordStructure(xml: string): { paragraphs: XmlElementRange[]; r
   }
 }
 
+/**
+ * Word stores every modern text box twice inside `mc:AlternateContent`: the real
+ * content in `mc:Choice` and a legacy VML copy in `mc:Fallback`. Reporting both would
+ * show each sentence twice, and repairing only one would leave the copies disagreeing.
+ * Fallback runs are therefore hidden from the audit and mirrored on repair: the k-th
+ * text run of a Fallback follows whatever happens to the k-th text run of its Choice.
+ */
+interface AlternateContentMirror {
+  /** Run indexes that live inside an mc:Fallback and must not be reported. */
+  hidden: Set<number>
+  /** Choice run index -> Fallback run index that mirrors it (only when both sides have the same number of text runs). */
+  mirrors: Map<number, number>
+}
+
+function mapAlternateContent(xml: string, runs: readonly WordRunRange[]): AlternateContentMirror {
+  const hidden = new Set<number>()
+  const mirrors = new Map<number, number>()
+  const { blocks: alternates } = enumerateXmlStructure(xml, { blocks: ['mc:AlternateContent'], inlines: [] })
+  if (alternates.length === 0) return { hidden, mirrors }
+
+  const { blocks: choices } = enumerateXmlStructure(xml, { blocks: ['mc:Choice'], inlines: [] })
+  const { blocks: fallbacks } = enumerateXmlStructure(xml, { blocks: ['mc:Fallback'], inlines: [] })
+  const hasText = (run: WordRunRange): boolean => /<w:t\b[^>]*>[\s\S]*?<\/w:t>/.test(ownXml(xml, run))
+  const runsWithin = (range: XmlElementRange): number[] => {
+    const indexes: number[] = []
+    runs.forEach((run, index) => {
+      if (run.start >= range.openEnd && run.end <= range.end && hasText(run)) indexes.push(index)
+    })
+    return indexes
+  }
+
+  for (const alternate of alternates) {
+    // Only direct children (not nested AlternateContent) belong to this element.
+    const inside = (range: XmlElementRange): boolean =>
+      range.start >= alternate.openEnd && range.end <= alternate.end &&
+      !alternate.holes.some(([holeStart, holeEnd]) => range.start >= holeStart && range.end <= holeEnd)
+    const fallback = fallbacks.find(inside)
+    if (!fallback) continue
+    const fallbackRuns = runsWithin(fallback)
+    for (const index of fallbackRuns) hidden.add(index)
+
+    const choice = choices.find(inside)
+    if (!choice) continue
+    const choiceRuns = runsWithin(choice)
+    if (choiceRuns.length !== fallbackRuns.length) continue
+    choiceRuns.forEach((choiceIndex, position) => mirrors.set(choiceIndex, fallbackRuns[position]))
+  }
+
+  return { hidden, mirrors }
+}
+
 /** Direct-child prefix of a run (opening tag up to its first nested paragraph). */
 const runHead = headXml
 
@@ -63,10 +114,12 @@ export function extractWordTextFragments(
     }
   })
 
+  const { hidden } = mapAlternateContent(xml, runs)
+
   runs.forEach((run, runIndex) => {
     // Runs outside any paragraph were never scanned before; keep their index reserved.
     const paragraph = paragraphInfo[run.paragraphIndex]
-    if (!paragraph) return
+    if (!paragraph || hidden.has(runIndex)) return
 
     const runXml = ownXml(xml, run)
     const rPr = runHead(xml, run).match(RUN_PROPERTIES)?.[0] ?? ''
@@ -129,10 +182,23 @@ export function replaceWordRunLanguages(
   replacements: ReadonlyMap<number, string>,
 ): { xml: string; changes: number } {
   const { runs } = enumerateWordStructure(xml)
-  const edits: Array<{ start: number; end: number; text: string }> = []
+  const edits: Array<{ start: number; end: number; text: string; runIndex: number }> = []
+
+  // Mirror each repaired mc:Choice run onto its hidden mc:Fallback twin.
+  const { mirrors } = mapAlternateContent(xml, runs)
+  const effective = new Map(replacements)
+  const mirrored = new Set<number>()
+  for (const [choiceIndex, fallbackIndex] of mirrors) {
+    const target = replacements.get(choiceIndex)
+    if (target && !effective.has(fallbackIndex)) {
+      effective.set(fallbackIndex, target)
+      mirrored.add(fallbackIndex)
+    }
+  }
+  let changes = 0
 
   runs.forEach((run, currentIndex) => {
-    const target = replacements.get(currentIndex)
+    const target = effective.get(currentIndex)
     if (!target) return
 
     const head = runHead(xml, run)
@@ -153,18 +219,18 @@ export function replaceWordRunLanguages(
           ? replaceAttribute(langTag, 'w:val', target)
           : addAttribute(langTag, 'w:val', target)
         const langStart = rPrStart + (lang.index ?? 0)
-        edits.push({ start: langStart, end: langStart + langTag.length, text: nextLang })
+        edits.push({ start: langStart, end: langStart + langTag.length, text: nextLang, runIndex: currentIndex })
         return
       }
 
       const langElement = `<w:lang w:val="${escapeXmlAttribute(target)}"/>`
       if (rPrXml.endsWith('/>')) {
-        edits.push({ start: rPrStart, end: rPrStart + rPrXml.length, text: `${rPrXml.slice(0, -2)}>${langElement}</w:rPr>` })
+        edits.push({ start: rPrStart, end: rPrStart + rPrXml.length, text: `${rPrXml.slice(0, -2)}>${langElement}</w:rPr>`, runIndex: currentIndex })
         return
       }
       // Insert before the history block when present, otherwise before the close tag.
       const insertAt = rPrStart + (changeStart >= 0 ? changeStart : rPrXml.length - '</w:rPr>'.length)
-      edits.push({ start: insertAt, end: insertAt, text: langElement })
+      edits.push({ start: insertAt, end: insertAt, text: langElement, runIndex: currentIndex })
       return
     }
 
@@ -174,6 +240,7 @@ export function replaceWordRunLanguages(
         start: run.start,
         end: run.openEnd,
         text: `${opening.slice(0, -2).trimEnd()}><w:rPr><w:lang w:val="${escapeXmlAttribute(target)}"/></w:rPr></w:r>`,
+        runIndex: currentIndex,
       })
       return
     }
@@ -181,12 +248,15 @@ export function replaceWordRunLanguages(
       start: run.openEnd,
       end: run.openEnd,
       text: `<w:rPr><w:lang w:val="${escapeXmlAttribute(target)}"/></w:rPr>`,
+      runIndex: currentIndex,
     })
   })
 
   // Edits never overlap (one per run, inside its own head); assemble in one ascending pass
   // so large selections stay linear instead of copying the part once per edit.
-  return { xml: spliceEdits(xml, edits), changes: edits.length }
+  // Mirrored Fallback edits are not counted: the user selected one fragment, not two.
+  changes = edits.filter((edit) => !mirrored.has(edit.runIndex)).length
+  return { xml: spliceEdits(xml, edits), changes }
 }
 
 function resolveStoredLanguage(
