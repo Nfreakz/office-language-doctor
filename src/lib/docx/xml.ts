@@ -1,9 +1,13 @@
 import { resolveWordStyleLanguage, type WordLanguageContext } from './styles'
 import type { StoredLanguageSource } from '../document/types'
+import { enumerateXmlStructure, headXml, ownXml, spliceEdits, type XmlElementRange } from '../document/xml-structure'
 
 const TEXT = /<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g
-const RUN_PROPERTIES = /<w:rPr\b[^>]*>[\s\S]*?<\/w:rPr>|<w:rPr\b[^>]*\/>/i
-const PARAGRAPH_PROPERTIES = /<w:pPr\b[^>]*>[\s\S]*?<\/w:pPr>|<w:pPr\b[^>]*\/>/i
+// Tracked formatting changes nest the OLD properties inside w:rPrChange / w:pPrChange,
+// so a lazy match would stop at that inner close tag. Skip those blocks explicitly.
+const RUN_PROPERTIES = /<w:rPr\b[^>]*>(?:<w:rPrChange\b[^>]*>[\s\S]*?<\/w:rPrChange>|(?!<\/w:rPr>)[\s\S])*?<\/w:rPr>|<w:rPr\b[^>]*\/>/i
+const PARAGRAPH_PROPERTIES = /<w:pPr\b[^>]*>(?:<w:pPrChange\b[^>]*>[\s\S]*?<\/w:pPrChange>|(?!<\/w:pPr>)[\s\S])*?<\/w:pPr>|<w:pPr\b[^>]*\/>/i
+const PROPERTY_CHANGE = /<w:(r|p)PrChange\b[^>]*>[\s\S]*?<\/w:\1PrChange>/gi
 const LANG = /<w:lang\b[^>]*>/i
 
 export interface ExtractedWordTextFragment {
@@ -15,16 +19,7 @@ export interface ExtractedWordTextFragment {
   paragraphText: string
 }
 
-interface WordElementRange {
-  start: number
-  end: number
-  /** Index just after the opening tag. */
-  openEnd: number
-  /** Ranges of nested paragraphs (e.g. textbox content) to exclude from this element's own XML. */
-  holes: Array<[number, number]>
-}
-
-interface WordRunRange extends WordElementRange {
+interface WordRunRange extends XmlElementRange {
   paragraphIndex: number
 }
 
@@ -34,83 +29,67 @@ interface WordRunRange extends WordElementRange {
  * tag) order; nested paragraphs (w:txbxContent inside w:pict / mc:AlternateContent)
  * are their own paragraphs and their runs their own runs.
  */
-function enumerateWordStructure(xml: string): { paragraphs: WordElementRange[]; runs: WordRunRange[] } {
-  const paragraphs: WordElementRange[] = []
-  const runs: WordRunRange[] = []
-  const stack: Array<{ kind: 'p' | 'r'; range: WordElementRange; paragraphIndex: number; slot: number }> = []
-  const runSlots: Array<WordRunRange | null> = []
-  const paragraphSlots: Array<WordElementRange | null> = []
-  const TOKEN = /<(\/?)w:(p|r)\b[^>]*?(\/?)>/g
-
-  for (const match of xml.matchAll(TOKEN)) {
-    const [tag, closing, kindRaw, selfClosing] = match
-    const kind = kindRaw as 'p' | 'r'
-    const position = match.index ?? 0
-    const tagEnd = position + tag.length
-
-    if (closing) {
-      let depth = stack.length - 1
-      while (depth >= 0 && stack[depth].kind !== kind) depth -= 1
-      if (depth < 0) continue
-      const [frame] = stack.splice(depth)
-      frame.range.end = tagEnd
-      if (kind === 'p') {
-        paragraphSlots[frame.slot] = frame.range
-        for (const outer of stack) outer.range.holes.push([frame.range.start, tagEnd])
-      } else {
-        runSlots[frame.slot] = { ...frame.range, paragraphIndex: frame.paragraphIndex }
-      }
-      continue
-    }
-
-    const range: WordElementRange = { start: position, end: tagEnd, openEnd: tagEnd, holes: [] }
-    const enclosingParagraph = [...stack].reverse().find((frame) => frame.kind === 'p')
-    if (kind === 'p') {
-      const slot = paragraphSlots.length
-      paragraphSlots.push(null)
-      if (selfClosing) paragraphSlots[slot] = range
-      else stack.push({ kind, range, paragraphIndex: slot, slot })
-    } else {
-      const slot = runSlots.length
-      runSlots.push(null)
-      const paragraphIndex = enclosingParagraph?.paragraphIndex ?? -1
-      if (selfClosing) runSlots[slot] = { ...range, paragraphIndex }
-      else stack.push({ kind, range, paragraphIndex, slot })
-    }
+function enumerateWordStructure(xml: string): { paragraphs: XmlElementRange[]; runs: WordRunRange[] } {
+  const { blocks, inlines } = enumerateXmlStructure(xml, { blocks: ['w:p'], inlines: ['w:r'] })
+  return {
+    paragraphs: blocks,
+    runs: inlines.map(({ blockIndex, ...range }) => ({ ...range, paragraphIndex: blockIndex })),
   }
-
-  // Unclosed elements are dropped; renumber so indexes stay dense and shared.
-  const paragraphRemap = new Map<number, number>()
-  paragraphSlots.forEach((range, slot) => {
-    if (!range) return
-    paragraphRemap.set(slot, paragraphs.length)
-    paragraphs.push(range)
-  })
-  for (const run of runSlots) {
-    if (!run) continue
-    runs.push({ ...run, paragraphIndex: paragraphRemap.get(run.paragraphIndex) ?? -1 })
-  }
-
-  return { paragraphs, runs }
 }
 
-/** XML of the element excluding nested paragraphs. */
-function ownXml(xml: string, range: WordElementRange): string {
-  let cursor = range.start
-  let result = ''
-  for (const [holeStart, holeEnd] of [...range.holes].sort((a, b) => a[0] - b[0])) {
-    if (holeStart < cursor) continue
-    result += xml.slice(cursor, holeStart)
-    cursor = holeEnd
+/**
+ * Word stores every modern text box twice inside `mc:AlternateContent`: the real
+ * content in `mc:Choice` and a legacy VML copy in `mc:Fallback`. Reporting both would
+ * show each sentence twice, and repairing only one would leave the copies disagreeing.
+ * Fallback runs are therefore hidden from the audit and mirrored on repair: the k-th
+ * text run of a Fallback follows whatever happens to the k-th text run of its Choice.
+ */
+interface AlternateContentMirror {
+  /** Run indexes that live inside an mc:Fallback and must not be reported. */
+  hidden: Set<number>
+  /** Choice run index -> Fallback run index that mirrors it (only when both sides have the same number of text runs). */
+  mirrors: Map<number, number>
+}
+
+function mapAlternateContent(xml: string, runs: readonly WordRunRange[]): AlternateContentMirror {
+  const hidden = new Set<number>()
+  const mirrors = new Map<number, number>()
+  const { blocks: alternates } = enumerateXmlStructure(xml, { blocks: ['mc:AlternateContent'], inlines: [] })
+  if (alternates.length === 0) return { hidden, mirrors }
+
+  const { blocks: choices } = enumerateXmlStructure(xml, { blocks: ['mc:Choice'], inlines: [] })
+  const { blocks: fallbacks } = enumerateXmlStructure(xml, { blocks: ['mc:Fallback'], inlines: [] })
+  const hasText = (run: WordRunRange): boolean => /<w:t\b[^>]*>[\s\S]*?<\/w:t>/.test(ownXml(xml, run))
+  const runsWithin = (range: XmlElementRange): number[] => {
+    const indexes: number[] = []
+    runs.forEach((run, index) => {
+      if (run.start >= range.openEnd && run.end <= range.end && hasText(run)) indexes.push(index)
+    })
+    return indexes
   }
-  return result + xml.slice(cursor, range.end)
+
+  for (const alternate of alternates) {
+    // Only direct children (not nested AlternateContent) belong to this element.
+    const inside = (range: XmlElementRange): boolean =>
+      range.start >= alternate.openEnd && range.end <= alternate.end &&
+      !alternate.holes.some(([holeStart, holeEnd]) => range.start >= holeStart && range.end <= holeEnd)
+    const fallback = fallbacks.find(inside)
+    if (!fallback) continue
+    const fallbackRuns = runsWithin(fallback)
+    for (const index of fallbackRuns) hidden.add(index)
+
+    const choice = choices.find(inside)
+    if (!choice) continue
+    const choiceRuns = runsWithin(choice)
+    if (choiceRuns.length !== fallbackRuns.length) continue
+    choiceRuns.forEach((choiceIndex, position) => mirrors.set(choiceIndex, fallbackRuns[position]))
+  }
+
+  return { hidden, mirrors }
 }
 
 /** Direct-child prefix of a run (opening tag up to its first nested paragraph). */
-function runHead(xml: string, range: WordElementRange): string {
-  const firstHole = Math.min(range.end, ...range.holes.map(([holeStart]) => holeStart))
-  return xml.slice(range.start, firstHole)
-}
+const runHead = headXml
 
 export function extractWordTextFragments(
   xml: string,
@@ -135,10 +114,12 @@ export function extractWordTextFragments(
     }
   })
 
+  const { hidden } = mapAlternateContent(xml, runs)
+
   runs.forEach((run, runIndex) => {
     // Runs outside any paragraph were never scanned before; keep their index reserved.
     const paragraph = paragraphInfo[run.paragraphIndex]
-    if (!paragraph) return
+    if (!paragraph || hidden.has(runIndex)) return
 
     const runXml = ownXml(xml, run)
     const rPr = runHead(xml, run).match(RUN_PROPERTIES)?.[0] ?? ''
@@ -200,13 +181,24 @@ export function replaceWordRunLanguages(
   xml: string,
   replacements: ReadonlyMap<number, string>,
 ): { xml: string; changes: number } {
+  const { runs } = enumerateWordStructure(xml)
+  const edits: Array<{ start: number; end: number; text: string; runIndex: number }> = []
+
+  // Mirror each repaired mc:Choice run onto its hidden mc:Fallback twin.
+  const { mirrors } = mapAlternateContent(xml, runs)
+  const effective = new Map(replacements)
+  const mirrored = new Set<number>()
+  for (const [choiceIndex, fallbackIndex] of mirrors) {
+    const target = replacements.get(choiceIndex)
+    if (target && !effective.has(fallbackIndex)) {
+      effective.set(fallbackIndex, target)
+      mirrored.add(fallbackIndex)
+    }
+  }
   let changes = 0
 
-  const { runs } = enumerateWordStructure(xml)
-  const edits: Array<{ start: number; end: number; text: string }> = []
-
   runs.forEach((run, currentIndex) => {
-    const target = replacements.get(currentIndex)
+    const target = effective.get(currentIndex)
     if (!target) return
 
     const head = runHead(xml, run)
@@ -214,23 +206,31 @@ export function replaceWordRunLanguages(
     if (rPr) {
       const rPrXml = rPr[0]
       const rPrStart = run.start + (rPr.index ?? 0)
-      const langTag = rPrXml.match(LANG)?.[0]
-      let nextRPr: string
-      if (langTag) {
+      // Look for w:lang only in the current properties, never in a w:rPrChange history block.
+      const changeStart = rPrXml.search(PROPERTY_CHANGE)
+      const currentRPr = changeStart >= 0 ? rPrXml.slice(0, changeStart) : rPrXml
+      const lang = currentRPr.match(LANG)
+      if (lang) {
+        const langTag = lang[0]
         const current = readAttribute(langTag, 'w:val')
         if (current?.toLowerCase() === target.toLowerCase()) return
 
         const nextLang = current
           ? replaceAttribute(langTag, 'w:val', target)
           : addAttribute(langTag, 'w:val', target)
-        nextRPr = rPrXml.replace(langTag, nextLang)
-      } else {
-        nextRPr = rPrXml.endsWith('/>')
-          ? `${rPrXml.slice(0, -2)}><w:lang w:val="${escapeXmlAttribute(target)}"/></w:rPr>`
-          : rPrXml.replace(/<\/w:rPr>$/i, `<w:lang w:val="${escapeXmlAttribute(target)}"/></w:rPr>`)
+        const langStart = rPrStart + (lang.index ?? 0)
+        edits.push({ start: langStart, end: langStart + langTag.length, text: nextLang, runIndex: currentIndex })
+        return
       }
 
-      edits.push({ start: rPrStart, end: rPrStart + rPrXml.length, text: nextRPr })
+      const langElement = `<w:lang w:val="${escapeXmlAttribute(target)}"/>`
+      if (rPrXml.endsWith('/>')) {
+        edits.push({ start: rPrStart, end: rPrStart + rPrXml.length, text: `${rPrXml.slice(0, -2)}>${langElement}</w:rPr>`, runIndex: currentIndex })
+        return
+      }
+      // Insert before the history block when present, otherwise before the close tag.
+      const insertAt = rPrStart + (changeStart >= 0 ? changeStart : rPrXml.length - '</w:rPr>'.length)
+      edits.push({ start: insertAt, end: insertAt, text: langElement, runIndex: currentIndex })
       return
     }
 
@@ -240,6 +240,7 @@ export function replaceWordRunLanguages(
         start: run.start,
         end: run.openEnd,
         text: `${opening.slice(0, -2).trimEnd()}><w:rPr><w:lang w:val="${escapeXmlAttribute(target)}"/></w:rPr></w:r>`,
+        runIndex: currentIndex,
       })
       return
     }
@@ -247,16 +248,15 @@ export function replaceWordRunLanguages(
       start: run.openEnd,
       end: run.openEnd,
       text: `<w:rPr><w:lang w:val="${escapeXmlAttribute(target)}"/></w:rPr>`,
+      runIndex: currentIndex,
     })
   })
 
-  let patched = xml
-  for (const edit of edits.sort((x, y) => y.start - x.start)) {
-    patched = patched.slice(0, edit.start) + edit.text + patched.slice(edit.end)
-    changes += 1
-  }
-
-  return { xml: patched, changes }
+  // Edits never overlap (one per run, inside its own head); assemble in one ascending pass
+  // so large selections stay linear instead of copying the part once per edit.
+  // Mirrored Fallback edits are not counted: the user selected one fragment, not two.
+  changes = edits.filter((edit) => !mirrored.has(edit.runIndex)).length
+  return { xml: spliceEdits(xml, edits), changes }
 }
 
 function resolveStoredLanguage(
@@ -276,7 +276,7 @@ function resolveStoredLanguage(
 
 function readLanguageFromProperties(properties: string): string | null {
   if (!properties) return null
-  const langTag = properties.match(LANG)?.[0] ?? ''
+  const langTag = properties.replace(PROPERTY_CHANGE, '').match(LANG)?.[0] ?? ''
   return readAttribute(langTag, 'w:val')
 }
 

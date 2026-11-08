@@ -7,7 +7,7 @@ import {
 } from '../src/lib/document/errors.ts'
 import { documentErrorMessage } from '../src/i18n.ts'
 import JSZip from 'jszip'
-import { MAX_PACKAGE_ENTRIES } from '../src/lib/document/zip.ts'
+import { MAX_PACKAGE_ENTRIES, MAX_XML_PART_BYTES, assertPackageSize } from '../src/lib/document/zip.ts'
 
 async function expectDocumentError(
   action: () => unknown | Promise<unknown>,
@@ -99,6 +99,18 @@ assert.ok(!documentErrorMessage(raw, 'status.analyzeError', 'en').includes(raw.m
     documentErrorMessage(new DocumentError('package-too-large'), 'status.analyzeError', 'ca'),
     /massa gran/,
   )
+}
+
+// The declared-size branch reads JSZip's central-directory sizes; guard it too so a
+// JSZip upgrade that renames that field cannot silently disable the limit.
+{
+  const zip = new JSZip()
+  zip.file('word/document.xml', 'x'.repeat(1024))
+  const loaded = await JSZip.loadAsync(await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' }))
+  const entry = loaded.files['word/document.xml'] as unknown as { _data: { uncompressedSize: number } }
+  assert.equal(entry._data.uncompressedSize, 1024, 'JSZip exposes the declared uncompressed size')
+  entry._data.uncompressedSize = MAX_XML_PART_BYTES + 1
+  assert.throws(() => assertPackageSize(loaded), (error: unknown) => error instanceof DocumentError && error.code === 'package-too-large')
 }
 
 console.log('Localized document errors and raw-error boundary: OK')

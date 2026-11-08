@@ -41,11 +41,30 @@ const IGNORED_DESTINATIONS = new Set([
 
 const decoders = new Map<number, TextDecoder>()
 
+// Windows code pages whose WHATWG encoding label is not `windows-<N>`.
+const CODE_PAGE_LABELS: Record<number, string> = {
+  874: 'windows-874',
+  932: 'shift_jis',
+  936: 'gbk',
+  949: 'euc-kr',
+  950: 'big5',
+  1361: 'x-user-defined',
+  10000: 'macintosh',
+  20866: 'koi8-r',
+  21866: 'koi8-u',
+  28591: 'iso-8859-1',
+  28592: 'iso-8859-2',
+  28595: 'iso-8859-5',
+  28597: 'iso-8859-7',
+  28605: 'iso-8859-15',
+  65001: 'utf-8',
+}
+
 function decoderFor(codePage: number): TextDecoder {
   let decoder = decoders.get(codePage)
   if (!decoder) {
     try {
-      decoder = new TextDecoder(codePage === 1252 ? 'windows-1252' : `windows-${codePage}`)
+      decoder = new TextDecoder(CODE_PAGE_LABELS[codePage] ?? `windows-${codePage}`)
     } catch {
       decoder = decoders.get(1252) ?? new TextDecoder('windows-1252')
     }

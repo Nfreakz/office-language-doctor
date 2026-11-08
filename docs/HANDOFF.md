@@ -108,6 +108,13 @@ A code and quality audit on 2026-11-05 found and fixed, with regression tests:
 - **Packaging:** ODF output rebuilds the archive with `mimetype` first and stored; self-closing `office:automatic-styles` handled; `src/lib/document/zip.ts` rejects archives above 20,000 entries, 2 GiB declared total or 256 MiB per XML part (`package-too-large`, localized). The check uses the declared central-directory sizes, so it stops honest-header bombs, not every crafted archive.
 - **Export:** CSV starts with a UTF-8 BOM for Excel.
 
+Second pass (2026-11-08) on the same branch family:
+
+- **Shared enumerator:** `src/lib/document/xml-structure.ts` (`enumerateXmlStructure`, `ownXml`, `headXml`, `spliceEdits`) is the single nesting-aware tokenizer for DOCX (`w:p`/`w:r`) and ODF (`text:p`+`text:h`/`text:span`). Both scan and patch of each engine must go through it; never reintroduce a lazy paragraph regex.
+- **DOCX:** `w:rPrChange`/`w:pPrChange` history blocks are skipped when reading properties and `w:lang` is inserted before them. `mc:AlternateContent` text boxes: Fallback runs are hidden from the audit and mirrored on repair (`mapAlternateContent`); mirrored edits do not count as changed fragments. Fragment patching assembles the output in one pass (budget: 12,000 edits < 2 s in `check:docx`).
+- **ODF:** headings (`text:h`) audited; direct paragraph text outside spans is one fragment (order: direct text, then spans); nested frames/captions are their own paragraphs. Real LibreOffice fixture at `scripts/fixtures/odt-frame-heading.odt` (source `.fodt`; regenerate with `soffice --headless --convert-to odt`). Still regex-chunked: slides, tables, rows and cells (nested ODS tables unsupported).
+- **RTF:** `CODE_PAGE_LABELS` maps non-`windows-<N>` code pages for detection text.
+
 Deliberately unchanged: whole-document repair still remaps styles, defaults, masters and layouts, because the audit reports those parts as stored-language origins. Manual Word/PowerPoint/LibreOffice reopening of repaired files from these fixes is still pending.
 
 ## Smart Fix policy

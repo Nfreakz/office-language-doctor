@@ -5,7 +5,14 @@
 ### Fixed
 
 - DOCX: audit and repair share one nesting-aware run enumeration, so fixes in documents with text boxes (`w:txbxContent`) land on the audited run instead of a neighbouring one;
+- DOCX: tracked formatting changes (`w:rPrChange` / `w:pPrChange`) no longer leak the historical properties into the audit or the repair: the stored language is read from the current properties and `w:lang` is written before the history block, not inside it;
+- DOCX: text boxes that Word stores twice (`mc:Choice` + `mc:Fallback`) are audited once; repairing the fragment updates both copies so the legacy fallback never disagrees with the visible text (uneven copies are left untouched);
+- DOCX: repairing thousands of selected fragments in one part is linear again instead of rebuilding the part once per fragment;
+- RTF: `\ansicpg` values whose encoding label is not `windows-<N>` (932, 936, 949, 950, 874, 65001, …) decode detection text instead of silently falling back to windows-1252;
 - ODT / ODP / ODS: fragment repair uses the same traversal as the audit, so shape text or paragraphs outside slides and cells no longer shift the repaired fragment;
+- ODT / ODP / ODS: paragraphs are enumerated with a nesting-aware tokenizer instead of a lazy regex, so a text frame or caption anchored inside a paragraph (LibreOffice nests the `draw:frame` in the `text:p`) is audited as its own fragment and repairing it restyles the caption paragraph, not the enclosing one; the body text that follows the frame is now audited too;
+- ODT / ODP / ODS: headings (`text:h`) are audited and repaired like paragraphs;
+- ODT / ODP / ODS: a paragraph's own text outside `text:span` elements (e.g. the words around one bold word) is no longer skipped; it is reported as one fragment that carries the paragraph language and is repaired through the paragraph style. Fragment order per paragraph is fixed and shared by audit and repair: direct text first, then spans in document order; nested spans are separate fragments and the outer span's text excludes them;
 - RTF: repair preserves the file byte-for-byte outside the inserted `{\langN …}` wrappers; raw 8-bit characters (e.g. `é` in the font table or body) are no longer re-encoded as UTF-8. Detection text is decoded through the document `\ansicpg`, `\binN` payloads are skipped and never patched, and `\uN` fallback skipping stops at group braces;
 - stored proofing tags that carry no language (`x-none`, `und`, `zxx`, `mul`, other `x-*`) are treated as missing tags (review-only) instead of direct mismatches that Smart Fix could preselect;
 - equivalent spellings of the same language no longer produce false mismatches: bare `nb` / `nn` / `no`, underscore tags such as `es_ES` and three-letter codes such as `spa` match their family;
@@ -17,6 +24,9 @@
 
 ### Changed
 
+- regression checks now cover the declared-size branch of the package guard and a 12,000-fragment repair time budget;
+- DOCX and OpenDocument share one generic nesting-aware block/inline enumerator (`src/lib/document/xml-structure.ts`) and one offset-based splice helper; DOCX behaviour is unchanged;
+- the ODF regression check includes a real LibreOffice-generated `.odt` fixture (`scripts/fixtures/odt-frame-heading.odt`, source `.fodt` alongside) with a paragraph-anchored text frame and caption, a Heading 1, a bold span and a plain paragraph;
 - dependency installs are reproducible: a committed `package-lock.json` pins the full dependency tree and every workflow uses `npm ci` with the lockfile as npm cache key. No product behavior change;
 - whole-document and selected-fragment repair share one UI flow; the CSV formula guard is documented (JSON exports keep the exact text).
 

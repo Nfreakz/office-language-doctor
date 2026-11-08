@@ -245,4 +245,12 @@ assert.equal(binOut.length, binInput.length + '{\\lang3082 }'.length)
 const ucFragments = extractRtfTextFragments(String.raw`{\rtf1\deflang1033{\uc2\lang1033 a\u233}b}`)
 assert.equal(ucFragments.map((f) => f.text).join('|'), 'aé|b')
 
+// Code pages whose encoding label is not `windows-<N>` must still decode detection text.
+{
+  const greek = String.raw`{\rtf1\ansi\ansicpg1253\deflang1032\lang1032 \'c5\'eb\'eb\'e7\'ed\'e9\'ea\'dc\par}`
+  assert.equal(extractRtfTextFragments(greek)[0]?.text, 'Ελληνικά')
+  const utf8 = '{\\rtf1\\ansi\\ansicpg65001\\deflang1034\\lang1034 ' + Array.from(new TextEncoder().encode('Año'), (b) => String.fromCharCode(b)).join('') + '\\par}'
+  assert.equal(extractRtfTextFragments(utf8)[0]?.text, 'Año')
+}
+
 console.log('RTF scan + selected repair + Unicode/hex decoding + byte preservation + \\bin: OK')

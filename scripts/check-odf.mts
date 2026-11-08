@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import JSZip from 'jszip'
 import { patchOdfFragments } from '../src/lib/odf/patch.ts'
 import { scanOdf } from '../src/lib/odf/scan.ts'
@@ -204,6 +206,113 @@ await assertShapeIgnored(
   assert.equal(content.match(/<office:automatic-styles\b/g)?.length, 1)
   assert.doesNotMatch(content, /<office:automatic-styles\/>/)
   assert.equal((await scanOdf(new File([repaired.blob], 'Order.odt', { type: mime }))).fragments.find((f) => f.text === target.text)?.storedTag, 'ca-ES')
+}
+
+
+// Regressions: nested paragraphs (frames anchored inside a text:p), text:h headings and
+// direct paragraph text next to spans. Fragment order per paragraph: direct text first,
+// then spans in document order; nested paragraphs are their own fragments.
+{
+  const nestedBody = '<office:text><text:p text:style-name="P1"><draw:frame draw:style-name="fr1" text:anchor-type="paragraph"><draw:text-box><text:p text:style-name="Caption">Figura 1: esquema general del sistema de riego</text:p></draw:text-box></draw:frame>Aquest és el text del cos que continua després del marc amb més paraules.</text:p><text:h text:style-name="H1" text:outline-level="1">Títol de la secció principal del document</text:h><text:p text:style-name="P2">Hola a tothom, <text:span text:style-name="T1">món</text:span> sencer i benvingut a la sessió.</text:p></office:text>'
+  const file = await buildCustom('odt', nestedBody)
+  const scan = await scanOdf(file)
+  assert.deepEqual(scan.fragments.map((fragment) => fragment.text), [
+    'Aquest és el text del cos que continua després del marc amb més paraules.',
+    'Figura 1: esquema general del sistema de riego',
+    'Títol de la secció principal del document',
+    'Hola a tothom, sencer i benvingut a la sessió.',
+    'món',
+  ])
+  assert.deepEqual(scan.fragments.map((fragment) => fragment.storedTag), ['en-US', 'en-US', 'en-US', 'en-US', 'en-US'])
+
+  const repairOne = async (index: number, targetTag: string): Promise<string> => {
+    const fragment = scan.fragments[index]
+    const fixed = await patchOdfFragments(file, [{ fragmentId: fragment.id, part: fragment.part, runIndex: fragment.runIndex, targetTag }])
+    assert.equal(fixed.changedFragments, 1)
+    const after = await scanOdf(new File([fixed.blob], 'nested-after.odt', { type: ODT_MIME }))
+    assert.deepEqual(after.fragments.map((f) => f.text), scan.fragments.map((f) => f.text), 'repair must not change the fragment list')
+    assert.deepEqual(after.fragments.map((f) => f.storedTag), scan.fragments.map((f, i) => (i === index ? targetTag : f.storedTag)))
+    return (await JSZip.loadAsync(fixed.blob)).file('content.xml')!.async('string')
+  }
+
+  const captionFixed = await repairOne(1, 'es-ES')
+  assert.ok(captionFixed.includes('<text:p text:style-name="P1"><draw:frame'), 'outer paragraph keeps P1 when the caption is repaired')
+  assert.match(captionFixed, /<draw:text-box><text:p text:style-name="LanguageDoctor1">Figura 1/)
+  assert.match(captionFixed, /<style:style style:name="LanguageDoctor1" style:family="paragraph">/)
+
+  const bodyFixed = await repairOne(0, 'ca-ES')
+  assert.ok(bodyFixed.includes('<text:p text:style-name="LanguageDoctor1"><draw:frame'), 'body text repair restyles the outer paragraph')
+  assert.ok(bodyFixed.includes('<text:p text:style-name="Caption">Figura 1'), 'caption keeps its style when the body is repaired')
+  assert.ok(bodyFixed.includes('text:style-name="H1"') && bodyFixed.includes('text:style-name="P2"'))
+
+  const headingFixed = await repairOne(2, 'ca-ES')
+  assert.ok(headingFixed.includes('<text:h text:style-name="LanguageDoctor1" text:outline-level="1">Títol'), 'heading tag is restyled in place')
+  assert.ok(headingFixed.includes('text:style-name="P1"') && headingFixed.includes('text:style-name="P2"'))
+
+  const directFixed = await repairOne(3, 'ca-ES')
+  assert.ok(directFixed.includes('<text:p text:style-name="LanguageDoctor1">Hola a tothom, <text:span text:style-name="T1">món</text:span> sencer'), 'direct text repair restyles the paragraph, not the span')
+
+  const spanFixed = await repairOne(4, 'ca-ES')
+  assert.ok(spanFixed.includes('<text:p text:style-name="P2">Hola a tothom, <text:span text:style-name="LanguageDoctor1">món</text:span> sencer'), 'span repair restyles only the span')
+  assert.match(spanFixed, /<style:style style:name="LanguageDoctor1" style:family="text">/)
+
+  // Nested spans: the inner span is its own fragment and the outer span's text excludes it.
+  const nestedSpans = await scanOdf(await buildCustom('odt', '<office:text><text:p text:style-name="P1">Inici <text:span text:style-name="T1">exterior <text:span text:style-name="T2">interior</text:span> cua</text:span> final</text:p></office:text>'))
+  assert.deepEqual(nestedSpans.fragments.map((fragment) => fragment.text), ['Inici final', 'exterior cua', 'interior'])
+
+  // Covered cells reserve one index per direct-text and span fragment, like audited cells.
+  const covered = await scanOdf(await buildCustom('ods', '<office:spreadsheet><table:table table:name="S"><table:table-row><table:covered-table-cell><text:p>Hidden <text:span text:style-name="T1">span</text:span></text:p></table:covered-table-cell><table:table-cell table:style-name="CellEN" office:value-type="string"><text:p>Català: Benvinguts a la sessió.</text:p></table:table-cell></table:table-row></table:table></office:spreadsheet>'))
+  assert.deepEqual(covered.fragments.map((fragment) => [fragment.runIndex, fragment.text]), [[2, 'Català: Benvinguts a la sessió.']])
+}
+
+// Real LibreOffice document (scripts/fixtures/odt-frame-heading.odt, produced with
+// `soffice --headless --convert-to odt scripts/fixtures/odt-frame-heading.fodt`): a text
+// frame with a caption anchored inside the first paragraph, a Heading 1, a paragraph with a
+// bold span and a plain paragraph.
+{
+  const fixturePath = fileURLToPath(new URL('./fixtures/odt-frame-heading.odt', import.meta.url))
+  const input = new File([readFileSync(fixturePath)], 'odt-frame-heading.odt', { type: ODT_MIME })
+  const scan = await scanOdf(input)
+  const texts = scan.fragments.map((fragment) => fragment.text)
+  assert.deepEqual(texts, [
+    'Aquest és el text del cos que continua després del marc amb més paraules per a la detecció.',
+    'Figura 1: esquema general del sistema de riego por goteo que se utiliza en el invernadero principal',
+    'Títol de la secció principal del document de prova',
+    "Hola a tothom, sencer i benvingut a la sessió de treball d'avui.",
+    'món',
+    'Los agricultores de la comarca utilizan este sistema de riego porque ahorra mucha agua y reduce el trabajo diario.',
+  ])
+  assert.deepEqual(scan.fragments.map((fragment) => fragment.storedTag), Array<string>(6).fill('en-US'))
+  assert.deepEqual(scan.fragments.map((fragment) => fragment.detectedTag), ['ca-ES', 'es-ES', 'ca-ES', 'ca-ES', null, 'es-ES'])
+
+  const beforeXml = await (await JSZip.loadAsync(input)).file('content.xml')!.async('string')
+  const caption = scan.fragments[1]
+  const repaired = await patchOdfFragments(input, [{ fragmentId: caption.id, part: caption.part, runIndex: caption.runIndex, targetTag: 'es-ES' }])
+  assert.equal(repaired.changedFragments, 1)
+
+  const repairedZip = await JSZip.loadAsync(repaired.blob)
+  const afterXml = await repairedZip.file('content.xml')!.async('string')
+  const newStyle = afterXml.match(/<style:style style:name="(LanguageDoctor\d+)" style:family="paragraph"[^>]*>[\s\S]*?<\/style:style>/)
+  assert.ok(newStyle, 'a paragraph style clone is added')
+  assert.match(newStyle[0], /fo:language="es"/)
+  assert.match(afterXml, new RegExp(`<draw:text-box[^>]*><text:p text:style-name="${newStyle[1]}">Figura 1`))
+  // Undoing the two deliberate edits must give back the original bytes: nothing else moved.
+  const undone = afterXml
+    .replace(newStyle[0], '')
+    .replace(`<text:p text:style-name="${newStyle[1]}">Figura 1`, '<text:p text:style-name="Caption">Figura 1')
+  assert.equal(undone, beforeXml, 'only the caption paragraph style and the new style differ')
+
+  const after = await scanOdf(new File([repaired.blob], 'odt-frame-heading-after.odt', { type: ODT_MIME }))
+  assert.deepEqual(after.fragments.map((fragment) => fragment.text), texts)
+  assert.deepEqual(after.fragments.map((fragment) => fragment.storedTag), ['en-US', 'es-ES', 'en-US', 'en-US', 'en-US', 'en-US'])
+  assert.equal(after.fragments[1].mismatch, false)
+
+  const bytes = new Uint8Array(await repaired.blob.arrayBuffer())
+  const view = new DataView(bytes.buffer)
+  assert.equal(view.getUint32(0, true), 0x04034b50)
+  assert.equal(view.getUint16(8, true), 0, 'mimetype stored')
+  assert.equal(new TextDecoder().decode(bytes.subarray(30, 30 + view.getUint16(26, true))), 'mimetype')
+  assert.equal(await repairedZip.file('mimetype')!.async('string'), ODT_MIME)
 }
 
 console.log('ODT + ODP + ODS scan and fragment repair: OK')
