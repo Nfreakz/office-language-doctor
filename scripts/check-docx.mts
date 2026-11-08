@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import JSZip from 'jszip'
 import { patchWordFragments } from '../src/lib/docx/patch.ts'
 import { scanWord } from '../src/lib/docx/scan.ts'
+import { parseWordLanguageContext } from '../src/lib/docx/styles.ts'
+import { extractWordTextFragments, replaceWordRunLanguages } from '../src/lib/docx/xml.ts'
 
 const mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
@@ -208,5 +210,36 @@ const innerFixed = await patchWordFragments(nestedFile, [
 ])
 const innerScan = await scanWord(new File([innerFixed.blob], 'inner.docx', { type: mime }))
 assert.deepEqual(innerScan.fragments.map((fragment) => fragment.storedTag), ['gl-ES', 'en-US', 'en-US'])
+
+// Regression: tracked formatting changes keep the OLD properties inside w:rPrChange.
+// The stored language must come from the current properties and the repair must
+// never be written into the history block.
+{
+  const context = { ...parseWordLanguageContext(null), documentDefault: 'en-US' }
+  const tracked = '<w:body><w:p><w:r><w:rPr><w:b/><w:rPrChange w:id="1" w:author="a" w:date="2026-01-01T00:00:00Z"><w:rPr><w:lang w:val="fr-FR"/></w:rPr></w:rPrChange></w:rPr><w:t>Texto en castellano para la prueba de cambios</w:t></w:r></w:p>'
+    + '<w:p><w:pPr><w:pPrChange w:id="2" w:author="a" w:date="2026-01-01T00:00:00Z"><w:pPr><w:rPr><w:lang w:val="de-DE"/></w:rPr></w:pPr></w:pPrChange></w:pPr><w:r><w:rPr><w:lang w:val="it-IT"/><w:rPrChange w:id="3" w:author="a" w:date="2026-01-01T00:00:00Z"><w:rPr><w:lang w:val="pt-PT"/></w:rPr></w:rPrChange></w:rPr><w:t>Segundo fragmento de prueba</w:t></w:r></w:p></w:body>'
+  const fragments = extractWordTextFragments(tracked, context)
+  assert.deepEqual(fragments.map((f) => [f.storedTag, f.storedSource]), [['en-US', 'document-default'], ['it-IT', 'run']])
+
+  const patched = replaceWordRunLanguages(tracked, new Map([[0, 'es-ES'], [1, 'es-ES']]))
+  assert.equal(patched.changes, 2)
+  assert.match(patched.xml, /<w:rPr><w:b\/><w:lang w:val="es-ES"\/><w:rPrChange w:id="1"[^>]*><w:rPr><w:lang w:val="fr-FR"\/><\/w:rPr><\/w:rPrChange><\/w:rPr>/)
+  assert.match(patched.xml, /<w:rPr><w:lang w:val="es-ES"\/><w:rPrChange w:id="3"[^>]*><w:rPr><w:lang w:val="pt-PT"\/><\/w:rPr><\/w:rPrChange><\/w:rPr>/)
+  assert.deepEqual(extractWordTextFragments(patched.xml, context).map((f) => f.storedTag), ['es-ES', 'es-ES'])
+}
+
+// Performance guard: repairing every run of a large part must stay linear.
+{
+  const context = { ...parseWordLanguageContext(null), documentDefault: 'en-US' }
+  const runs = 12_000
+  const big = '<w:body>' + Array.from({ length: runs }, (_, i) => `<w:p><w:r><w:rPr><w:lang w:val="en-US"/></w:rPr><w:t>Paragraph number ${i} with some english words inside it</w:t></w:r></w:p>`).join('') + '</w:body>'
+  const everything = new Map(Array.from({ length: runs }, (_, i) => [i, 'es-ES'] as [number, string]))
+  const started = performance.now()
+  const patched = replaceWordRunLanguages(big, everything)
+  const elapsed = performance.now() - started
+  assert.equal(patched.changes, runs)
+  assert.equal(extractWordTextFragments(patched.xml, context).filter((f) => f.storedTag === 'es-ES').length, runs)
+  assert.ok(elapsed < 2_000, `patching ${runs} runs took ${elapsed.toFixed(0)} ms`)
+}
 
 console.log('DOCX scan + fragment repair + paragraph context: OK')

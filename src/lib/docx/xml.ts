@@ -2,8 +2,11 @@ import { resolveWordStyleLanguage, type WordLanguageContext } from './styles'
 import type { StoredLanguageSource } from '../document/types'
 
 const TEXT = /<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g
-const RUN_PROPERTIES = /<w:rPr\b[^>]*>[\s\S]*?<\/w:rPr>|<w:rPr\b[^>]*\/>/i
-const PARAGRAPH_PROPERTIES = /<w:pPr\b[^>]*>[\s\S]*?<\/w:pPr>|<w:pPr\b[^>]*\/>/i
+// Tracked formatting changes nest the OLD properties inside w:rPrChange / w:pPrChange,
+// so a lazy match would stop at that inner close tag. Skip those blocks explicitly.
+const RUN_PROPERTIES = /<w:rPr\b[^>]*>(?:<w:rPrChange\b[^>]*>[\s\S]*?<\/w:rPrChange>|(?!<\/w:rPr>)[\s\S])*?<\/w:rPr>|<w:rPr\b[^>]*\/>/i
+const PARAGRAPH_PROPERTIES = /<w:pPr\b[^>]*>(?:<w:pPrChange\b[^>]*>[\s\S]*?<\/w:pPrChange>|(?!<\/w:pPr>)[\s\S])*?<\/w:pPr>|<w:pPr\b[^>]*\/>/i
+const PROPERTY_CHANGE = /<w:(r|p)PrChange\b[^>]*>[\s\S]*?<\/w:\1PrChange>/gi
 const LANG = /<w:lang\b[^>]*>/i
 
 export interface ExtractedWordTextFragment {
@@ -214,23 +217,31 @@ export function replaceWordRunLanguages(
     if (rPr) {
       const rPrXml = rPr[0]
       const rPrStart = run.start + (rPr.index ?? 0)
-      const langTag = rPrXml.match(LANG)?.[0]
-      let nextRPr: string
-      if (langTag) {
+      // Look for w:lang only in the current properties, never in a w:rPrChange history block.
+      const changeStart = rPrXml.search(PROPERTY_CHANGE)
+      const currentRPr = changeStart >= 0 ? rPrXml.slice(0, changeStart) : rPrXml
+      const lang = currentRPr.match(LANG)
+      if (lang) {
+        const langTag = lang[0]
         const current = readAttribute(langTag, 'w:val')
         if (current?.toLowerCase() === target.toLowerCase()) return
 
         const nextLang = current
           ? replaceAttribute(langTag, 'w:val', target)
           : addAttribute(langTag, 'w:val', target)
-        nextRPr = rPrXml.replace(langTag, nextLang)
-      } else {
-        nextRPr = rPrXml.endsWith('/>')
-          ? `${rPrXml.slice(0, -2)}><w:lang w:val="${escapeXmlAttribute(target)}"/></w:rPr>`
-          : rPrXml.replace(/<\/w:rPr>$/i, `<w:lang w:val="${escapeXmlAttribute(target)}"/></w:rPr>`)
+        const langStart = rPrStart + (lang.index ?? 0)
+        edits.push({ start: langStart, end: langStart + langTag.length, text: nextLang })
+        return
       }
 
-      edits.push({ start: rPrStart, end: rPrStart + rPrXml.length, text: nextRPr })
+      const langElement = `<w:lang w:val="${escapeXmlAttribute(target)}"/>`
+      if (rPrXml.endsWith('/>')) {
+        edits.push({ start: rPrStart, end: rPrStart + rPrXml.length, text: `${rPrXml.slice(0, -2)}>${langElement}</w:rPr>` })
+        return
+      }
+      // Insert before the history block when present, otherwise before the close tag.
+      const insertAt = rPrStart + (changeStart >= 0 ? changeStart : rPrXml.length - '</w:rPr>'.length)
+      edits.push({ start: insertAt, end: insertAt, text: langElement })
       return
     }
 
@@ -250,13 +261,18 @@ export function replaceWordRunLanguages(
     })
   })
 
-  let patched = xml
-  for (const edit of edits.sort((x, y) => y.start - x.start)) {
-    patched = patched.slice(0, edit.start) + edit.text + patched.slice(edit.end)
+  // Edits never overlap (one per run, inside its own head); assemble in one ascending pass
+  // so large selections stay linear instead of copying the part once per edit.
+  const pieces: string[] = []
+  let cursor = 0
+  for (const edit of edits.sort((x, y) => x.start - y.start)) {
+    pieces.push(xml.slice(cursor, edit.start), edit.text)
+    cursor = edit.end
     changes += 1
   }
+  pieces.push(xml.slice(cursor))
 
-  return { xml: patched, changes }
+  return { xml: pieces.join(''), changes }
 }
 
 function resolveStoredLanguage(
@@ -276,7 +292,7 @@ function resolveStoredLanguage(
 
 function readLanguageFromProperties(properties: string): string | null {
   if (!properties) return null
-  const langTag = properties.match(LANG)?.[0] ?? ''
+  const langTag = properties.replace(PROPERTY_CHANGE, '').match(LANG)?.[0] ?? ''
   return readAttribute(langTag, 'w:val')
 }
 
