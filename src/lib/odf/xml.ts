@@ -8,9 +8,14 @@ import {
 } from './styles'
 import { DocumentError } from '../document/errors'
 import type { StoredLanguageSource } from '../document/types'
+import {
+  enumerateXmlStructure,
+  ownXml,
+  spliceEdits,
+  type XmlElementRange,
+  type XmlInlineRange,
+} from '../document/xml-structure'
 
-const PARAGRAPH = /<text:p\b[^>]*>[\s\S]*?<\/text:p>/g
-const SPAN = /<text:span\b[^>]*>[\s\S]*?<\/text:span>/g
 const ROW = /<table:table-row\b[^>]*\/>|<table:table-row\b[^>]*>[\s\S]*?<\/table:table-row>/g
 const SPREADSHEET_CELL = /<table:table-cell\b[^>]*\/>|<table:table-cell\b[^>]*>[\s\S]*?<\/table:table-cell>|<table:covered-table-cell\b[^>]*\/>|<table:covered-table-cell\b[^>]*>[\s\S]*?<\/table:covered-table-cell>/g
 const DRAW_PAGE = /<draw:page(?=\s|>)[^>]*>[\s\S]*?<\/draw:page>/g
@@ -25,6 +30,31 @@ export interface ExtractedOdfTextFragment {
   location: string
 }
 
+/**
+ * One audited/patched unit inside a paragraph. `direct` is the paragraph's own text
+ * outside any span (restyled through the paragraph), `span` is one text:span.
+ */
+interface OdfFragmentSite {
+  kind: 'direct' | 'span'
+  text: string
+  /** Element whose opening tag carries the text:style-name to replace. */
+  element: XmlElementRange
+}
+
+interface OdfParagraphSite {
+  /** Paragraph or heading range in content.xml (absolute offsets). */
+  range: XmlElementRange
+  /** Opening tag of the text:p / text:h. */
+  opening: string
+  /** Fragment units in the shared order: direct text first, then spans in document order. */
+  fragments: OdfFragmentSite[]
+  location: string
+  /** Spreadsheet cell style name (null when unstyled), undefined outside spreadsheet cells. */
+  cellStyle?: string | null
+  /** Covered cells: indexes are reserved but text is neither reported nor patched. */
+  consumeOnly?: boolean
+}
+
 export function extractOdfTextFragments(
   contentXml: string,
   stylesXml: string | null,
@@ -33,14 +63,19 @@ export function extractOdfTextFragments(
   const fragments: ExtractedOdfTextFragment[] = []
   let runIndex = 0
 
-  const processParagraph = (
-    paragraphXml: string,
-    fallbackTag: string | null = null,
-    fallbackSource: StoredLanguageSource = 'none',
-    location = 'Document content',
-  ): void => {
-    const paragraphOpening = paragraphXml.match(/^<text:p\b[^>]*>/)?.[0] ?? ''
-    const paragraphStyle = readAttribute(paragraphOpening, 'text:style-name')
+  for (const paragraph of collectOdfParagraphs(contentXml)) {
+    if (paragraph.consumeOnly) {
+      runIndex += paragraph.fragments.length
+      continue
+    }
+
+    const cellResolved = paragraph.cellStyle !== undefined
+      ? resolveOdfStyleLanguage(paragraph.cellStyle, 'table-cell', context)
+      : { tag: null }
+    const fallbackTag = cellResolved.tag
+    const fallbackSource: StoredLanguageSource = cellResolved.tag ? 'style' : 'none'
+
+    const paragraphStyle = readAttribute(paragraph.opening, 'text:style-name')
     const paragraphResolved = resolveOdfStyleLanguage(paragraphStyle, 'paragraph', context)
     const paragraphTag = paragraphResolved.tag ?? fallbackTag
     const paragraphSource: StoredLanguageSource = paragraphResolved.tag
@@ -51,78 +86,90 @@ export function extractOdfTextFragments(
         ? fallbackSource
         : 'none'
 
-    const spans = Array.from(paragraphXml.matchAll(SPAN))
-
-    if (spans.length > 0) {
-      for (const spanMatch of spans) {
-        const spanXml = spanMatch[0]
-        const spanOpening = spanXml.match(/^<text:span\b[^>]*>/)?.[0] ?? ''
+    for (const site of paragraph.fragments) {
+      if (site.kind === 'direct') {
+        fragments.push({
+          text: site.text,
+          storedTag: paragraphTag,
+          storedSource: paragraphSource,
+          runIndex,
+          location: paragraph.location,
+        })
+      } else {
+        const spanOpening = contentXml.slice(site.element.start, site.element.openEnd)
         const spanStyle = readAttribute(spanOpening, 'text:style-name')
         const spanResolved = resolveOdfStyleLanguage(spanStyle, 'text', context)
-        const text = normalizeOdfText(spanXml)
-        if (!text) continue
-
         fragments.push({
-          text,
+          text: site.text,
           storedTag: spanResolved.tag ?? paragraphTag,
           storedSource: spanResolved.tag ? 'style' : paragraphSource,
           runIndex,
-          location,
+          location: paragraph.location,
         })
-        runIndex += 1
       }
-      return
+      runIndex += 1
     }
-
-    const text = normalizeOdfText(paragraphXml)
-    if (!text) return
-
-    fragments.push({
-      text,
-      storedTag: paragraphTag,
-      storedSource: paragraphSource,
-      runIndex,
-      location,
-    })
-    runIndex += 1
-  }
-
-  for (const paragraph of collectOdfParagraphs(contentXml)) {
-    if (paragraph.consumeOnly) {
-      runIndex += countOdfParagraphRuns(paragraph.xml)
-      continue
-    }
-    const cellResolved = paragraph.cellStyle !== undefined
-      ? resolveOdfStyleLanguage(paragraph.cellStyle, 'table-cell', context)
-      : { tag: null }
-    const cellSource: StoredLanguageSource = cellResolved.tag ? 'style' : 'none'
-    processParagraph(paragraph.xml, cellResolved.tag, cellSource, paragraph.location)
   }
 
   return fragments
 }
 
-interface OdfParagraphSite {
-  /** Absolute offset of the paragraph in content.xml. */
-  start: number
-  xml: string
-  location: string
-  /** Spreadsheet cell style name (null when unstyled), undefined outside spreadsheet cells. */
-  cellStyle?: string | null
-  /** Covered cells: indexes are reserved but text is neither reported nor patched. */
-  consumeOnly?: boolean
-}
-
 /**
  * The single traversal shared by extractOdfTextFragments and replaceOdfFragmentLanguages,
  * so run indexes always refer to the same text in scan and patch.
+ *
+ * Paragraphs (text:p) and headings (text:h) are enumerated with a nesting-aware stack:
+ * a paragraph inside a draw:frame anchored in another paragraph is its own paragraph,
+ * and its XML is a hole in the enclosing one. Within a paragraph the fragment order is
+ * fixed: the paragraph's direct text (outside spans and nested paragraphs, concatenated)
+ * comes first when non-empty, then each text:span in document order. Nested spans are
+ * separate fragments; the outer span's text excludes them.
  */
 function collectOdfParagraphs(contentXml: string): OdfParagraphSite[] {
-  const sites: OdfParagraphSite[] = []
+  const { blocks, inlines } = enumerateXmlStructure(contentXml, {
+    blocks: ['text:p', 'text:h'],
+    inlines: ['text:span'],
+  })
 
-  const addParagraphs = (chunk: string, offset: number, site: Omit<OdfParagraphSite, 'start' | 'xml'>): void => {
-    for (const paragraphMatch of chunk.matchAll(PARAGRAPH)) {
-      sites.push({ ...site, start: offset + (paragraphMatch.index ?? 0), xml: paragraphMatch[0] })
+  const spansByBlock = new Map<number, XmlInlineRange[]>()
+  for (const span of inlines) {
+    if (span.blockIndex < 0) continue
+    const list = spansByBlock.get(span.blockIndex) ?? []
+    list.push(span)
+    spansByBlock.set(span.blockIndex, list)
+  }
+
+  const paragraphs: Array<Omit<OdfParagraphSite, 'location'>> = blocks.map((range, blockIndex) => {
+    const spans = spansByBlock.get(blockIndex) ?? []
+    const fragments: OdfFragmentSite[] = []
+
+    const directText = normalizeOdfText(
+      ownXml(contentXml, range, spans.map((span) => [span.start, span.end] as const)),
+    )
+    if (directText) fragments.push({ kind: 'direct', text: directText, element: range })
+
+    for (const span of spans) {
+      const text = normalizeOdfText(ownXml(contentXml, span))
+      if (text) fragments.push({ kind: 'span', text, element: span })
+    }
+
+    return {
+      range,
+      opening: contentXml.slice(range.start, range.openEnd),
+      fragments,
+    }
+  })
+
+  const sites: OdfParagraphSite[] = []
+  let nextParagraph = 0
+
+  /** Attach every paragraph whose opening tag lies inside [offset, offset + length) to this site. */
+  const addParagraphs = (offset: number, length: number, site: Omit<OdfParagraphSite, 'range' | 'opening' | 'fragments'>): void => {
+    const chunkEnd = offset + length
+    while (nextParagraph < paragraphs.length && paragraphs[nextParagraph].range.start < offset) nextParagraph += 1
+    while (nextParagraph < paragraphs.length && paragraphs[nextParagraph].range.start < chunkEnd) {
+      sites.push({ ...paragraphs[nextParagraph], ...site })
+      nextParagraph += 1
     }
   }
 
@@ -143,7 +190,7 @@ function collectOdfParagraphs(contentXml: string): OdfParagraphSite[] {
         const columnRepeat = readPositiveIntegerAttribute(cellOpening, 'table:number-columns-repeated')
 
         if (/^<table:covered-table-cell\b/i.test(cellOpening)) {
-          addParagraphs(cellXml, cellOffset, { location: '', consumeOnly: true })
+          addParagraphs(cellOffset, cellXml.length, { location: '', consumeOnly: true })
           columnIndex += columnRepeat
           continue
         }
@@ -159,7 +206,7 @@ function collectOdfParagraphs(contentXml: string): OdfParagraphSite[] {
           columnSpan,
           rowSpan,
         )
-        addParagraphs(cellXml, cellOffset, {
+        addParagraphs(cellOffset, cellXml.length, {
           location,
           cellStyle: readAttribute(cellOpening, 'table:style-name'),
         })
@@ -182,7 +229,7 @@ function collectOdfParagraphs(contentXml: string): OdfParagraphSite[] {
         const location = pageName && !genericName
           ? `Slide ${pageIndex + 1} · ${pageName}`
           : `Slide ${pageIndex + 1}`
-        addParagraphs(pageXml, pageMatch.index ?? 0, { location })
+        addParagraphs(pageMatch.index ?? 0, pageXml.length, { location })
       })
       return sites
     }
@@ -208,14 +255,8 @@ function collectOdfParagraphs(contentXml: string): OdfParagraphSite[] {
   const fallbackLocation = /<office:presentation\b/i.test(contentXml)
     ? 'Presentation content'
     : 'Document content'
-  addParagraphs(contentXml, 0, { location: fallbackLocation })
+  addParagraphs(0, contentXml.length, { location: fallbackLocation })
   return sites
-}
-
-function countOdfParagraphRuns(paragraphXml: string): number {
-  const spans = Array.from(paragraphXml.matchAll(SPAN))
-  if (spans.length > 0) return spans.filter((spanMatch) => normalizeOdfText(spanMatch[0])).length
-  return normalizeOdfText(paragraphXml) ? 1 : 0
 }
 
 export function replaceOdfLanguageStyles(
@@ -246,8 +287,8 @@ export function replaceOdfFragmentLanguages(
   const context = parseOdfLanguageContext(contentXml, stylesXml)
   const usedNames = collectStyleNames(contentXml, stylesXml)
   const newStyles: string[] = []
+  const edits: Array<{ start: number; end: number; text: string }> = []
   let runIndex = 0
-  let changes = 0
   let styleCounter = 1
 
   const nextStyleName = (): string => {
@@ -260,66 +301,37 @@ export function replaceOdfFragmentLanguages(
     return name
   }
 
-  const patchParagraph = (paragraphXml: string): string => {
-    const spans = Array.from(paragraphXml.matchAll(SPAN))
-
-    if (spans.length > 0) {
-      return paragraphXml.replace(SPAN, (spanXml) => {
-        const text = normalizeOdfText(spanXml)
-        if (!text) return spanXml
-
-        const currentIndex = runIndex
-        runIndex += 1
-        const target = replacements.get(currentIndex)
-        if (!target) return spanXml
-
-        const opening = spanXml.match(/^<text:span\b[^>]*>/)?.[0]
-        if (!opening) return spanXml
-
-        const sourceStyleName = readAttribute(opening, 'text:style-name')
-        const sourceStyleXml = getOdfStyleXml(sourceStyleName, context)
-        const newStyleName = nextStyleName()
-        newStyles.push(cloneOdfStyleWithLanguage(sourceStyleXml, newStyleName, 'text', target))
-
-        const nextOpening = setAttribute(opening, 'text:style-name', newStyleName)
-        changes += 1
-        return spanXml.replace(opening, nextOpening)
-      })
-    }
-
-    const text = normalizeOdfText(paragraphXml)
-    if (!text) return paragraphXml
-
-    const currentIndex = runIndex
-    runIndex += 1
-    const target = replacements.get(currentIndex)
-    if (!target) return paragraphXml
-
-    const opening = paragraphXml.match(/^<text:p\b[^>]*>/)?.[0]
-    if (!opening) return paragraphXml
-
-    const sourceStyleName = readAttribute(opening, 'text:style-name')
-    const sourceStyleXml = getOdfStyleXml(sourceStyleName, context)
-    const newStyleName = nextStyleName()
-    newStyles.push(cloneOdfStyleWithLanguage(sourceStyleXml, newStyleName, 'paragraph', target))
-
-    const nextOpening = setAttribute(opening, 'text:style-name', newStyleName)
-    changes += 1
-    return paragraphXml.replace(opening, nextOpening)
-  }
-
-  // Same traversal as the scan; splice patched paragraphs back so other bytes stay intact.
-  let patched = ''
-  let cursor = 0
-  for (const site of collectOdfParagraphs(contentXml)) {
-    if (site.consumeOnly) {
-      runIndex += countOdfParagraphRuns(site.xml)
+  // Same traversal as the scan. Each fragment restyles exactly one opening tag (the
+  // paragraph/heading for direct text, the span for span text), so edits never overlap
+  // and can be spliced back by offset, leaving every other byte intact.
+  for (const paragraph of collectOdfParagraphs(contentXml)) {
+    if (paragraph.consumeOnly) {
+      runIndex += paragraph.fragments.length
       continue
     }
-    patched += contentXml.slice(cursor, site.start) + patchParagraph(site.xml)
-    cursor = site.start + site.xml.length
+
+    for (const site of paragraph.fragments) {
+      const currentIndex = runIndex
+      runIndex += 1
+      const target = replacements.get(currentIndex)
+      if (!target) continue
+
+      const opening = contentXml.slice(site.element.start, site.element.openEnd)
+      const family = site.kind === 'direct' ? 'paragraph' : 'text'
+      const sourceStyleName = readAttribute(opening, 'text:style-name')
+      const sourceStyleXml = getOdfStyleXml(sourceStyleName, context)
+      const newStyleName = nextStyleName()
+      newStyles.push(cloneOdfStyleWithLanguage(sourceStyleXml, newStyleName, family, target))
+
+      edits.push({
+        start: site.element.start,
+        end: site.element.openEnd,
+        text: setAttribute(opening, 'text:style-name', newStyleName),
+      })
+    }
   }
-  patched += contentXml.slice(cursor)
+
+  let patched = spliceEdits(contentXml, edits)
 
   if (newStyles.length > 0) {
     const insertion = newStyles.join('')
@@ -340,7 +352,7 @@ export function replaceOdfFragmentLanguages(
     }
   }
 
-  return { xml: patched, changes }
+  return { xml: patched, changes: edits.length }
 }
 
 function spreadsheetCellLocation(

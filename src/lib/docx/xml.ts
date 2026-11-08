@@ -1,5 +1,6 @@
 import { resolveWordStyleLanguage, type WordLanguageContext } from './styles'
 import type { StoredLanguageSource } from '../document/types'
+import { enumerateXmlStructure, headXml, ownXml, spliceEdits, type XmlElementRange } from '../document/xml-structure'
 
 const TEXT = /<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g
 // Tracked formatting changes nest the OLD properties inside w:rPrChange / w:pPrChange,
@@ -18,16 +19,7 @@ export interface ExtractedWordTextFragment {
   paragraphText: string
 }
 
-interface WordElementRange {
-  start: number
-  end: number
-  /** Index just after the opening tag. */
-  openEnd: number
-  /** Ranges of nested paragraphs (e.g. textbox content) to exclude from this element's own XML. */
-  holes: Array<[number, number]>
-}
-
-interface WordRunRange extends WordElementRange {
+interface WordRunRange extends XmlElementRange {
   paragraphIndex: number
 }
 
@@ -37,83 +29,16 @@ interface WordRunRange extends WordElementRange {
  * tag) order; nested paragraphs (w:txbxContent inside w:pict / mc:AlternateContent)
  * are their own paragraphs and their runs their own runs.
  */
-function enumerateWordStructure(xml: string): { paragraphs: WordElementRange[]; runs: WordRunRange[] } {
-  const paragraphs: WordElementRange[] = []
-  const runs: WordRunRange[] = []
-  const stack: Array<{ kind: 'p' | 'r'; range: WordElementRange; paragraphIndex: number; slot: number }> = []
-  const runSlots: Array<WordRunRange | null> = []
-  const paragraphSlots: Array<WordElementRange | null> = []
-  const TOKEN = /<(\/?)w:(p|r)\b[^>]*?(\/?)>/g
-
-  for (const match of xml.matchAll(TOKEN)) {
-    const [tag, closing, kindRaw, selfClosing] = match
-    const kind = kindRaw as 'p' | 'r'
-    const position = match.index ?? 0
-    const tagEnd = position + tag.length
-
-    if (closing) {
-      let depth = stack.length - 1
-      while (depth >= 0 && stack[depth].kind !== kind) depth -= 1
-      if (depth < 0) continue
-      const [frame] = stack.splice(depth)
-      frame.range.end = tagEnd
-      if (kind === 'p') {
-        paragraphSlots[frame.slot] = frame.range
-        for (const outer of stack) outer.range.holes.push([frame.range.start, tagEnd])
-      } else {
-        runSlots[frame.slot] = { ...frame.range, paragraphIndex: frame.paragraphIndex }
-      }
-      continue
-    }
-
-    const range: WordElementRange = { start: position, end: tagEnd, openEnd: tagEnd, holes: [] }
-    const enclosingParagraph = [...stack].reverse().find((frame) => frame.kind === 'p')
-    if (kind === 'p') {
-      const slot = paragraphSlots.length
-      paragraphSlots.push(null)
-      if (selfClosing) paragraphSlots[slot] = range
-      else stack.push({ kind, range, paragraphIndex: slot, slot })
-    } else {
-      const slot = runSlots.length
-      runSlots.push(null)
-      const paragraphIndex = enclosingParagraph?.paragraphIndex ?? -1
-      if (selfClosing) runSlots[slot] = { ...range, paragraphIndex }
-      else stack.push({ kind, range, paragraphIndex, slot })
-    }
+function enumerateWordStructure(xml: string): { paragraphs: XmlElementRange[]; runs: WordRunRange[] } {
+  const { blocks, inlines } = enumerateXmlStructure(xml, { blocks: ['w:p'], inlines: ['w:r'] })
+  return {
+    paragraphs: blocks,
+    runs: inlines.map(({ blockIndex, ...range }) => ({ ...range, paragraphIndex: blockIndex })),
   }
-
-  // Unclosed elements are dropped; renumber so indexes stay dense and shared.
-  const paragraphRemap = new Map<number, number>()
-  paragraphSlots.forEach((range, slot) => {
-    if (!range) return
-    paragraphRemap.set(slot, paragraphs.length)
-    paragraphs.push(range)
-  })
-  for (const run of runSlots) {
-    if (!run) continue
-    runs.push({ ...run, paragraphIndex: paragraphRemap.get(run.paragraphIndex) ?? -1 })
-  }
-
-  return { paragraphs, runs }
-}
-
-/** XML of the element excluding nested paragraphs. */
-function ownXml(xml: string, range: WordElementRange): string {
-  let cursor = range.start
-  let result = ''
-  for (const [holeStart, holeEnd] of [...range.holes].sort((a, b) => a[0] - b[0])) {
-    if (holeStart < cursor) continue
-    result += xml.slice(cursor, holeStart)
-    cursor = holeEnd
-  }
-  return result + xml.slice(cursor, range.end)
 }
 
 /** Direct-child prefix of a run (opening tag up to its first nested paragraph). */
-function runHead(xml: string, range: WordElementRange): string {
-  const firstHole = Math.min(range.end, ...range.holes.map(([holeStart]) => holeStart))
-  return xml.slice(range.start, firstHole)
-}
+const runHead = headXml
 
 export function extractWordTextFragments(
   xml: string,
@@ -203,8 +128,6 @@ export function replaceWordRunLanguages(
   xml: string,
   replacements: ReadonlyMap<number, string>,
 ): { xml: string; changes: number } {
-  let changes = 0
-
   const { runs } = enumerateWordStructure(xml)
   const edits: Array<{ start: number; end: number; text: string }> = []
 
@@ -263,16 +186,7 @@ export function replaceWordRunLanguages(
 
   // Edits never overlap (one per run, inside its own head); assemble in one ascending pass
   // so large selections stay linear instead of copying the part once per edit.
-  const pieces: string[] = []
-  let cursor = 0
-  for (const edit of edits.sort((x, y) => x.start - y.start)) {
-    pieces.push(xml.slice(cursor, edit.start), edit.text)
-    cursor = edit.end
-    changes += 1
-  }
-  pieces.push(xml.slice(cursor))
-
-  return { xml: pieces.join(''), changes }
+  return { xml: spliceEdits(xml, edits), changes: edits.length }
 }
 
 function resolveStoredLanguage(
