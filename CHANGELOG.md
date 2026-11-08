@@ -6,6 +6,9 @@
 
 - DOCX: audit and repair share one nesting-aware run enumeration, so fixes in documents with text boxes (`w:txbxContent`) land on the audited run instead of a neighbouring one;
 - ODT / ODP / ODS: fragment repair uses the same traversal as the audit, so shape text or paragraphs outside slides and cells no longer shift the repaired fragment;
+- ODT / ODP / ODS: paragraphs are enumerated with a nesting-aware tokenizer instead of a lazy regex, so a text frame or caption anchored inside a paragraph (LibreOffice nests the `draw:frame` in the `text:p`) is audited as its own fragment and repairing it restyles the caption paragraph, not the enclosing one; the body text that follows the frame is now audited too;
+- ODT / ODP / ODS: headings (`text:h`) are audited and repaired like paragraphs;
+- ODT / ODP / ODS: a paragraph's own text outside `text:span` elements (e.g. the words around one bold word) is no longer skipped; it is reported as one fragment that carries the paragraph language and is repaired through the paragraph style. Fragment order per paragraph is fixed and shared by audit and repair: direct text first, then spans in document order; nested spans are separate fragments and the outer span's text excludes them;
 - RTF: repair preserves the file byte-for-byte outside the inserted `{\langN …}` wrappers; raw 8-bit characters (e.g. `é` in the font table or body) are no longer re-encoded as UTF-8. Detection text is decoded through the document `\ansicpg`, `\binN` payloads are skipped and never patched, and `\uN` fallback skipping stops at group braces;
 - stored proofing tags that carry no language (`x-none`, `und`, `zxx`, `mul`, other `x-*`) are treated as missing tags (review-only) instead of direct mismatches that Smart Fix could preselect;
 - equivalent spellings of the same language no longer produce false mismatches: bare `nb` / `nn` / `no`, underscore tags such as `es_ES` and three-letter codes such as `spa` match their family;
@@ -17,6 +20,8 @@
 
 ### Changed
 
+- DOCX and OpenDocument share one generic nesting-aware block/inline enumerator (`src/lib/document/xml-structure.ts`) and one offset-based splice helper; DOCX behaviour is unchanged;
+- the ODF regression check includes a real LibreOffice-generated `.odt` fixture (`scripts/fixtures/odt-frame-heading.odt`, source `.fodt` alongside) with a paragraph-anchored text frame and caption, a Heading 1, a bold span and a plain paragraph;
 - dependency installs are reproducible: a committed `package-lock.json` pins the full dependency tree and every workflow uses `npm ci` with the lockfile as npm cache key. No product behavior change;
 - whole-document and selected-fragment repair share one UI flow; the CSV formula guard is documented (JSON exports keep the exact text).
 
